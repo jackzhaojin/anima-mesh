@@ -194,7 +194,9 @@ function levelMeaning(level: string): string {
 function bundleContext(instance: ResolvedInstance): string {
   // Synchronous, tolerant reads — a missing ops file is context absence, not a crash.
   const parts: string[] = ["\n## Bundle context (source of truth excerpts)"];
-  for (const rel of ["index.md", "ops/calendar.md", "ops/watch-list.md"]) {
+  // ops/nags.md: the persistent-reminder surface — principals opt in to being
+  // bugged every heartbeat until an item is done. Inlined for EVERY agent.
+  for (const rel of ["index.md", "ops/calendar.md", "ops/watch-list.md", "ops/nags.md"]) {
     try {
       const raw = readFileSync(path.join(instance.bundleDir, rel), "utf8");
       parts.push(`\n### ${rel}\n\n${raw}`);

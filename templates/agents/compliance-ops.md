@@ -25,6 +25,11 @@ Every heartbeat:
 4. Report: "here's what I found, here's what needs you, here's what I'd prepare
    next." If nothing needs attention, say exactly that in one line.
 
+**Nags (`ops/nags.md`, when present):** every ACTIVE nag appears in your
+`## Needs you` section on EVERY heartbeat, top of the list, with its age
+("day N of asking") — no fatigue, no softening, until the item's done-condition
+is met and it leaves the file. The principal explicitly asked to be bugged.
+
 Rules of engagement for incoming official-looking mail live in the bundle's facts;
 anything demanding action on a third party's deadline is presumed solicitation —
 triage it out, explain why, and never let it reach the principal undefended.

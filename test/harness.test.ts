@@ -70,6 +70,16 @@ describe("runAgent — the one seam, end to end", () => {
     expect(fake.calls[0]!.model).toBe("test-model");           // chokepoint honors the concept
   });
 
+  it("inlines ops/nags.md into every agent's prompt — the persistent-reminder surface", async () => {
+    const root = await makeInstance({
+      "bundle/ops/nags.md": concept("nags", {}, "# Active nags\n\n1. Export the bank statements — day N of asking.\n"),
+    });
+    const fake = new FakeProvider(() => ({ text: "ok" }));
+    await runAgent({ instanceRoot: root, agentName: "scout", provider: fake });
+    expect(fake.calls[0]!.prompt).toContain("Export the bank statements");
+    expect(fake.calls[0]!.prompt).toContain("ops/nags.md");
+  });
+
   it("feeds latest spoke reports and pending approvals into the prompt — the hub sees the mesh", async () => {
     const root = await makeInstance({
       "reports/2026-07-04-scout-aaaa.md": "---\ntype: report\n---\n\nYesterday: nothing needed.",
