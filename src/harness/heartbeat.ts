@@ -46,6 +46,12 @@ export interface HeartbeatResult {
   ok: boolean;
 }
 
+/** Local calendar day as a comparable yyyymmdd number. */
+function localDay(epochMs: number): number {
+  const d = new Date(epochMs);
+  return d.getFullYear() * 10_000 + (d.getMonth() + 1) * 100 + d.getDate();
+}
+
 export async function heartbeat(options: HeartbeatOptions): Promise<HeartbeatResult> {
   const instance = loadInstance(options.instanceRoot);
   const bundle = await loadBundle(instance.bundleDir);
@@ -83,6 +89,16 @@ export async function heartbeat(options: HeartbeatOptions): Promise<HeartbeatRes
 
     if (lastCompleted === 0) {
       due.push({ agent, reason: "never run" });
+    } else if (agent.heartbeat === "daily") {
+      // Daily means "not yet today" (local calendar), not "20h elapsed" —
+      // a late-night manual run must never eat the next morning's brief.
+      // (Lesson from the first scheduled morning: 1am debug runs silenced
+      // the 8am beat and the principal's daily DM.)
+      if (localDay(lastCompleted) < localDay(now.getTime())) {
+        due.push({ agent, reason: "daily: not yet run today" });
+      } else {
+        skipped.push({ agent: agent.name, reason: "daily: already ran today" });
+      }
     } else {
       const elapsedHours = (now.getTime() - lastCompleted) / 3_600_000;
       if (elapsedHours >= hours) {
@@ -116,7 +132,14 @@ export async function heartbeat(options: HeartbeatOptions): Promise<HeartbeatRes
   for (const { agent } of due) {
     progress(`heartbeat: running ${agent.name}`);
     try {
-      runs.push(await runAgent({ instanceRoot: options.instanceRoot, agentName: agent.name, onProgress: progress }));
+      runs.push(
+        await runAgent({
+          instanceRoot: options.instanceRoot,
+          agentName: agent.name,
+          now: options.now,
+          onProgress: progress,
+        }),
+      );
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       failures.push({ agent: agent.name, error: message });

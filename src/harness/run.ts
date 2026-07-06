@@ -79,6 +79,9 @@ export async function runAgent(options: RunOptions): Promise<RunReport> {
   const runId = options.runId ?? randomUUID();
   const now = options.now ?? new Date();
   const startedAt = now.toISOString();
+  // Injected clock ⇒ fully frozen timestamps (deterministic simulations);
+  // real runs keep wall-clock precision per entry.
+  const clock = options.now ? () => startedAt : () => new Date().toISOString();
   // Local date, not UTC: a daily brief stamped "tomorrow" confuses its reader.
   const dateStamp = [
     now.getFullYear(),
@@ -120,7 +123,7 @@ export async function runAgent(options: RunOptions): Promise<RunReport> {
   ].join("\n");
   writeFileSync(reportPath, reportContent, "utf8");
   ledger.append({
-    ts: new Date().toISOString(),
+    ts: clock(),
     runId,
     agent: agent.name,
     action: "report-written",
@@ -128,7 +131,7 @@ export async function runAgent(options: RunOptions): Promise<RunReport> {
     detail: { path: path.relative(instance.root, reportPath) },
   });
 
-  const finishedAt = new Date().toISOString();
+  const finishedAt = clock();
   ledger.append({ ts: finishedAt, runId, agent: agent.name, action: "run-completed", type: "report" });
 
   const verifierResults: VerifierResult[] = [

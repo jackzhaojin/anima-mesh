@@ -73,6 +73,27 @@ describe("heartbeat — D5's deterministic trigger", () => {
     expect(dueNames).not.toContain("weekly-w");
   });
 
+  it("daily is calendar-based: a 1am run never eats the 8am brief", async () => {
+    const root = await makeMeshInstance();
+    // last night 23:30 local
+    const lastNight = new Date();
+    lastNight.setDate(lastNight.getDate() - 1);
+    lastNight.setHours(23, 30, 0, 0);
+    await heartbeat({ instanceRoot: root, now: lastNight });
+
+    // this morning 07:00 local — only 7.5h later, but it's a NEW day
+    const thisMorning = new Date();
+    thisMorning.setHours(7, 0, 0, 0);
+    const morning = await heartbeat({ instanceRoot: root, now: thisMorning, dryRun: true });
+    const dueNames = morning.due.map((d) => d.agent);
+    expect(dueNames).toContain("alpha-daily");
+    expect(dueNames).toContain("chief-of-staff");
+    expect(morning.due.find((d) => d.agent === "chief-of-staff")!.reason).toContain("not yet run today");
+    // and a second beat the SAME morning still skips them
+    const again = await heartbeat({ instanceRoot: root, now: lastNight, dryRun: true });
+    expect(again.skipped.find((s) => s.agent === "alpha-daily")!.reason).toContain("already ran today");
+  });
+
   it("one spoke's failure never aborts the beat — remaining agents still run", async () => {
     const root = await makeMeshInstance();
     // alpha-daily's harness doesn't exist → its run throws; the rest proceed.
