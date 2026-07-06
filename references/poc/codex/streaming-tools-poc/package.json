@@ -1,0 +1,27 @@
+{
+  "name": "codex-streaming-tools-poc",
+  "version": "1.0.0",
+  "description": "Advanced Codex SDK streaming and tool inspection POC",
+  "main": "src/stream-tools.js",
+  "scripts": {
+    "buffered:tools": "node src/buffered-tools.js",
+    "buffered:tools:raw-reasoning": "node src/buffered-tools-raw-reasoning.js",
+    "stream:hello": "node src/stream-hello.js",
+    "stream:tools": "node src/stream-tools.js",
+    "stream:write": "node src/stream-write.js"
+  },
+  "keywords": [
+    "codex",
+    "openai",
+    "sdk",
+    "streaming",
+    "tools",
+    "poc"
+  ],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "dependencies": {
+    "@openai/codex-sdk": "^0.118.0"
+  }
+}

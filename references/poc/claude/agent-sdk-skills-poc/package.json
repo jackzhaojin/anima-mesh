@@ -1,0 +1,39 @@
+{
+  "name": "agent-sdk-skills-poc",
+  "version": "1.0.0",
+  "description": "POC for testing Claude Agent SDK Skills - discovery, loading, and invocation",
+  "type": "module",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "npm run build && node dist/index.js",
+    "dev": "tsx src/index.ts",
+    "test:user-skills": "tsx src/experiments/test-user-skills.ts",
+    "test:project-skills": "tsx src/experiments/test-project-skills.ts",
+    "test:bundled-skills": "tsx src/experiments/test-bundled-skills.ts",
+    "test:all": "tsx src/experiments/run-all-tests.ts",
+    "test:extended": "tsx src/experiments/test-extended-skills.ts",
+    "clean": "rm -rf dist"
+  },
+  "keywords": [
+    "claude",
+    "anthropic",
+    "agent-sdk",
+    "skills",
+    "poc"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@anthropic-ai/claude-agent-sdk": "^0.2.29",
+    "dotenv": "^16.4.5"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "name": "codex-hello-world",
+  "version": "1.0.0",
+  "description": "Minimal Codex SDK hello world",
+  "main": "src/hello.js",
+  "scripts": {
+    "hello": "node src/hello.js"
+  },
+  "keywords": [
+    "codex",
+    "openai",
+    "sdk",
+    "poc"
+  ],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "dependencies": {
+    "@openai/codex-sdk": "^0.118.0"
+  }
+}

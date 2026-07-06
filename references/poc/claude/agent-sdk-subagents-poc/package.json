@@ -1,0 +1,30 @@
+{
+  "name": "agent-sdk-subagents-poc",
+  "version": "1.0.0",
+  "description": "POC validating Claude Agent SDK subagent capabilities via Task tool",
+  "type": "module",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsx src/index.ts",
+    "start": "node dist/index.js",
+    "test:subagents": "tsx src/experiments/test-subagents.ts"
+  },
+  "keywords": [
+    "claude",
+    "agent-sdk",
+    "subagents",
+    "poc"
+  ],
+  "author": "",
+  "license": "Private",
+  "dependencies": {
+    "@anthropic-ai/claude-agent-sdk": "^0.2.29",
+    "dotenv": "^16.3.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "tsx": "^4.7.0",
+    "typescript": "^5.3.0"
+  }
+}
