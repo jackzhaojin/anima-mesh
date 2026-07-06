@@ -97,6 +97,9 @@ pnpm cli init ../my-brain --answers answers.json --agentic opencode
 
 pnpm cli validate ../my-brain          # OKF + animamesh conformance
 pnpm cli run compliance-ops --instance ../my-brain
+pnpm cli heartbeat --instance ../my-brain      # run everything due; hub last
+pnpm cli deliver --instance ../my-brain        # brief → discord/notion/gmail/console
+pnpm cli card --instance ../my-brain           # the mesh's A2A agent card
 pnpm cli gate list --instance ../my-brain
 pnpm cli report --instance ../my-brain
 ```
@@ -124,7 +127,7 @@ conformance and complete a full agent run against the fake provider.
 
 ## Status
 
-v0.1.0 — pre-release. Package name on npm to be confirmed; pinned consumers
+v0.2.0 — pre-release. Package name on npm to be confirmed; pinned consumers
 should reference the repo by tag.
 
-MIT © Jack Jin
+Apache-2.0 © 2026 Jack Jin — see [LICENSE](LICENSE)

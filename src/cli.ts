@@ -13,6 +13,10 @@ import { loadAnswersFile, interactiveInterview, normalizeAnswers, agenticEnrich 
 import { listAgentTemplates } from "./init/templates.js";
 import { resolveProvider } from "./providers/index.js";
 import { agentsFromBundle } from "./agents/concept.js";
+import { deliverLatestReport } from "./channels/index.js";
+import { heartbeat } from "./harness/heartbeat.js";
+import { buildAgentCard } from "./a2a/card.js";
+import { writeFileSync } from "node:fs";
 
 /**
  * anima-mesh CLI — init / validate / run / gate / report.
@@ -33,6 +37,12 @@ export async function main(argv: string[], io: { log: (s: string) => void; error
         return await cmdGate(rest, io);
       case "report":
         return await cmdReport(rest, io);
+      case "deliver":
+        return await cmdDeliver(rest, io);
+      case "heartbeat":
+        return await cmdHeartbeat(rest, io);
+      case "card":
+        return await cmdCard(rest, io);
       case "templates":
         io.log(listAgentTemplates().join("\n"));
         return 0;
@@ -62,6 +72,9 @@ function usage(): string {
     "  anima-mesh run <agent> [--instance dir]",
     "  anima-mesh gate list|approve <id>|deny <id> [--instance dir] [--by NAME] [--note TEXT]",
     "  anima-mesh report [--instance dir]",
+    "  anima-mesh heartbeat [--instance dir] [--dry-run] [--no-deliver]",
+    "  anima-mesh deliver [--instance dir] [--agent NAME] [--channel c1,c2]",
+    "  anima-mesh card [--instance dir] [--out FILE]",
     "  anima-mesh templates",
   ].join("\n");
 }
@@ -198,6 +211,55 @@ async function cmdReport(args: string[], io: { log: (s: string) => void }): Prom
       const firstLine = readFileSync(path.join(instance.reportsDir, r), "utf8").split("\n").find((l) => l.startsWith("# ") || l.startsWith("## "));
       io.log(`- ${r}${firstLine ? ` — ${firstLine.replace(/^#+\s*/, "")}` : ""}`);
     }
+  }
+  return 0;
+}
+
+async function cmdDeliver(args: string[], io: { log: (s: string) => void }): Promise<number> {
+  const instanceRoot = flag(args, "instance") ?? ".";
+  const results = await deliverLatestReport(instanceRoot, {
+    agent: flag(args, "agent") || undefined,
+    channels: flag(args, "channel") ? flag(args, "channel")!.split(",").map((s) => s.trim()) : undefined,
+    log: io.log,
+  });
+  for (const r of results) io.log(`${r.ok ? "✓" : "✗"} ${r.channel}: ${r.detail}`);
+  return results.every((r) => r.ok) ? 0 : 1;
+}
+
+async function cmdHeartbeat(args: string[], io: { log: (s: string) => void }): Promise<number> {
+  const instanceRoot = flag(args, "instance") ?? ".";
+  const dryRun = hasFlag(args, "dry-run");
+  const result = await heartbeat({ instanceRoot, dryRun, onProgress: (n) => io.log(`  ${n}`) });
+
+  io.log(`due: ${result.due.length ? result.due.map((d) => `${d.agent} (${d.reason})`).join(", ") : "none"}`);
+  for (const s of result.skipped) io.log(`  skip ${s.agent}: ${s.reason}`);
+  if (dryRun) return 0;
+
+  for (const run of result.runs) {
+    io.log(`${run.ok ? "✓" : "✗"} ${run.agent} run ${run.runId.slice(0, 8)} → ${run.reportPath}`);
+  }
+
+  // Deliver the hub's brief when configured and freshly produced.
+  const instance = loadInstance(instanceRoot);
+  const deliverAgent = instance.config.delivery?.deliverAgent;
+  const channels = instance.config.delivery?.channels ?? [];
+  if (!hasFlag(args, "no-deliver") && deliverAgent && channels.length > 0 && result.runs.some((r) => r.agent === deliverAgent && r.ok)) {
+    const results = await deliverLatestReport(instanceRoot, { log: io.log });
+    for (const r of results) io.log(`${r.ok ? "✓" : "✗"} delivered via ${r.channel}: ${r.detail}`);
+  }
+  return result.ok ? 0 : 1;
+}
+
+async function cmdCard(args: string[], io: { log: (s: string) => void }): Promise<number> {
+  const instanceRoot = flag(args, "instance") ?? ".";
+  const card = await buildAgentCard(instanceRoot);
+  const json = JSON.stringify(card, null, 2);
+  const out = flag(args, "out");
+  if (out) {
+    writeFileSync(out, json + "\n", "utf8");
+    io.log(`agent card written to ${out}`);
+  } else {
+    io.log(json);
   }
   return 0;
 }

@@ -28,6 +28,15 @@ export interface InstanceConfig {
     optionTrigger?: string | null;
     founderWaiver?: boolean;
   };
+  /** Where reports get delivered (channel names) and whose report is "the brief". */
+  delivery?: {
+    channels?: string[];
+    deliverAgent?: string;
+  };
+  /** A2A surface config; url is where the Agent Card would be served when hosted. */
+  a2a?: {
+    url?: string;
+  };
 }
 
 export interface ResolvedInstance {

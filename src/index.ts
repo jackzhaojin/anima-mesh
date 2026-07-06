@@ -58,6 +58,23 @@ export {
   type VerifierResult,
 } from "./harness/verifiers.js";
 
+export {
+  resolveChannel,
+  registerChannel,
+  deliverLatestReport,
+  consoleChannel,
+  discordChannel,
+  notionChannel,
+  gmailChannel,
+  type DeliveryChannel,
+  type DeliveryMessage,
+  type DeliveryResult,
+  type ChannelContext,
+} from "./channels/index.js";
+export { heartbeat, PERIOD_HOURS, type HeartbeatOptions, type HeartbeatResult } from "./harness/heartbeat.js";
+export { buildAgentCard, type AgentCard, type AgentCardSkill } from "./a2a/card.js";
+export { loadInstanceEnv, getEnv } from "./instance/env.js";
+
 export { scaffoldBrain, type InitAnswers, type ScaffoldResult } from "./init/scaffold.js";
 export { loadAnswersFile, normalizeAnswers, interactiveInterview, agenticEnrich } from "./init/interview.js";
 export { listAgentTemplates, loadAgentTemplate, fillTemplate, templatesDir } from "./init/templates.js";
