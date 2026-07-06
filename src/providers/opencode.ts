@@ -23,11 +23,17 @@ interface OpencodeServer {
   proc: ChildProcess;
 }
 
-let serverPromise: Promise<OpencodeServer> | null = null;
-let serverChild: ChildProcess | null = null;
+/**
+ * One server per working directory: the session's relative file reads must
+ * resolve against the instance the agent operates on, not a shared tmpdir.
+ * (Found by the very first real run — the model's `read ops/calendar.md`
+ * missed the instance.)
+ */
+const serversByCwd = new Map<string, Promise<OpencodeServer>>();
+const serverChildren = new Set<ChildProcess>();
 
-function startServer(): Promise<OpencodeServer> {
-  const workdir = path.join(tmpdir(), "anima-mesh-opencode");
+function startServer(cwd: string): Promise<OpencodeServer> {
+  const workdir = cwd || path.join(tmpdir(), "anima-mesh-opencode");
   mkdirSync(workdir, { recursive: true });
 
   const proc = spawn(
@@ -35,7 +41,7 @@ function startServer(): Promise<OpencodeServer> {
     ["serve", "--port", "0", "--hostname", "127.0.0.1"],
     { cwd: workdir, env: process.env, stdio: ["ignore", "pipe", "pipe"] },
   );
-  serverChild = proc;
+  serverChildren.add(proc);
 
   return new Promise<OpencodeServer>((resolve, reject) => {
     let settled = false;
@@ -50,30 +56,36 @@ function startServer(): Promise<OpencodeServer> {
     proc.stdout?.on("data", onData);
     proc.stderr?.on("data", onData);
     proc.on("exit", (code) => {
-      serverPromise = null;
-      serverChild = null;
+      serversByCwd.delete(cwd);
+      serverChildren.delete(proc);
       if (!settled) reject(new Error(`opencode serve exited early (code ${code})`));
     });
     setTimeout(() => !settled && reject(new Error("timed out waiting for opencode serve")), SERVE_STARTUP_TIMEOUT_MS);
   });
 }
 
-function getServer(): Promise<OpencodeServer> {
-  if (!serverPromise) {
-    serverPromise = startServer().catch((e) => {
-      serverPromise = null;
+function getServer(cwd: string): Promise<OpencodeServer> {
+  const key = path.resolve(cwd);
+  let existing = serversByCwd.get(key);
+  if (!existing) {
+    existing = startServer(key).catch((e) => {
+      serversByCwd.delete(key);
       return Promise.reject(e);
     });
+    serversByCwd.set(key, existing);
   }
-  return serverPromise;
+  return existing;
 }
 
 function killServer(): void {
-  try {
-    serverChild?.kill("SIGTERM");
-  } catch {
-    /* already gone */
+  for (const child of serverChildren) {
+    try {
+      child.kill("SIGTERM");
+    } catch {
+      /* already gone */
+    }
   }
+  serverChildren.clear();
 }
 process.once("exit", killServer);
 for (const sig of ["SIGINT", "SIGTERM"] as const) {
@@ -156,8 +168,8 @@ export const opencodeProvider: AgentWorkerProvider = {
     const [providerID, modelID] = splitModel(model);
     const progress = opts.onProgress ?? (() => {});
 
-    progress(`opencode: starting (${model})`);
-    const { base } = await getServer();
+    progress(`opencode: starting (${model}) in ${opts.cwd}`);
+    const { base } = await getServer(opts.cwd);
 
     const session = await postJson(base, "/session", { title: "anima-mesh run" });
     const sessionId: string = session.id;

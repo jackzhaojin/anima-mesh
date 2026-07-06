@@ -1,4 +1,4 @@
-import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { randomUUID } from "node:crypto";
 import * as path from "node:path";
 import { loadBundle, getConcept } from "../okf/bundle.js";
@@ -79,7 +79,12 @@ export async function runAgent(options: RunOptions): Promise<RunReport> {
   const runId = options.runId ?? randomUUID();
   const now = options.now ?? new Date();
   const startedAt = now.toISOString();
-  const dateStamp = startedAt.slice(0, 10);
+  // Local date, not UTC: a daily brief stamped "tomorrow" confuses its reader.
+  const dateStamp = [
+    now.getFullYear(),
+    String(now.getMonth() + 1).padStart(2, "0"),
+    String(now.getDate()).padStart(2, "0"),
+  ].join("-");
 
   ledger.append({ ts: startedAt, runId, agent: agent.name, action: "run-started", type: "report" });
 
@@ -88,9 +93,11 @@ export async function runAgent(options: RunOptions): Promise<RunReport> {
   provider.assertConfigured();
   progress(`run ${runId.slice(0, 8)}: ${agent.name} via ${provider.name} (${agent.model})`);
 
+  // The bundle IS the agent's working world: relative reads in any harness
+  // resolve against the knowledge layer, matching the prompt's paths.
   const result = await provider.run({
     prompt,
-    cwd: instance.root,
+    cwd: instance.bundleDir,
     model: agent.model,
     onProgress: progress,
   });
@@ -160,6 +167,7 @@ function buildPrompt(agent: AgentConcept, bundleRoot: string, instance: Resolved
     agent.job,
     "",
     "## Operating rules",
+    "- Your working directory is the bundle root: paths like `ops/calendar.md` and `facts/*.md` resolve directly.",
     "- Base every claim about stable facts on the bundle excerpts below — never on recall.",
     "- You produce a single markdown report. The harness writes it to disk; you cause no side effects.",
     "- If something needs the principal's decision or approval, say so explicitly in a `## Needs you` section.",
@@ -168,6 +176,7 @@ function buildPrompt(agent: AgentConcept, bundleRoot: string, instance: Resolved
   return [
     sections.join("\n"),
     bundleContext(instance),
+    instanceContext(instance),
     "\n## Output\nReturn ONLY the markdown body of your report (no code fences around the whole thing).",
   ].join("\n");
 }
@@ -192,6 +201,45 @@ function bundleContext(instance: ResolvedInstance): string {
     } catch {
       /* concept not present in this instance — fine */
     }
+  }
+  return parts.join("\n");
+}
+
+const MAX_REPORT_CHARS = 4000;
+const LATEST_REPORTS = 3;
+
+/**
+ * Operational context beyond the bundle: the freshest spoke reports and any
+ * pending approvals — what a coordinating hub (and any spoke) should see.
+ * Read-only context; still L1-safe.
+ */
+function instanceContext(instance: ResolvedInstance): string {
+  const parts: string[] = [];
+  try {
+    const files = readdirSync(instance.reportsDir)
+      .filter((f) => f.endsWith(".md"))
+      .sort()
+      .slice(-LATEST_REPORTS);
+    if (files.length > 0) {
+      parts.push("\n## Latest reports from the mesh");
+      for (const f of files) {
+        const raw = readFileSync(path.join(instance.reportsDir, f), "utf8");
+        const clipped = raw.length > MAX_REPORT_CHARS ? raw.slice(0, MAX_REPORT_CHARS) + "\n…(truncated)" : raw;
+        parts.push(`\n### reports/${f}\n\n${clipped}`);
+      }
+    }
+  } catch {
+    /* no reports dir yet */
+  }
+  try {
+    const store = new ApprovalStore(instance.approvalsDir);
+    const pending = store.list("pending");
+    if (pending.length > 0) {
+      parts.push("\n## Pending approvals (awaiting the principal)");
+      for (const p of pending) parts.push(`- ${p.id}: ${p.actionType} — ${p.summary} (requested by ${p.requestedBy})`);
+    }
+  } catch {
+    /* no approvals dir yet */
   }
   return parts.join("\n");
 }

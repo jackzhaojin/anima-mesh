@@ -70,6 +70,23 @@ describe("runAgent — the one seam, end to end", () => {
     expect(fake.calls[0]!.model).toBe("test-model");           // chokepoint honors the concept
   });
 
+  it("feeds latest spoke reports and pending approvals into the prompt — the hub sees the mesh", async () => {
+    const root = await makeInstance({
+      "reports/2026-07-04-scout-aaaa.md": "---\ntype: report\n---\n\nYesterday: nothing needed.",
+      "approvals/x.json": JSON.stringify({
+        id: "x", actionType: "government-filing", summary: "file the annual return",
+        requestedBy: "scout", requestedAt: "2026-07-04T00:00:00Z", status: "pending",
+      }),
+    });
+    const fake = new FakeProvider(() => ({ text: "brief" }));
+    await runAgent({ instanceRoot: root, agentName: "scout", provider: fake });
+    const prompt = fake.calls[0]!.prompt;
+    expect(prompt).toContain("Latest reports from the mesh");
+    expect(prompt).toContain("Yesterday: nothing needed.");
+    expect(prompt).toContain("Pending approvals");
+    expect(prompt).toContain("file the annual return");
+  });
+
   it("fails loud on unknown agents", async () => {
     const root = await makeInstance();
     await expect(runAgent({ instanceRoot: root, agentName: "ghost", provider: new FakeProvider() }))
