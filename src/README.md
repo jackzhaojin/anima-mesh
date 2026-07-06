@@ -63,10 +63,18 @@ model-related crosses this seam and nothing else does.
 ## harness/ — one heartbeat
 
 - `run.ts` — `runAgent`: load instance → find agent → activation + ladder
-  checks → assemble prompt (job + inlined `index.md`/`ops/*` + latest mesh
-  reports + pending approvals) → provider.run with **cwd = bundle root** →
-  harness writes the report artifact (L1 contract: the agent causes no side
-  effects) → ledger appends → verifiers.
+  checks → assemble prompt (job + inlined `index.md`/`ops/*` incl. the
+  `ops/nags.md` persistent-reminder surface + latest mesh reports + pending
+  approvals) → provider.run with **cwd = bundle root** → harness writes the
+  report artifact (L1 contract: the agent causes no side effects) → ledger
+  appends → verifiers. Injected `now` freezes all timestamps (deterministic
+  simulation).
+- `heartbeat.ts` — the scheduled wake: **daily = "not yet today" (local
+  calendar — a late-night manual run never eats the morning brief)**;
+  weekly/monthly/quarterly are hour-thresholds under-period for cron drift;
+  spokes first, hub last; **one spoke's failure never aborts the beat**
+  (failures collected on the result); commercial agents skip while
+  dual-gated.
 - `verifiers.ts` — the three seam checks (+ conformance): expected outputs
   exist, no gated ledger entry without its approval, all declared actions
   logged, bundle still conformant.

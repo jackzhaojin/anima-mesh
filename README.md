@@ -81,6 +81,12 @@ your-brain/                      ← private instance (yours, never public)
   ship capable but refuse to run until the instance's legal boundary map is
   verified AND an explicit trigger or waiver is on file. Capability never
   outruns permission.
+- **The mesh reaches its principal, and nags on request.** Delivery channels
+  (Discord webhook/bot-DM, Notion, Gmail, console) carry the hub's brief; an
+  optional `ops/nags.md` rides in every prompt so opted-into reminders repeat
+  every heartbeat — with age — until done. Heartbeats are resilient (a failed
+  spoke never kills the beat) and daily means *daily*: local-calendar
+  semantics, immune to odd-hour manual runs.
 
 ## Quickstart
 
