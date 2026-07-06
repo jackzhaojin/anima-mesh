@@ -1,0 +1,187 @@
+# ---------------------------------------------------------------------------
+# Local-only scratch — anything you never want to leave your machine
+# ---------------------------------------------------------------------------
+local-only/
+*.local
+*.local.*
+
+# ---------------------------------------------------------------------------
+# Node / package managers
+# ---------------------------------------------------------------------------
+node_modules/
+jspm_packages/
+.pnp
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/sdks
+!.yarn/versions
+.pnpm-store/
+
+# Logs & debug output
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+.pnpm-debug.log*
+report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
+
+# ---------------------------------------------------------------------------
+# Build output / compiled artifacts
+# ---------------------------------------------------------------------------
+dist/
+build/
+out/
+lib/
+.output/
+.vercel/
+.netlify/
+.serverless/
+storybook-static/
+
+# Framework build caches
+.next/
+.nuxt/
+.svelte-kit/
+.astro/
+.docusaurus/
+.turbo/
+.parcel-cache/
+.cache/
+.vite/
+.rollup.cache/
+.webpack/
+.eslintcache
+.stylelintcache
+tsconfig.tsbuildinfo
+*.tsbuildinfo
+
+# ---------------------------------------------------------------------------
+# Testing / coverage
+# ---------------------------------------------------------------------------
+coverage/
+.nyc_output/
+*.lcov
+test-results/
+playwright-report/
+blob-report/
+.playwright/
+.playwright-cli/
+.playwright-mcp/
+
+# ---------------------------------------------------------------------------
+# Environment & secrets
+# ---------------------------------------------------------------------------
+.env
+.env.*
+!.env.example
+!.env.sample
+!.env.template
+*.pem
+*.key
+secrets/
+.secrets/
+
+# ---------------------------------------------------------------------------
+# AI / LLM tooling — keys, caches, vector stores, model weights, embeddings
+# ---------------------------------------------------------------------------
+.ai/
+.aider*
+.continue/
+.cursor/
+.windsurf/
+.codeium/
+.copilot/
+.langchain/
+.langgraph/
+.chroma/
+.chromadb/
+chroma_db/
+.pinecone/
+.deeplake/
+.faiss/
+*.faiss
+.vectorstore/
+vectorstores/
+embeddings/
+.embeddings/
+.llama_index/
+storage/llama/
+.ollama/
+models/
+*.gguf
+*.ggml
+*.safetensors
+*.onnx
+*.pt
+*.pth
+*.bin
+*.ckpt
+.transformers_cache/
+.hf_cache/
+huggingface/
+wandb/
+mlruns/
+.ipynb_checkpoints/
+
+# ---------------------------------------------------------------------------
+# Editors — VS Code
+# ---------------------------------------------------------------------------
+# Ignore ALL VS Code multi-root workspace files
+*.code-workspace
+
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+.history/
+
+# Other editors
+.idea/
+*.iml
+*.swp
+*.swo
+*~
+.\#*
+\#*\#
+
+# ---------------------------------------------------------------------------
+# Claude Code — ignore local/private state, but CHECK IN shared team assets
+# (skills, commands, agents, hooks, shared settings.json)
+# ---------------------------------------------------------------------------
+.claude/settings.local.json
+.claude/**/settings.local.json
+.claude/local/
+.claude/.credentials.json
+.claude/todos/
+.claude/shell-snapshots/
+.claude/statsig/
+.claude/projects/
+CLAUDE.local.md
+
+# ---------------------------------------------------------------------------
+# OS cruft
+# ---------------------------------------------------------------------------
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+Desktop.ini
+
+# ---------------------------------------------------------------------------
+# Temp
+# ---------------------------------------------------------------------------
+tmp/
+temp/
+*.tmp
+*.bak
+*.orig
