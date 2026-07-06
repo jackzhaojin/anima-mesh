@@ -73,6 +73,22 @@ describe("heartbeat — D5's deterministic trigger", () => {
     expect(dueNames).not.toContain("weekly-w");
   });
 
+  it("one spoke's failure never aborts the beat — remaining agents still run", async () => {
+    const root = await makeMeshInstance();
+    // alpha-daily's harness doesn't exist → its run throws; the rest proceed.
+    const { readFileSync, writeFileSync } = await import("node:fs");
+    const alphaPath = path.join(root, "bundle/agents/alpha-daily.md");
+    writeFileSync(alphaPath, readFileSync(alphaPath, "utf8").replace("harness: fake", "harness: broken-harness"));
+
+    const result = await heartbeat({ instanceRoot: root });
+    expect(result.ok).toBe(false);
+    expect(result.failures).toHaveLength(1);
+    expect(result.failures[0]!.agent).toBe("alpha-daily");
+    expect(result.failures[0]!.error).toContain("broken-harness");
+    // everyone after the failure still ran, hub still last
+    expect(result.runs.map((r) => r.agent)).toEqual(["beta-daily", "weekly-w", "chief-of-staff"]);
+  });
+
   it("dry-run decides but never runs", async () => {
     const root = await makeMeshInstance();
     const result = await heartbeat({ instanceRoot: root, dryRun: true });

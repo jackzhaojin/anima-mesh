@@ -32,10 +32,17 @@ export interface HeartbeatDecision {
   reason: string;
 }
 
+export interface HeartbeatFailure {
+  agent: string;
+  error: string;
+}
+
 export interface HeartbeatResult {
   due: HeartbeatDecision[];
   skipped: HeartbeatDecision[];
   runs: RunReport[];
+  /** Agents whose run threw (provider/auth/etc.) — the beat continues past them. */
+  failures: HeartbeatFailure[];
   ok: boolean;
 }
 
@@ -98,14 +105,30 @@ export async function heartbeat(options: HeartbeatOptions): Promise<HeartbeatRes
 
   const dueDecisions: HeartbeatDecision[] = due.map((d) => ({ agent: d.agent.name, reason: d.reason }));
   if (options.dryRun) {
-    return { due: dueDecisions, skipped, runs: [], ok: true };
+    return { due: dueDecisions, skipped, runs: [], failures: [], ok: true };
   }
 
+  // One spoke's failure never aborts the beat — an unattended mesh must
+  // degrade agent-by-agent, not collapse. (Lesson from the first launchd
+  // beat: an auth error in one provider killed the remaining runs.)
   const runs: RunReport[] = [];
+  const failures: HeartbeatFailure[] = [];
   for (const { agent } of due) {
     progress(`heartbeat: running ${agent.name}`);
-    runs.push(await runAgent({ instanceRoot: options.instanceRoot, agentName: agent.name, onProgress: progress }));
+    try {
+      runs.push(await runAgent({ instanceRoot: options.instanceRoot, agentName: agent.name, onProgress: progress }));
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      failures.push({ agent: agent.name, error: message });
+      progress(`heartbeat: ✗ ${agent.name} failed — ${message.slice(0, 200)} (continuing)`);
+    }
   }
 
-  return { due: dueDecisions, skipped, runs, ok: runs.every((r) => r.ok) };
+  return {
+    due: dueDecisions,
+    skipped,
+    runs,
+    failures,
+    ok: failures.length === 0 && runs.every((r) => r.ok),
+  };
 }

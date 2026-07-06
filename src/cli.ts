@@ -238,6 +238,9 @@ async function cmdHeartbeat(args: string[], io: { log: (s: string) => void }): P
   for (const run of result.runs) {
     io.log(`${run.ok ? "✓" : "✗"} ${run.agent} run ${run.runId.slice(0, 8)} → ${run.reportPath}`);
   }
+  for (const failure of result.failures) {
+    io.log(`✗ ${failure.agent} FAILED: ${failure.error.slice(0, 300)}`);
+  }
 
   // Deliver the hub's brief when configured and freshly produced.
   const instance = loadInstance(instanceRoot);
