@@ -1,7 +1,12 @@
 import type { Bundle } from "../okf/bundle.js";
 import { conceptsByType } from "../okf/bundle.js";
 import { canPerform, requiresGate, type ActionCategory, type Level } from "../autonomy/ladder.js";
-import type { ApprovalStore } from "./approvals.js";
+import type { ApprovalRecord } from "./approvals.js";
+
+/** Anything that can answer "what is approval <id>?" — ApprovalStore or a store-backed map. */
+export interface ApprovalLookup {
+  get(id: string): ApprovalRecord | undefined;
+}
 
 /**
  * Constitution enforcement lives here — in the harness, in code. It is never
@@ -44,7 +49,7 @@ export interface ActionCheck {
   /** Constitution vocabulary type, e.g. `report` or `government-filing`. */
   actionType: string;
   gatedTypes: readonly string[];
-  approvals: ApprovalStore;
+  approvals: ApprovalLookup;
   approvalId?: string;
   /** L3 whitelisted reversible actions — the agent concept's whitelist. */
   whitelist?: readonly string[];

@@ -1,8 +1,7 @@
-import { loadBundle } from "../okf/bundle.js";
-import { loadInstance } from "../instance/config.js";
 import { agentsFromBundle, assertActivatable, type AgentConcept } from "../agents/concept.js";
-import { Ledger } from "../ledger/ledger.js";
 import type { ApiProviderContext } from "../providers/index.js";
+import type { InstanceStore } from "../instance/store.js";
+import { FsInstanceStore } from "../instance/store-fs.js";
 import { runAgent, type RunReport } from "./run.js";
 
 /**
@@ -22,11 +21,16 @@ export const PERIOD_HOURS: Record<string, number> = {
 };
 
 export interface HeartbeatOptions {
-  instanceRoot: string;
+  /** Filesystem instance root; ignored when `store` is provided. */
+  instanceRoot?: string;
+  /** The storage seam. Default: FsInstanceStore(instanceRoot). */
+  store?: InstanceStore;
   now?: Date;
   dryRun?: boolean;
   /** Env/fetch context for API providers — threaded into every run (see RunOptions). */
   providerCtx?: ApiProviderContext;
+  /** "per-run" (default) flushes inside each run; "caller" leaves one flush to the caller. */
+  flushPolicy?: "per-run" | "caller";
   onProgress?: (note: string) => void;
 }
 
@@ -56,10 +60,16 @@ function localDay(epochMs: number): number {
 }
 
 export async function heartbeat(options: HeartbeatOptions): Promise<HeartbeatResult> {
-  const instance = loadInstance(options.instanceRoot);
-  const bundle = await loadBundle(instance.bundleDir);
+  const store =
+    options.store ??
+    (() => {
+      if (!options.instanceRoot) throw new Error("heartbeat: provide `store` or `instanceRoot`");
+      return new FsInstanceStore(options.instanceRoot);
+    })();
+  const config = await store.loadConfig();
+  const bundle = await store.loadBundle();
   const agents = agentsFromBundle(bundle);
-  const ledger = new Ledger(instance.ledgerFile);
+  const ledgerEntries = await store.readLedger();
   const now = options.now ?? new Date();
   const progress = options.onProgress ?? (() => {});
 
@@ -69,7 +79,7 @@ export async function heartbeat(options: HeartbeatOptions): Promise<HeartbeatRes
   for (const agent of agents) {
     if (agent.commercial) {
       try {
-        assertActivatable(agent, instance.config);
+        assertActivatable(agent, config);
       } catch {
         skipped.push({ agent: agent.name, reason: "commercial, dual-gated inactive (D11)" });
         continue;
@@ -84,8 +94,7 @@ export async function heartbeat(options: HeartbeatOptions): Promise<HeartbeatRes
       skipped.push({ agent: agent.name, reason: `unknown cadence '${agent.heartbeat}'` });
       continue;
     }
-    const lastCompleted = ledger
-      .read()
+    const lastCompleted = ledgerEntries
       .filter((e) => e.agent === agent.name && e.action === "run-completed")
       .map((e) => Date.parse(e.ts))
       .reduce((max, t) => Math.max(max, t), 0);
@@ -137,10 +146,11 @@ export async function heartbeat(options: HeartbeatOptions): Promise<HeartbeatRes
     try {
       runs.push(
         await runAgent({
-          instanceRoot: options.instanceRoot,
+          store,
           agentName: agent.name,
           now: options.now,
           providerCtx: options.providerCtx,
+          flushPolicy: options.flushPolicy,
           onProgress: progress,
         }),
       );

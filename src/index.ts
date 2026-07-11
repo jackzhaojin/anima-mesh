@@ -53,12 +53,19 @@ export {
   type ProviderResult,
 } from "./providers/index.js";
 
+export { type InstanceStore } from "./instance/store.js";
+export { FsInstanceStore } from "./instance/store-fs.js";
 export { runAgent, type RunOptions, type RunReport } from "./harness/run.js";
 export {
   verifyConformance,
+  verifyConformanceBundle,
   verifyExpectedOutputs,
+  verifyExpectedOutputsStore,
   verifyGateAssertions,
+  verifyGateAssertionsStore,
+  verifyGateEntries,
   verifyLedgerCompleteness,
+  verifyLedgerCompletenessStore,
   allOk,
   formatResults,
   type VerifierResult,
