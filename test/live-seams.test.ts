@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { createMoonshotApiProvider } from "../src/providers/moonshot-api.js";
+import { createAnthropicApiProvider } from "../src/providers/anthropic-api.js";
 import { deliverMessage } from "../src/channels/registry.js";
 import { runAgent } from "../src/harness/run.js";
 import { makeTree, cleanup, concept, minimalAnimaMeshFiles } from "./helpers.js";
@@ -33,6 +34,20 @@ describe.skipIf(env.LIVE_KIMI !== "1")("live: moonshot-api provider", () => {
       prompt: "Reply with exactly one short sentence confirming you received this engine live-test.",
       cwd: process.cwd(),
       model: env.KIMI_MODEL ?? "kimi-for-coding",
+    });
+    expect(result.text.length).toBeGreaterThan(0);
+    expect(result.tokens).toBeDefined();
+  }, 120_000);
+});
+
+describe.skipIf(env.LIVE_CLAUDE !== "1")("live: anthropic-api provider (subscription OAuth)", () => {
+  it("completes a real request over plain fetch", async () => {
+    const provider = createAnthropicApiProvider({ env });
+    provider.assertConfigured();
+    const result = await provider.run({
+      prompt: "Reply with exactly one short sentence confirming you received this engine live-test.",
+      cwd: process.cwd(),
+      model: "claude-haiku-4-5-20251001",
     });
     expect(result.text.length).toBeGreaterThan(0);
     expect(result.tokens).toBeDefined();

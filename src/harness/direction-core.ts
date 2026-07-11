@@ -1,4 +1,4 @@
-import { findAgent, assertActivatable } from "../agents/concept.js";
+import { findAgent, assertActivatable, effectiveCognition } from "../agents/concept.js";
 import { loadGatedTypes, assertActionAllowed } from "../gates/gatekeeper.js";
 import { resolveProvider, type AgentWorkerProvider, type ApiProviderContext } from "../providers/index.js";
 import type { InstanceStore } from "../instance/store.js";
@@ -125,14 +125,15 @@ export async function runDirectionCore(options: DirectionRunOptions): Promise<Di
 
   const prompt = await buildDirectionPrompt(agent, store, config, dateStamp, message);
   const providerCtx = options.providerCtx ?? { env: store.instanceEnv?.() ?? {} };
-  const provider = options.provider ?? resolveProvider(agent.harness, providerCtx);
+  const cognition = effectiveCognition(agent, config);
+  const provider = options.provider ?? resolveProvider(cognition.harness, providerCtx);
   provider.assertConfigured();
   progress(`direction ${runId.slice(0, 8)}: ${agent.name} via ${provider.name} (${message.channel})`);
 
   const result = await provider.run({
     prompt,
     cwd: store.bundleDir ?? (typeof process !== "undefined" ? process.cwd() : "/"),
-    model: agent.model,
+    model: cognition.model,
     onProgress: progress,
   });
   const reply = result.text.trim().slice(0, REPLY_LIMIT);
@@ -150,7 +151,7 @@ export async function runDirectionCore(options: DirectionRunOptions): Promise<Di
     `channel: ${message.channel}`,
     `sender: ${message.sender}`,
     `harness: ${provider.name}`,
-    `model: ${agent.model}`,
+    `model: ${cognition.model}`,
     "---",
     "",
     "## Direction received",
@@ -195,7 +196,7 @@ export async function runDirectionCore(options: DirectionRunOptions): Promise<Di
     runId,
     agent: agent.name,
     harness: provider.name,
-    model: agent.model,
+    model: cognition.model,
     reply,
     reportPath: store.reportPath(reportName),
     verifierResults,

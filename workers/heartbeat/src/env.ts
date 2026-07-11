@@ -23,6 +23,7 @@ export interface Env {
   DISCORD_BOT_TOKEN?: string;
   DISCORD_DM_USER_ID?: string; // doubles as the direction sender allowlist (v1: the principal only)
   BEAT_TRIGGER_TOKEN: string;
+  CLAUDE_CODE_OAUTH_TOKEN?: string; // subscription OAuth for the anthropic-api harness (decision 2026-07-11 — supersedes the never-on-Workers posture; plain fetch, no SDK)
   GMAIL_CLIENT_ID?: string; // persona Gmail OAuth (inbound poll + reply); send scope exists, modify needs re-consent
   GMAIL_CLIENT_SECRET?: string;
   GMAIL_REFRESH_TOKEN?: string;
@@ -37,6 +38,7 @@ export function envRecord(env: Env): Record<string, string | undefined> {
     MOONSHOT_BASE_URL: env.MOONSHOT_BASE_URL,
     DISCORD_BOT_TOKEN: env.DISCORD_BOT_TOKEN,
     DISCORD_DM_USER_ID: env.DISCORD_DM_USER_ID,
+    CLAUDE_CODE_OAUTH_TOKEN: env.CLAUDE_CODE_OAUTH_TOKEN,
     GMAIL_CLIENT_ID: env.GMAIL_CLIENT_ID,
     GMAIL_CLIENT_SECRET: env.GMAIL_CLIENT_SECRET,
     GMAIL_REFRESH_TOKEN: env.GMAIL_REFRESH_TOKEN,

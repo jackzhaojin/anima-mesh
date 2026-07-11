@@ -34,6 +34,18 @@ export interface InstanceConfig {
     url?: string;
   };
   /**
+   * Cognition overrides — the "which brain, today" knob. Agent frontmatter
+   * stays the declared identity (harness + model, with git history); this
+   * block REDIRECTS a declared harness to another at run time, so vendor
+   * outages/blocks are one config edit, not frontmatter churn. Delete the
+   * entry to fall back to the declaration. (Born 2026-07-11: the Kimi edge
+   * blocks Workers egress; agents keep `moonshot-api` declared while
+   * actually running `anthropic-api` until Kimi is reachable again.)
+   */
+  cognition?: {
+    overrides?: Record<string, { harness?: string; model?: string }>;
+  };
+  /**
    * Inbound direction: messages addressed to the mesh's persona become
    * agentic runs (the model decides the disposition — never a keyword
    * router). Sender allowlists live at the channel edge (Worker secrets /

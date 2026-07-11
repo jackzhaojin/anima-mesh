@@ -158,7 +158,7 @@ describe("provider registry", () => {
   });
 
   it("CLOUD_HARNESSES contains exactly the fetch-only harnesses", () => {
-    expect([...CLOUD_HARNESSES]).toEqual(["moonshot-api"]);
+    expect([...CLOUD_HARNESSES].sort()).toEqual(["anthropic-api", "moonshot-api"]);
     expect(CLOUD_HARNESSES.has("claude-agent-sdk")).toBe(false);
     expect(CLOUD_HARNESSES.has("claude-code")).toBe(false);
     expect(CLOUD_HARNESSES.has("opencode")).toBe(false);

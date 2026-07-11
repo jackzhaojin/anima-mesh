@@ -1,4 +1,4 @@
-import { agentsFromBundle, assertActivatable, type AgentConcept } from "../agents/concept.js";
+import { agentsFromBundle, assertActivatable, effectiveCognition, type AgentConcept } from "../agents/concept.js";
 import { CLOUD_HARNESSES, type ApiProviderContext } from "../providers/index.js";
 import type { InstanceStore } from "../instance/store.js";
 import { runAgentCore, dateStampFor, type RunReport } from "./run-core.js";
@@ -94,8 +94,9 @@ export async function heartbeatCore(options: HeartbeatCoreOptions): Promise<Hear
         continue;
       }
     }
-    if (options.cloudTier && !CLOUD_HARNESSES.has(agent.harness)) {
-      skipped.push({ agent: agent.name, reason: `laptop-tier harness (${agent.harness}) — not run in cloud` });
+    const cognition = effectiveCognition(agent, config);
+    if (options.cloudTier && !CLOUD_HARNESSES.has(cognition.harness)) {
+      skipped.push({ agent: agent.name, reason: `laptop-tier harness (${cognition.harness}) — not run in cloud` });
       continue;
     }
     if (!agent.heartbeat) {

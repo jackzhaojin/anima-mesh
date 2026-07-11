@@ -5,6 +5,7 @@ import {
   moonshotApiProvider,
   type ApiProviderContext,
 } from "./moonshot-api.js";
+import { createAnthropicApiProvider, anthropicApiProvider } from "./anthropic-api.js";
 
 export type { AgentWorkerProvider, ProviderRunOptions, ProviderResult } from "./types.js";
 export { FakeProvider } from "./fake.js";
@@ -13,6 +14,7 @@ export {
   moonshotApiProvider,
   type ApiProviderContext,
 } from "./moonshot-api.js";
+export { createAnthropicApiProvider, anthropicApiProvider } from "./anthropic-api.js";
 
 /**
  * The provider registry core — Workers-safe: only fetch-based providers are
@@ -22,6 +24,7 @@ export {
  */
 const registry = new Map<string, AgentWorkerProvider>([
   ["moonshot-api", moonshotApiProvider],
+  ["anthropic-api", anthropicApiProvider],
   ["fake", new FakeProvider()],
 ]);
 
@@ -32,6 +35,7 @@ const registry = new Map<string, AgentWorkerProvider>([
  */
 const contextualFactories = new Map<string, (ctx: ApiProviderContext) => AgentWorkerProvider>([
   ["moonshot-api", createMoonshotApiProvider],
+  ["anthropic-api", createAnthropicApiProvider],
 ]);
 
 /**
@@ -40,7 +44,7 @@ const contextualFactories = new Map<string, (ctx: ApiProviderContext) => AgentWo
  * Deliberately NOT including `claude-agent-sdk`: the SDK spawns a bundled
  * CLI, which no Worker hosts.
  */
-export const CLOUD_HARNESSES: ReadonlySet<string> = new Set(["moonshot-api"]);
+export const CLOUD_HARNESSES: ReadonlySet<string> = new Set(["moonshot-api", "anthropic-api"]);
 
 /**
  * Resolve a harness name (from an agent concept's `harness:` field) to a

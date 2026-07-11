@@ -47,6 +47,21 @@ export function agentsFromBundle(bundle: Bundle): AgentConcept[] {
   return conceptsByType(bundle, "agent").map(agentFromConcept);
 }
 
+/**
+ * What actually thinks for this agent right now: the frontmatter
+ * declaration unless the instance config redirects that harness
+ * (`cognition.overrides` — the vendor-outage knob). Reports record the
+ * EFFECTIVE pair — evidence describes what ran, not what was hoped for.
+ */
+export function effectiveCognition(
+  agent: AgentConcept,
+  config: InstanceConfig,
+): { harness: string; model: string } {
+  const override = config.cognition?.overrides?.[agent.harness];
+  if (!override) return { harness: agent.harness, model: agent.model };
+  return { harness: override.harness ?? agent.harness, model: override.model ?? agent.model };
+}
+
 export function findAgent(bundle: Bundle, name: string): AgentConcept {
   const agents = agentsFromBundle(bundle);
   const found = agents.find((a) => a.name === name);

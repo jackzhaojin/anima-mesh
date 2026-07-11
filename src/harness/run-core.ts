@@ -1,4 +1,4 @@
-import { findAgent, assertActivatable, type AgentConcept } from "../agents/concept.js";
+import { findAgent, assertActivatable, effectiveCognition, type AgentConcept } from "../agents/concept.js";
 import { loadGatedTypes, assertActionAllowed } from "../gates/gatekeeper.js";
 import { resolveProvider, type AgentWorkerProvider, type ApiProviderContext } from "../providers/index.js";
 import type { InstanceStore } from "../instance/store.js";
@@ -123,9 +123,10 @@ export async function runAgentCore(options: RunCoreOptions): Promise<RunReport> 
 
   const prompt = await buildPrompt(agent, store, config, dateStamp);
   const providerCtx = options.providerCtx ?? { env: store.instanceEnv?.() ?? {} };
-  const provider = options.provider ?? resolveProvider(agent.harness, providerCtx);
+  const cognition = effectiveCognition(agent, config);
+  const provider = options.provider ?? resolveProvider(cognition.harness, providerCtx);
   provider.assertConfigured();
-  progress(`run ${runId.slice(0, 8)}: ${agent.name} via ${provider.name} (${agent.model})`);
+  progress(`run ${runId.slice(0, 8)}: ${agent.name} via ${provider.name} (${cognition.model})`);
 
   // The bundle IS the agent's working world: relative reads in any harness
   // resolve against the knowledge layer, matching the prompt's paths.
@@ -133,7 +134,7 @@ export async function runAgentCore(options: RunCoreOptions): Promise<RunReport> 
   const result = await provider.run({
     prompt,
     cwd: store.bundleDir ?? (typeof process !== "undefined" ? process.cwd() : "/"),
-    model: agent.model,
+    model: cognition.model,
     onProgress: progress,
   });
 
@@ -146,7 +147,7 @@ export async function runAgentCore(options: RunCoreOptions): Promise<RunReport> 
     `runId: ${runId}`,
     `date: ${dateStamp}`,
     `harness: ${provider.name}`,
-    `model: ${agent.model}`,
+    `model: ${cognition.model}`,
     "---",
     "",
     result.text.trim(),
@@ -180,7 +181,7 @@ export async function runAgentCore(options: RunCoreOptions): Promise<RunReport> 
     runId,
     agent: agent.name,
     harness: provider.name,
-    model: agent.model,
+    model: cognition.model,
     startedAt,
     finishedAt,
     reportPath: store.reportPath(reportName),
