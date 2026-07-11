@@ -4,6 +4,9 @@ import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { loadBundle } from "./okf/bundle.js";
 import { checkConformance, formatReport, type ConformanceProfile } from "./okf/conformance.js";
 import { loadInstance, CONFIG_FILENAME } from "./instance/config.js";
+import { loadInstanceEnv } from "./instance/env.js";
+import { GitHubInstanceStore } from "./instance/store-github.js";
+import { githubToken } from "./instance/github-auth.js";
 import { runAgent } from "./harness/run.js";
 import { formatResults } from "./harness/verifiers.js";
 import { ApprovalStore } from "./gates/approvals.js";
@@ -143,11 +146,33 @@ async function cmdRun(args: string[], io: { log: (s: string) => void }): Promise
   const agentName = args.find((a) => !a.startsWith("--"));
   if (!agentName) throw new Error("run: agent name required");
   const instanceRoot = flag(args, "instance") ?? ".";
-  const report = await runAgent({
-    instanceRoot,
-    agentName,
-    onProgress: (note) => io.log(`  ${note}`),
-  });
+
+  // github:owner/name#ref — run against a remote brain, zero local file
+  // reads. Env (GITHUB_TOKEN, model keys) comes from any .env/.env.local in
+  // the CURRENT directory plus process.env — run from the instance checkout
+  // to pick up its keys.
+  let report;
+  if (instanceRoot.startsWith("github:")) {
+    const spec = instanceRoot.slice("github:".length);
+    const [repo, ref] = spec.split("#") as [string, string | undefined];
+    if (!/^[^/]+\/[^/#]+$/.test(repo)) {
+      throw new Error(`run: bad github instance '${instanceRoot}' — expected github:owner/name[#ref]`);
+    }
+    const env = loadInstanceEnv(process.cwd());
+    const store = new GitHubInstanceStore({ repo, ref, token: await githubToken(env) });
+    report = await runAgent({
+      store,
+      agentName,
+      providerCtx: { env },
+      onProgress: (note) => io.log(`  ${note}`),
+    });
+  } else {
+    report = await runAgent({
+      instanceRoot,
+      agentName,
+      onProgress: (note) => io.log(`  ${note}`),
+    });
+  }
   io.log(`\nrun ${report.runId} — ${report.ok ? "OK" : "FAILED VERIFICATION"}`);
   io.log(formatResults(report.verifierResults));
   io.log(`report: ${report.reportPath}`);
