@@ -1,24 +1,9 @@
 import { readdir, readFile } from "node:fs/promises";
 import * as path from "node:path";
-import { parseConcept, type Frontmatter } from "./frontmatter.js";
+import { parseConcept } from "./frontmatter.js";
+import type { Bundle, Concept } from "./bundle-core.js";
 
-export interface Concept {
-  /** Absolute path on disk. */
-  path: string;
-  /** Path relative to the bundle root, POSIX separators. */
-  relPath: string;
-  frontmatter: Frontmatter;
-  body: string;
-  /** True when the file had no frontmatter block at all. */
-  missingFrontmatter: boolean;
-  /** Set when the frontmatter block existed but failed to parse. */
-  parseError?: string;
-}
-
-export interface Bundle {
-  root: string;
-  concepts: Concept[];
-}
+export { getConcept, conceptsByType, type Bundle, type Concept } from "./bundle-core.js";
 
 const SKIP_DIRS = new Set(["node_modules", ".git", "dist"]);
 
@@ -77,12 +62,4 @@ export async function loadBundle(root: string): Promise<Bundle> {
     }
   }
   return { root: rootAbs, concepts };
-}
-
-export function getConcept(bundle: Bundle, relPath: string): Concept | undefined {
-  return bundle.concepts.find((c) => c.relPath === relPath);
-}
-
-export function conceptsByType(bundle: Bundle, type: string): Concept[] {
-  return bundle.concepts.filter((c) => c.frontmatter.type === type);
 }

@@ -1,7 +1,7 @@
-import type { Bundle, Concept } from "../okf/bundle.js";
-import { conceptsByType } from "../okf/bundle.js";
+import type { Bundle, Concept } from "../okf/bundle-core.js";
+import { conceptsByType } from "../okf/bundle-core.js";
 import { parseLevel, type Level } from "../autonomy/ladder.js";
-import type { InstanceConfig } from "../instance/config.js";
+import type { InstanceConfig } from "../instance/config-core.js";
 
 /**
  * An agent IS its concept file (D6/D14): level, model, and harness live in

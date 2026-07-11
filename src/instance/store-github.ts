@@ -1,8 +1,8 @@
 import { parseConcept } from "../okf/frontmatter.js";
-import type { Bundle, Concept } from "../okf/bundle.js";
+import type { Bundle, Concept } from "../okf/bundle-core.js";
 import type { LedgerEntry } from "../ledger/ledger.js";
 import type { ApprovalRecord, ApprovalStatus } from "../gates/approvals.js";
-import { DEFAULT_CONFIG, CONFIG_FILENAME, type InstanceConfig } from "./config.js";
+import { DEFAULT_CONFIG, CONFIG_FILENAME, type InstanceConfig } from "./config-core.js";
 import { parseTar, gunzip } from "./tar.js";
 import type { InstanceStore } from "./store.js";
 

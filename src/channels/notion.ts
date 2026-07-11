@@ -1,5 +1,5 @@
 import type { DeliveryChannel, DeliveryMessage, ChannelContext, DeliveryResult } from "./types.js";
-import { getEnv } from "../instance/env.js";
+import { getEnv } from "../instance/env-core.js";
 
 /**
  * Notion delivery: creates a page in a database (NOTION_DATABASE_ID) with the

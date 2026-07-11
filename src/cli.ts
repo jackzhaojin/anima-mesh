@@ -3,6 +3,8 @@ import * as path from "node:path";
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { loadBundle } from "./okf/bundle.js";
 import { checkConformance, formatReport, type ConformanceProfile } from "./okf/conformance.js";
+import { diskLinkChecker } from "./okf/conformance-fs.js";
+import "./providers/node-providers.js"; // register subprocess providers
 import { loadInstance, CONFIG_FILENAME } from "./instance/config.js";
 import { loadInstanceEnv } from "./instance/env.js";
 import { GitHubInstanceStore } from "./instance/store-github.js";
@@ -137,7 +139,7 @@ async function cmdValidate(args: string[], io: { log: (s: string) => void }): Pr
   // Instance dir (has config) → validate its bundle; otherwise treat as a bundle dir.
   const bundleDir = existsSync(path.join(root, CONFIG_FILENAME)) ? loadInstance(root).bundleDir : root;
   const bundle = await loadBundle(bundleDir);
-  const report = checkConformance(bundle, profile);
+  const report = checkConformance(bundle, profile, { linkExists: diskLinkChecker });
   io.log(formatReport(report));
   return report.ok ? 0 : 1;
 }

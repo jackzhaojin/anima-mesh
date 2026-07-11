@@ -1,0 +1,25 @@
+// TEMPLATE ONLY — the real deploy config lives in the INSTANCE repo's
+// cloud/ workspace (D12: the engine is generic; deploying is an instance
+// act). Copy, fill account_id and vars, deploy from there.
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "animamesh-heartbeat",
+  "main": "src/index.ts", // instance configs point at the engine checkout instead
+  "account_id": "<CLOUDFLARE ACCOUNT ID>",
+  "compatibility_date": "2026-07-01",
+  "observability": { "enabled": true },
+  "durable_objects": {
+    "bindings": [{ "name": "HEARTBEAT_DO", "class_name": "HeartbeatDO" }]
+  },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["HeartbeatDO"] }],
+  "vars": {
+    "BRAIN_REPO": "<owner/name>",
+    "BRAIN_REF": "main",
+    "BEAT_TIMEZONE": "America/New_York",
+    "BEAT_HOUR": "8"
+    // "MOONSHOT_BASE_URL": "https://api.kimi.com/coding/v1"  // when the key is endpoint-scoped
+  }
+  // Secrets (wrangler secret put): GITHUB_TOKEN, MOONSHOT_API_KEY,
+  // DISCORD_BOT_TOKEN, DISCORD_DM_USER_ID, BEAT_TRIGGER_TOKEN.
+  // NO ANTHROPIC_API_KEY and NO CLAUDE_CODE_OAUTH_TOKEN — ever.
+}

@@ -1,5 +1,5 @@
-import type { Bundle } from "../okf/bundle.js";
-import { conceptsByType } from "../okf/bundle.js";
+import type { Bundle } from "../okf/bundle-core.js";
+import { conceptsByType } from "../okf/bundle-core.js";
 import { canPerform, requiresGate, type ActionCategory, type Level } from "../autonomy/ladder.js";
 import type { ApprovalRecord } from "./approvals.js";
 

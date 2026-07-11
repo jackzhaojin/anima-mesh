@@ -1,5 +1,5 @@
 import type { DeliveryChannel, DeliveryMessage, ChannelContext, DeliveryResult } from "./types.js";
-import { getEnv } from "../instance/env.js";
+import { getEnv } from "../instance/env-core.js";
 
 /**
  * Gmail delivery via OAuth refresh token — the persona sends from its own

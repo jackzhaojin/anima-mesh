@@ -39,22 +39,27 @@ export { loadInstance, CONFIG_FILENAME, DEFAULT_CONFIG, type InstanceConfig, typ
 export {
   resolveProvider,
   registerProvider,
+  registerContextualFactory,
   FakeProvider,
-  claudeCodeProvider,
-  opencodeProvider,
   moonshotApiProvider,
   createMoonshotApiProvider,
-  claudeAgentSdkProvider,
-  createClaudeAgentSdkProvider,
   CLOUD_HARNESSES,
   type ApiProviderContext,
   type AgentWorkerProvider,
   type ProviderRunOptions,
   type ProviderResult,
 } from "./providers/index.js";
+export {
+  claudeCodeProvider,
+  opencodeProvider,
+  claudeAgentSdkProvider,
+  createClaudeAgentSdkProvider,
+} from "./providers/node-providers.js";
 
 export { type InstanceStore } from "./instance/store.js";
 export { FsInstanceStore } from "./instance/store-fs.js";
+export { GitHubInstanceStore, type GitHubStoreOptions } from "./instance/store-github.js";
+export { githubToken } from "./instance/github-auth.js";
 export { runAgent, type RunOptions, type RunReport } from "./harness/run.js";
 export {
   verifyConformance,

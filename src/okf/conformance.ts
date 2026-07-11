@@ -1,7 +1,5 @@
-import { existsSync } from "node:fs";
-import * as path from "node:path";
-import type { Bundle, Concept } from "./bundle.js";
-import { conceptsByType, getConcept } from "./bundle.js";
+import type { Bundle, Concept } from "./bundle-core.js";
+import { conceptsByType, getConcept } from "./bundle-core.js";
 
 /**
  * Conformance profiles:
@@ -31,10 +29,44 @@ export interface ConformanceReport {
 
 const LINK_RE = /\[[^\]]*\]\(([^)#?]+\.md)(?:[#?][^)]*)?\)/g;
 
+/**
+ * How R4 verifies a relative .md link. Default: pure bundle-membership —
+ * resolve against the concept's relPath and require the target to be a
+ * concept in this bundle (links escaping the bundle root are skipped: the
+ * bundle cannot see outside itself remotely). Disk-backed callers may pass
+ * an fs checker for full fidelity.
+ */
+export type LinkChecker = (concept: Concept, target: string) => boolean;
+
+/** POSIX-only resolve of `target` against the directory of `relPath`; null if it escapes the root. */
+function resolveRel(relPath: string, target: string): string | null {
+  const baseParts = relPath.split("/").slice(0, -1);
+  for (const part of target.split("/")) {
+    if (part === "" || part === ".") continue;
+    if (part === "..") {
+      if (baseParts.length === 0) return null;
+      baseParts.pop();
+    } else {
+      baseParts.push(part);
+    }
+  }
+  return baseParts.join("/");
+}
+
+function membershipChecker(bundle: Bundle): LinkChecker {
+  const relPaths = new Set(bundle.concepts.map((c) => c.relPath));
+  return (concept, target) => {
+    const resolved = resolveRel(concept.relPath, target);
+    return resolved === null ? true : relPaths.has(resolved);
+  };
+}
+
 export function checkConformance(
   bundle: Bundle,
   profile: ConformanceProfile = "okf",
+  opts: { linkExists?: LinkChecker } = {},
 ): ConformanceReport {
+  const linkExists = opts.linkExists ?? membershipChecker(bundle);
   const issues: ConformanceIssue[] = [];
   const err = (rule: string, message: string, p?: string) =>
     issues.push({ level: "error", rule, message, path: p });
@@ -66,8 +98,7 @@ export function checkConformance(
     for (const match of c.body.matchAll(LINK_RE)) {
       const target = match[1]!;
       if (/^[a-z]+:\/\//i.test(target) || target.startsWith("/")) continue;
-      const resolved = path.resolve(path.dirname(c.path), target);
-      if (!existsSync(resolved)) {
+      if (!linkExists(c, target)) {
         warn("okf/broken-link", `relative link does not resolve: ${target}`, c.relPath);
       }
     }

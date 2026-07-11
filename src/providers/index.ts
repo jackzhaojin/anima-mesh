@@ -1,29 +1,26 @@
 import type { AgentWorkerProvider } from "./types.js";
 import { FakeProvider } from "./fake.js";
-import { claudeCodeProvider } from "./claude-code.js";
-import { opencodeProvider } from "./opencode.js";
 import {
   createMoonshotApiProvider,
   moonshotApiProvider,
   type ApiProviderContext,
 } from "./moonshot-api.js";
-import { createClaudeAgentSdkProvider, claudeAgentSdkProvider } from "./claude-agent-sdk.js";
 
 export type { AgentWorkerProvider, ProviderRunOptions, ProviderResult } from "./types.js";
 export { FakeProvider } from "./fake.js";
-export { claudeCodeProvider } from "./claude-code.js";
-export { opencodeProvider } from "./opencode.js";
 export {
   createMoonshotApiProvider,
   moonshotApiProvider,
   type ApiProviderContext,
 } from "./moonshot-api.js";
-export { createClaudeAgentSdkProvider, claudeAgentSdkProvider } from "./claude-agent-sdk.js";
 
+/**
+ * The provider registry core — Workers-safe: only fetch-based providers are
+ * imported here. Subprocess providers (claude-code, opencode,
+ * claude-agent-sdk) live in node-providers.ts, which Node entrypoints
+ * import for its registration side effect; nothing under workers/ may.
+ */
 const registry = new Map<string, AgentWorkerProvider>([
-  ["claude-code", claudeCodeProvider],
-  ["opencode", opencodeProvider],
-  ["claude-agent-sdk", claudeAgentSdkProvider],
   ["moonshot-api", moonshotApiProvider],
   ["fake", new FakeProvider()],
 ]);
@@ -35,14 +32,13 @@ const registry = new Map<string, AgentWorkerProvider>([
  */
 const contextualFactories = new Map<string, (ctx: ApiProviderContext) => AgentWorkerProvider>([
   ["moonshot-api", createMoonshotApiProvider],
-  ["claude-agent-sdk", createClaudeAgentSdkProvider],
 ]);
 
 /**
- * The harnesses a cloud beat may run (doc: cloudflare-buildout). Everything
- * else is subprocess-bound — laptop-tier by architecture, skipped with
- * reason by the cloud heartbeat. Deliberately NOT including
- * `claude-agent-sdk`: the SDK spawns a bundled CLI, which no Worker hosts.
+ * The harnesses a cloud beat may run. Everything else is subprocess-bound —
+ * laptop-tier by architecture, skipped with reason by the cloud heartbeat.
+ * Deliberately NOT including `claude-agent-sdk`: the SDK spawns a bundled
+ * CLI, which no Worker hosts.
  */
 export const CLOUD_HARNESSES: ReadonlySet<string> = new Set(["moonshot-api"]);
 
@@ -66,4 +62,11 @@ export function resolveProvider(harness: string, ctx?: ApiProviderContext): Agen
 
 export function registerProvider(provider: AgentWorkerProvider, name = provider.name): void {
   registry.set(name, provider);
+}
+
+export function registerContextualFactory(
+  name: string,
+  factory: (ctx: ApiProviderContext) => AgentWorkerProvider,
+): void {
+  contextualFactories.set(name, factory);
 }

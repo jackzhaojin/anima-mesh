@@ -1,7 +1,7 @@
-import type { Bundle } from "../okf/bundle.js";
+import type { Bundle } from "../okf/bundle-core.js";
 import type { LedgerEntry } from "../ledger/ledger.js";
 import type { ApprovalRecord, ApprovalStatus } from "../gates/approvals.js";
-import type { InstanceConfig } from "./config.js";
+import type { InstanceConfig } from "./config-core.js";
 
 /**
  * The storage seam: everything the harness touches at run time, behind one
