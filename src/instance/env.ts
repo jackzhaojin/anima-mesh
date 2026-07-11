@@ -1,6 +1,8 @@
 import { existsSync, readFileSync } from "node:fs";
 import * as path from "node:path";
 
+export { getEnv } from "./env-core.js";
+
 /**
  * Minimal .env loader for instance secrets. No dependency, no interpolation,
  * no export keyword — KEY=VALUE lines, `#` comments, optional single/double
@@ -29,9 +31,4 @@ export function loadInstanceEnv(instanceRoot: string): Record<string, string> {
     }
   }
   return out;
-}
-
-/** Instance env first, process env as fallback. */
-export function getEnv(env: Record<string, string | undefined>, key: string): string | undefined {
-  return env[key] ?? process.env[key];
 }

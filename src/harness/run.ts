@@ -7,7 +7,8 @@ import { findAgent, assertActivatable, type AgentConcept } from "../agents/conce
 import { Ledger } from "../ledger/ledger.js";
 import { ApprovalStore } from "../gates/approvals.js";
 import { loadGatedTypes, assertActionAllowed } from "../gates/gatekeeper.js";
-import { resolveProvider, type AgentWorkerProvider } from "../providers/index.js";
+import { resolveProvider, type AgentWorkerProvider, type ApiProviderContext } from "../providers/index.js";
+import { loadInstanceEnv } from "../instance/env.js";
 import {
   verifyConformance,
   verifyExpectedOutputs,
@@ -32,6 +33,12 @@ export interface RunOptions {
   agentName: string;
   /** Test seam: inject a provider (e.g. FakeProvider) instead of resolving the concept's harness. */
   provider?: AgentWorkerProvider;
+  /**
+   * Env/fetch context for API providers (Worker secrets in the cloud).
+   * Defaults to the instance's .env/.env.local — laptop runs pick up keys
+   * like MOONSHOT_API_KEY without any process-level export.
+   */
+  providerCtx?: ApiProviderContext;
   runId?: string;
   now?: Date;
   onProgress?: (note: string) => void;
@@ -92,7 +99,8 @@ export async function runAgent(options: RunOptions): Promise<RunReport> {
   ledger.append({ ts: startedAt, runId, agent: agent.name, action: "run-started", type: "report" });
 
   const prompt = buildPrompt(agent, bundle.root, instance, dateStamp);
-  const provider = options.provider ?? resolveProvider(agent.harness);
+  const providerCtx = options.providerCtx ?? { env: loadInstanceEnv(instance.root) };
+  const provider = options.provider ?? resolveProvider(agent.harness, providerCtx);
   provider.assertConfigured();
   progress(`run ${runId.slice(0, 8)}: ${agent.name} via ${provider.name} (${agent.model})`);
 

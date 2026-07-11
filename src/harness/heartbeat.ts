@@ -2,6 +2,7 @@ import { loadBundle } from "../okf/bundle.js";
 import { loadInstance } from "../instance/config.js";
 import { agentsFromBundle, assertActivatable, type AgentConcept } from "../agents/concept.js";
 import { Ledger } from "../ledger/ledger.js";
+import type { ApiProviderContext } from "../providers/index.js";
 import { runAgent, type RunReport } from "./run.js";
 
 /**
@@ -24,6 +25,8 @@ export interface HeartbeatOptions {
   instanceRoot: string;
   now?: Date;
   dryRun?: boolean;
+  /** Env/fetch context for API providers — threaded into every run (see RunOptions). */
+  providerCtx?: ApiProviderContext;
   onProgress?: (note: string) => void;
 }
 
@@ -137,6 +140,7 @@ export async function heartbeat(options: HeartbeatOptions): Promise<HeartbeatRes
           instanceRoot: options.instanceRoot,
           agentName: agent.name,
           now: options.now,
+          providerCtx: options.providerCtx,
           onProgress: progress,
         }),
       );
