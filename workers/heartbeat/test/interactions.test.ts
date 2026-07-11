@@ -206,9 +206,22 @@ describe("the full deferred flow", () => {
     await send(principalCommand("please think about this"));
     await waitForFollowups(followup);
 
-    expect(followup.contents[0]).toContain("couldn't process");
-    // The attempt is still evidence: direction-started flushed.
+    // Honest advice: the message is recorded; retrying a dead provider helps nobody.
+    expect(followup.contents[0]).toContain("couldn't think about that one");
+    expect(followup.contents[0]).toContain("no need to resend");
+    expect(followup.contents[0]).not.toContain("try again");
+    // The attempt is still evidence — AND the principal's words survive:
+    // direction-started + direction-failed (with the text) share the runId.
     expect(gh.trees).toHaveLength(1);
     expect(gh.trees[0]!.tree.map((t) => t.path)).toEqual(["ledger/actions.jsonl"]);
+    const ledger = gh.trees[0]!.tree[0]!.content;
+    expect(ledger).toContain('"action":"direction-started"');
+    expect(ledger).toContain('"action":"direction-failed"');
+    expect(ledger).toContain("please think about this"); // the lost-text bug, fixed
+    const started = JSON.parse(ledger.split("\n").find((l) => l.includes("direction-started"))!);
+    const failed = JSON.parse(ledger.split("\n").find((l) => l.includes("direction-failed"))!);
+    expect(failed.runId).toBe(started.runId);
+    expect(failed.agent).toBe("chief-of-staff");
+    expect(failed.detail.error).toMatch(/400/);
   });
 });

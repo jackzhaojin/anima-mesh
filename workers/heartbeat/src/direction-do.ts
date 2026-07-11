@@ -226,12 +226,16 @@ export class DirectionDO extends DurableObject<Env> {
       });
     }
 
+    const config = await store.loadConfig();
+    const directionAgent = config.direction?.agent ?? config.delivery?.deliverAgent ?? "chief-of-staff";
     const replies: Array<{ item: QueuedDirection; content: string }> = [];
     for (const item of queue) {
+      const runId = crypto.randomUUID();
       try {
         const report = await runDirectionCore({
           store,
           message: item.message,
+          runId,
           providerCtx: { env: record },
           flushPolicy: "caller", // one commit per drain, not per direction
           timeZone: env.BEAT_TIMEZONE,
@@ -241,14 +245,31 @@ export class DirectionDO extends DurableObject<Env> {
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
         console.log(`direction failed: ${message}`);
+        // The principal's words must never be lost to a provider failure:
+        // the failed direction's TEXT rides the evidence commit, so the
+        // next brief (laptop tier included) can still act on it.
+        await store.appendLedger({
+          ts: new Date().toISOString(),
+          runId,
+          agent: directionAgent,
+          action: "direction-failed",
+          type: "report",
+          detail: {
+            channel: item.message.channel,
+            sender: item.message.sender,
+            messageId: item.message.messageId,
+            text: item.message.text.slice(0, 1000),
+            error: message.slice(0, 300),
+          },
+        });
         replies.push({
           item,
-          content: `⚠️ I couldn't process that direction (${message.slice(0, 200)}). It's logged; try again or wait for the next brief.`,
+          content: `⚠️ I couldn't think about that one (${message.slice(0, 300)}). Your message IS recorded in the ledger and will surface in the next brief — no need to resend.`,
         });
       }
     }
 
-    const persona = (await store.loadConfig()).identity?.persona?.name;
+    const persona = config.identity?.persona?.name;
     await store.flush(
       `direction: ${queue.length} processed${denied.length ? `, ${denied.length} denied recorded` : ""}`,
     );
