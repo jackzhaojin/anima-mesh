@@ -15,9 +15,10 @@ names, real emails, and secrets. `.env*` files never enter this repo.
 ## Commands
 
 ```bash
-pnpm verify        # typecheck + full test suite — must be green before every commit
+pnpm verify        # typecheck + full test suite + worker typecheck — green before every commit
 pnpm test          # vitest run
 pnpm typecheck     # tsc --noEmit (covers src/ AND test/)
+pnpm typecheck:worker  # tsc -p workers/heartbeat (Workers types)
 pnpm cli <cmd>     # run the CLI from source (tsx src/cli.ts)
 pnpm build         # emit dist/ (tsconfig.build.json)
 ```
@@ -33,15 +34,28 @@ src/
                 gates + ladder enforcement — GateViolation on any breach)
   autonomy/     L1→L4 ladder; external actions ALWAYS gated, even at L4
   agents/       AgentConcept from concept files · D11 commercial dual-gate
-  providers/    THE CHOKEPOINT: AgentWorkerProvider seam + registry
-                (claude-code, opencode, fake) — all model access goes here
-  instance/     animamesh.config.json loading/resolution
-  harness/      runAgent (one heartbeat: context → provider → artifact →
-                ledger → verifiers) · the three seam verifiers
+  providers/    THE CHOKEPOINT: AgentWorkerProvider seam + registry.
+                index.ts is the Workers-safe core (moonshot-api, fake,
+                CLOUD_HARNESSES, resolveProvider(harness, ctx?));
+                node-providers.ts registers the subprocess ones on import
+                (claude-code, claude-agent-sdk, opencode) — Node entrypoints only
+  instance/     config loading/resolution · THE STORAGE SEAM: store.ts
+                interface, store-fs (local), store-github (tarball read,
+                one commit per flush, never force) · tar.ts · github-auth.ts
+  harness/      run-core/heartbeat-core (Workers-safe; store required;
+                tz-aware dates; cloudTier skips non-CLOUD_HARNESSES) with
+                run.ts/heartbeat.ts Node wrappers · verifiers(-core)
+  channels/     delivery registry (registry.ts, Workers-safe: discord/notion/
+                gmail/console, injected env) · index.ts fs wrapper
+  a2a/          agent card: card-core.ts pure assembly · card.ts fs wrapper
   init/         interview (file/flags/interactive/agentic) · scaffoldBrain
                 (acceptance test: its own output must pass conformance)
   cli.ts        init/validate/run/gate/report/templates — main(argv) → exit
-                code, driven in-process by tests
+                code, driven in-process by tests; `github:owner/repo#ref`
+                instance scheme runs against a remote brain
+workers/heartbeat/  the cloud tier: Worker + HeartbeatDO (DST-correct daily
+                alarm, beat mutex) — own workspace, pure Web platform;
+                deploy config lives in the INSTANCE repo
 templates/agents/   the shipped roster (see templates/README.md)
 test/               regression suite (see test/README.md)
 references/poc/     read-only PoC examples — NOT engine code, excluded from tsconfig
@@ -63,6 +77,12 @@ references/poc/     read-only PoC examples — NOT engine code, excluded from ts
    together — init output must always pass the current checker.
 6. **Every safety property gets a behavioral test.** A gate without a test
    proving it throws is not a gate.
+7. **The Worker bundle is pure Web platform.** Nothing reachable from
+   `workers/heartbeat/src/index.ts` may import `node:*`, subprocess
+   providers, or fs-backed modules — `test/workers-imports.test.ts` enforces
+   it. New shared code goes in a `*-core.ts` module; Node conveniences wrap
+   it. The GitHub store never force-updates a ref, and global `fetch` must be
+   wrapped, not aliased (Workers reject rebound `this`).
 
 ## Conventions
 

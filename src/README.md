@@ -45,39 +45,93 @@ assertions verifiers build on.
   the body. `assertActivatable` enforces the commercial dual gate
   (boundary map verified AND trigger/waiver) from `animamesh.config.json`.
 - `instance/config.ts` — resolve an instance root (config + bundle + ledger +
-  approvals + reports + drafts paths).
+  approvals + reports + drafts paths). Shape/defaults live in `config-core.ts`
+  (Workers-safe).
+- **`instance/store.ts` — the storage seam.** Everything the harness touches
+  at run time (`loadConfig`/`loadBundle`/reports/ledger/approvals/`flush`)
+  behind one async interface, with read-your-writes semantics. Two
+  implementations:
+  - `store-fs.ts` — the local-directory behavior, extracted verbatim;
+    `flush()` is a no-op (writes were immediate).
+  - `store-github.ts` — the instance over HTTPS: one tarball snapshot at a
+    pinned commit (`tar.ts`, a Workers-safe ~100-line reader), writes
+    buffered in memory (full-file writes + replayable ledger appends), then
+    **exactly one commit per `flush()`** via the git data API —
+    `force: false`, one re-snapshot retry on a moved ref, then a loud
+    failure. Committer identity `animamesh-cloud` so `git log` attributes
+    the writer. `github-auth.ts` isolates token minting (PAT today; a
+    GitHub App swap touches only that file).
 
 ## providers/ — the chokepoint
 
 `AgentWorkerProvider` = `{name, assertConfigured(), run(opts)}`. Everything
 model-related crosses this seam and nothing else does.
 
-- `claude-code.ts` — spawns `claude -p … --output-format text`.
-- `opencode.ts` — long-lived `opencode serve` **per working directory** (the
-  session's relative reads must resolve against the instance), REST session +
-  message, SSE `/event` tap for live tool-firing progress. Default model:
-  Kimi K2.6 (`kimi-code/kimi-for-coding`).
+- `index.ts` — the registry **core** (Workers-safe): only fetch-based
+  providers imported here. Exports `CLOUD_HARNESSES` — the single definition
+  of what a cloud beat may run — and `resolveProvider(harness, ctx?)`, where
+  `ctx` (`ApiProviderContext`: injected env + fetchImpl) binds API providers
+  to Worker secrets or an instance's `.env` files.
+- `moonshot-api.ts` — OpenAI-compatible chat completions by pure fetch: the
+  cloud tier's cognition. `MOONSHOT_BASE_URL` overrides the endpoint
+  (subscription keys are endpoint-scoped); 429/5xx backoff; no `temperature`
+  (some models hard-reject non-defaults); tokens surfaced to the ledger.
+- `node-providers.ts` — the subprocess providers, registered as an import
+  side effect by Node entrypoints only (never by `workers/`):
+  - `claude-code.ts` — spawns `claude -p … --output-format text`.
+  - `claude-agent-sdk.ts` — Claude via `@anthropic-ai/claude-agent-sdk`
+    (lazy import; subscription auth via `CLAUDE_CODE_OAUTH_TOKEN`; read-only
+    tools, no settings bleed). Laptop-only by architecture: the SDK spawns a
+    bundled CLI.
+  - `opencode.ts` — long-lived `opencode serve` **per working directory**
+    (the session's relative reads must resolve against the instance), REST
+    session + message, SSE `/event` tap for live tool-firing progress.
 - `fake.ts` — deterministic, records calls; the regression suite's provider.
-- `index.ts` — registry; instances can `registerProvider()` their own.
 
 ## harness/ — one heartbeat
 
-- `run.ts` — `runAgent`: load instance → find agent → activation + ladder
-  checks → assemble prompt (job + inlined `index.md`/`ops/*` incl. the
+Core/node split throughout: the `*-core.ts` modules are Workers-safe (store
+required, no filesystem); the unsuffixed modules are Node wrappers that
+default the store to the local directory and register subprocess providers.
+
+- `run-core.ts` — `runAgentCore`: load via store → find agent → activation +
+  ladder checks → assemble prompt (job + inlined `index.md`/`ops/*` incl. the
   `ops/nags.md` persistent-reminder surface + latest mesh reports + pending
-  approvals) → provider.run with **cwd = bundle root** → harness writes the
-  report artifact (L1 contract: the agent causes no side effects) → ledger
-  appends → verifiers. Injected `now` freezes all timestamps (deterministic
-  simulation).
-- `heartbeat.ts` — the scheduled wake: **daily = "not yet today" (local
-  calendar — a late-night manual run never eats the morning brief)**;
-  weekly/monthly/quarterly are hour-thresholds under-period for cron drift;
-  spokes first, hub last; **one spoke's failure never aborts the beat**
-  (failures collected on the result); commercial agents skip while
-  dual-gated.
-- `verifiers.ts` — the three seam checks (+ conformance): expected outputs
-  exist, no gated ledger entry without its approval, all declared actions
-  logged, bundle still conformant.
+  approvals) → provider.run with **cwd = bundle root** (fs stores) → harness
+  writes the report artifact (L1 contract: the agent causes no side effects)
+  → ledger appends → verifiers → flush (`per-run` default; `caller` batches a
+  whole beat into one commit). Injected `now` freezes all timestamps;
+  injected `timeZone` keeps datestamps and daily dedup honest on UTC runtimes.
+- `heartbeat-core.ts` — the scheduled wake: **daily = "not yet today"
+  (calendar, tz-aware — a late-night manual run never eats the morning
+  brief)**; weekly/monthly/quarterly are hour-thresholds under-period for
+  cron drift; spokes first, hub last; **one spoke's failure never aborts the
+  beat**; commercial agents skip while dual-gated; `cloudTier: true` skips
+  any harness not in `CLOUD_HARNESSES`, with reason.
+- `verifiers-core.ts` / `verifiers.ts` — the three seam checks
+  (+ conformance): expected outputs exist, no gated ledger entry without its
+  approval, all declared actions logged, bundle still conformant. Store-aware
+  variants in core; disk-fidelity wrappers for the CLI.
+
+## channels/ + a2a/ — reaching the principal, and the world
+
+- `channels/registry.ts` (Workers-safe) — channel registry (discord bot-DM /
+  webhook, notion, gmail, console; all pure fetch with injected env) +
+  `deliverLatestReportFromStore`. `channels/index.ts` adds the fs wrapper.
+- `a2a/card-core.ts` — the mesh's Agent Card assembled from a loaded bundle
+  (`streaming: false` — short connections by design; dual-gated commercial
+  agents are not advertised). `a2a/card.ts` is the fs wrapper.
+
+## workers/heartbeat/ — the cloud tier (repo root, own workspace)
+
+A Cloudflare Worker + one Durable Object: DST-correct daily alarm
+(`alarm-time.ts`), beat mutex, `runCloudBeat` = `heartbeatCore` over a
+`GitHubInstanceStore` with `moonshot-api` cognition, one commit per beat,
+brief delivery + failure DM ("silence must mean success"). Routes:
+`/healthz`, token-gated `POST /beat`, `/.well-known/agent-card.json`.
+`test/workers-imports.test.ts` walks its import graph and fails on any
+`node:*` or subprocess module. Deploy config lives in the instance repo;
+`wrangler.example.jsonc` here is a template.
 
 ## init/ — a brain from nothing
 

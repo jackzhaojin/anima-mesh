@@ -1,6 +1,6 @@
 {
   "name": "anima-mesh",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "AnimaMesh — an engine for running a company-of-0: a mesh of small agents over a git-backed OKF knowledge bundle, with humans as the approval gate.",
   "type": "module",
   "private": true,

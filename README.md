@@ -74,9 +74,19 @@ your-brain/                      ← private instance (yours, never public)
   with a paper trail.
 - **The model chokepoint.** Each agent concept declares its `model` and
   `harness`; swapping vendors is a config edit, never a rebuild. Shipped
-  harnesses: `claude-code` (headless CLI), `opencode` (any opencode-configured
-  model — Kimi K2.6 by default), `fake` (deterministic, for the regression
-  suite).
+  harnesses: `moonshot-api` (pure fetch, OpenAI-compatible — the only one a
+  cloud beat may run), `claude-code` (headless CLI), `claude-agent-sdk`
+  (Claude on subscription auth; subprocess, so laptop-tier by architecture),
+  `opencode` (any opencode-configured model), `fake` (deterministic, for the
+  regression suite).
+- **Two runtimes, one engine.** The same heartbeat runs from a laptop CLI
+  over a local directory, or from a **Cloudflare Worker + Durable Object
+  alarm** (`workers/heartbeat/`) over a GitHub-hosted brain — the
+  `InstanceStore` seam swaps the transport. A cloud beat reads the instance
+  as one tarball and lands all its artifacts as **one commit** (never
+  force-pushed), so the repo stays the single test seam either way. No
+  containers, no long-lived connections: the agent card says
+  `streaming: false` on purpose.
 - **Commercial capability is dual-gated.** Sales/lead/inbound-triage templates
   ship capable but refuse to run until the instance's legal boundary map is
   verified AND an explicit trigger or waiver is on file. Capability never
@@ -103,6 +113,7 @@ pnpm cli init ../my-brain --answers answers.json --agentic opencode
 
 pnpm cli validate ../my-brain          # OKF + animamesh conformance
 pnpm cli run compliance-ops --instance ../my-brain
+pnpm cli run some-agent --instance github:owner/brain#branch   # zero local reads
 pnpm cli heartbeat --instance ../my-brain      # run everything due; hub last
 pnpm cli deliver --instance ../my-brain        # brief → discord/notion/gmail/console
 pnpm cli card --instance ../my-brain           # the mesh's A2A agent card
@@ -121,6 +132,7 @@ out** — checked by the same validator every instance is checked by.
 | [src/README.md](src/README.md) | Module-by-module architecture map |
 | [templates/README.md](templates/README.md) | The agent roster templates and their placeholder contract |
 | [test/README.md](test/README.md) | What the regression suite guarantees and how to extend it |
+| [workers/heartbeat/README.md](workers/heartbeat/README.md) | The cloud-tier heartbeat Worker and how instances deploy it |
 | [references/README.md](references/README.md) | Proof-of-concept integrations that informed the design |
 
 ## Testing
@@ -133,7 +145,9 @@ conformance and complete a full agent run against the fake provider.
 
 ## Status
 
-v0.2.0 — pre-release. Package name on npm to be confirmed; pinned consumers
-should reference the repo by tag.
+v0.3.0 — pre-release. Package name on npm to be confirmed; pinned consumers
+should reference the repo by tag. v0.3.0 adds the storage seam
+(`InstanceStore`: fs + GitHub), the `moonshot-api` and `claude-agent-sdk`
+providers, and the `workers/heartbeat` cloud tier.
 
 Apache-2.0 © 2026 Jack Jin — see [LICENSE](LICENSE)

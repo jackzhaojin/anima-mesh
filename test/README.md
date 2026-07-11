@@ -30,6 +30,23 @@ calls, no static fixtures — everything builds in temp dirs via
   overrides an explicit human choice.
 - **cli.test.ts** — every command driven in-process (`main(argv)` → exit
   code): init/validate/run/gate/report/templates, including failure exits.
+- **channels.test.ts / heartbeat-card.test.ts** — delivery channels against
+  mocked fetch (env injection, per-channel auth failures); heartbeat
+  due/skip/dedup semantics; the agent card excludes dual-gated agents and
+  declares `streaming: false`.
+- **providers-moonshot.test.ts / providers-claude-sdk.test.ts** — the API
+  providers against mocked fetch / a mocked SDK module (never a subprocess):
+  request shape, retry/backoff, timeouts, env-binding, no key leakage;
+  `CLOUD_HARNESSES` contains exactly the fetch-only harnesses.
+- **store-github.test.ts** — the remote store against a scripted GitHub API
+  with an in-test fixture tarball: read-your-writes, one commit per flush,
+  `force:false` + exactly one conflict retry, User-Agent on every call, and
+  a full `runAgent` over the store landing report + 3 ledger lines in ONE
+  commit. (`store-github-integration.test.ts` hits a real repo branch, gated
+  on `GITHUB_STORE_IT=1`.)
+- **workers-alarm-time.test.ts / workers-imports.test.ts** — DST-correct
+  alarm math across both US transitions; the Worker import-graph walker that
+  fails on any `node:*` or subprocess module.
 
 ## Adding tests
 
