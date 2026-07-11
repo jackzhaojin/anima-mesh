@@ -18,9 +18,10 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "verify": "npm run typecheck && npm run test && npm run typecheck:worker",
+    "verify": "npm run typecheck && npm run test && npm run typecheck:worker && npm run test:worker",
     "cli": "tsx src/cli.ts",
-    "typecheck:worker": "tsc -p workers/heartbeat/tsconfig.json"
+    "typecheck:worker": "tsc -p workers/heartbeat/tsconfig.json",
+    "test:worker": "cd workers/heartbeat && pnpm test"
   },
   "dependencies": {
     "@anthropic-ai/claude-agent-sdk": "^0.3.207",

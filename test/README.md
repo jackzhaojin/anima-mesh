@@ -1,9 +1,10 @@
 # test/ — the regression suite
 
-`pnpm verify` = typecheck (src **and** test) + this suite. It is the
-contract: green before every commit, no exceptions. No network, no real model
-calls, no static fixtures — everything builds in temp dirs via
-`helpers.ts` and runs against `FakeProvider`.
+`pnpm verify` = typecheck (src **and** test) + this suite + the Worker's
+workerd suite (`pnpm test:worker`). It is the contract: green before every
+commit, no exceptions. No network, no real model calls, no static fixtures —
+everything builds in temp dirs via `helpers.ts` and runs against
+`FakeProvider`.
 
 ## What each file guarantees
 
@@ -47,6 +48,33 @@ calls, no static fixtures — everything builds in temp dirs via
 - **workers-alarm-time.test.ts / workers-imports.test.ts** — DST-correct
   alarm math across both US transitions; the Worker import-graph walker that
   fails on any `node:*` or subprocess module.
+
+## workers/heartbeat/test/ — the Worker in real workerd
+
+`pnpm test:worker` (included in `pnpm verify`) runs vitest inside workerd
+via `@cloudflare/vitest-pool-workers`: the deployed-shape Worker with its
+Durable Object, all outbound services (GitHub, Kimi, Discord) scripted with
+`fetchMock` — one-shot interceptors with exact call counts, so the mock plan
+IS the expected traffic (`assertNoPendingInterceptors` in every afterEach).
+
+- **router.test.ts** — /healthz sanitization (counts only, never failure
+  strings), Bearer auth on /beat, first-arm idempotence, the public card,
+  404-by-default.
+- **heartbeat-do.test.ts** — the alarm re-arms in `finally` even when the
+  beat crashes (with the failure DM proven); alarm lands at the configured
+  hour in the configured timezone; the beat mutex (fresh lock skips, stale
+  lock stolen, lock cleared after).
+- **beat-e2e.test.ts** — a full cloud beat end-to-end in workerd: snapshot →
+  due decision → Kimi cognition → report + ledger → ONE commit (force:false,
+  `animamesh-cloud`) → Discord DM; same-day dedup; an agent-level provider
+  failure that the beat survives and reports.
+
+Pinned to vitest 3.2.x + pool 0.12.x (the last vitest-3 line, matching this
+suite). The 0.13+ pool requires vitest 4 and replaces defineWorkersConfig and
+fetchMock — migrate deliberately with Cloudflare's shipped codemod.
+Two pool quirks are handled in `test/fixtures.ts`/config comments: isolated
+storage can't pop live SQLite sidecars (so tests wipe DO state explicitly
+instead), and the first stub call after a module reload needs one retry.
 
 ## Adding tests
 

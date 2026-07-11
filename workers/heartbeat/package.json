@@ -5,12 +5,21 @@
   "description": "AnimaMesh cloud heartbeat: one Worker + one Durable Object alarm over a GitHub-hosted brain. Deploy config lives in the instance repo (cloud/); wrangler.example.jsonc here is a template.",
   "type": "module",
   "scripts": {
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
   },
   "devDependencies": {
-    "@cloudflare/workers-types": "^4.20260620.0",
+    "@cloudflare/vitest-pool-workers": "^0.12.21",
+    "@cloudflare/workers-types": "^5.20260708.1",
     "@types/node": "^26.1.1",
     "typescript": "^5.7.0",
+    "vitest": "^3.2.7",
     "wrangler": "^4.0.0"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "workerd",
+      "esbuild"
+    ]
   }
 }
