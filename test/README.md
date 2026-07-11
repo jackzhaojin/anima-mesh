@@ -76,6 +76,17 @@ Two pool quirks are handled in `test/fixtures.ts`/config comments: isolated
 storage can't pop live SQLite sidecars (so tests wipe DO state explicitly
 instead), and the first stub call after a module reload needs one retry.
 
+## The golden day — `test/golden-day.test.ts` (deterministic, in verify)
+
+P2's testing bar: one fully scripted mesh day (two spokes + the hub, frozen
+clock, scripted model outputs) replayed through the real heartbeat, with
+every observable asserted — due ordering (spokes → hub), three green runs,
+ledger trios with frozen timestamps, the hub's prompt containing today's
+spoke reports + nags + pending approvals, byte-stable report bodies modulo
+runId, same-day replay = pure no-op, and the cloud view skipping
+subprocess harnesses with reason. When behavior changes intentionally,
+update the golden day deliberately — it is the mesh's flight recorder.
+
 ## Live seam tests — `pnpm test:live` (env-gated, skipped in verify)
 
 `test/live-seams.test.ts` proves the real integrations from the engine
@@ -94,6 +105,12 @@ LIVE_KIMI=1 LIVE_DISCORD=1 LIVE_AGENT=1 pnpm test:live
   verifiers green. Touches no real instance; safe against daily dedup.
 - `GITHUB_STORE_IT=1` — the GitHub store against a real throwaway branch
   (`store-github-integration.test.ts`).
+- `LIVE_EVAL=1` — **AI-driven eval** (`live-eval.test.ts`): a REAL model
+  writes the chief-of-staff brief over the golden day's scripted facts, and
+  a second model call judges it against a rubric (surfaces the discrepancy?
+  carries the nag? honest about quiet areas? score ≥ 6/10) — verdict JSON
+  asserted in code. Two Kimi calls. Run after changing buildPrompt or any
+  agent job description.
 
 All four appear as *skipped* in `pnpm verify` — the contract suite stays
 network-free; the live gates exist so "it works on mocks" is never the only
