@@ -99,7 +99,14 @@ export function createMoonshotApiProvider(ctx: ApiProviderContext = {}): AgentWo
           return { text: text.trim(), raw: json, tokens: json.usage };
         }
 
-        const errBody = (await res.text().catch(() => "")).slice(0, 200);
+        const raw = await res.text().catch(() => "");
+        // An HTML body is an edge/WAF block page, not an API error — name it
+        // instead of spraying markup into logs and channel replies. (Found
+        // live 2026-07-11: api.kimi.com 403s ALL Cloudflare Workers egress
+        // with a Cloudflare block page; the open platform does not.)
+        const errBody = raw.trimStart().startsWith("<")
+          ? "(HTML block page from the endpoint's edge — this network is blocked from calling the endpoint; the API itself was never reached)"
+          : raw.slice(0, 200);
         const retryable = res.status === 429 || res.status >= 500;
         if (retryable && attempt < retryDelays.length) {
           const retryAfter = Number(res.headers.get("retry-after"));

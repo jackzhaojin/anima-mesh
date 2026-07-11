@@ -69,6 +69,21 @@ describe("moonshot-api provider", () => {
     expect(fetchImpl).toHaveBeenCalledTimes(1);
   });
 
+  it("names an HTML block page instead of spraying markup — the WAF-block lesson", async () => {
+    // Found live 2026-07-11: api.kimi.com 403s ALL Cloudflare Workers egress
+    // with a Cloudflare block page (the API is never reached).
+    const blockPage = '<!DOCTYPE html>\n<!--[if lt IE 7]> <html class="no-js ie6 oldie"> <![endif]-->SECRET-COORDS';
+    const fetchImpl = vi.fn().mockResolvedValue(new Response(blockPage, { status: 403 }));
+    const provider = createMoonshotApiProvider({ env: ENV, fetchImpl, retryDelaysMs: [0, 0] });
+
+    const err = await provider.run({ prompt: "p", cwd: "/" }).catch((e: Error) => e);
+    expect(err).toBeInstanceOf(Error);
+    expect((err as Error).message).toContain("HTTP 403");
+    expect((err as Error).message).toContain("HTML block page");
+    expect((err as Error).message).not.toContain("DOCTYPE");
+    expect((err as Error).message).not.toContain("SECRET-COORDS");
+  });
+
   it("retries 429 then succeeds", async () => {
     const fetchImpl = vi
       .fn()
