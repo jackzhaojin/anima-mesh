@@ -76,6 +76,29 @@ Two pool quirks are handled in `test/fixtures.ts`/config comments: isolated
 storage can't pop live SQLite sidecars (so tests wipe DO state explicitly
 instead), and the first stub call after a module reload needs one retry.
 
+## Live seam tests — `pnpm test:live` (env-gated, skipped in verify)
+
+`test/live-seams.test.ts` proves the real integrations from the engine
+checkout — the parts mocks cannot vouch for. Source your instance's env
+first, then opt into each seam with its flag:
+
+```bash
+set -a; source /path/to/your-instance/.env.local; set +a
+LIVE_KIMI=1 LIVE_DISCORD=1 LIVE_AGENT=1 pnpm test:live
+```
+
+- `LIVE_KIMI=1` — one real Moonshot/Kimi completion (~seconds, ~150 tokens).
+- `LIVE_DISCORD=1` — one real bot DM to the configured principal.
+- `LIVE_AGENT=1` — a **full agentic run locally end to end**: temp instance
+  scaffolded on disk → real Kimi cognition → report artifact + ledger +
+  verifiers green. Touches no real instance; safe against daily dedup.
+- `GITHUB_STORE_IT=1` — the GitHub store against a real throwaway branch
+  (`store-github-integration.test.ts`).
+
+All four appear as *skipped* in `pnpm verify` — the contract suite stays
+network-free; the live gates exist so "it works on mocks" is never the only
+evidence. Run them after touching a provider/channel/store seam.
+
 ## Adding tests
 
 1. New safety property ⇒ new behavioral test that proves the failure mode
