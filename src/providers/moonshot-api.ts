@@ -17,7 +17,10 @@ export interface ApiProviderContext {
   retryDelaysMs?: number[];
 }
 
-const ENDPOINT = "https://api.moonshot.ai/v1/chat/completions";
+// Open-platform default; MOONSHOT_BASE_URL overrides (e.g. the
+// Kimi-for-Coding subscription endpoint https://api.kimi.com/coding/v1,
+// whose keys are NOT valid on the open platform — verified 2026-07-11).
+const DEFAULT_BASE_URL = "https://api.moonshot.ai/v1";
 // Verified against platform.moonshot.ai (now platform.kimi.ai) 2026-07-11.
 const DEFAULT_MODEL = "kimi-k2.6";
 const DEFAULT_TIMEOUT_MS = 10 * 60 * 1000;
@@ -50,12 +53,15 @@ export function createMoonshotApiProvider(ctx: ApiProviderContext = {}): AgentWo
         throw new Error("moonshot-api harness: MOONSHOT_API_KEY is not set");
       }
       const model = opts.model ?? DEFAULT_MODEL;
+      const base = (getEnv(env, "MOONSHOT_BASE_URL") ?? DEFAULT_BASE_URL).replace(/\/+$/, "");
+      const endpoint = `${base}/chat/completions`;
       const progress = opts.onProgress ?? (() => {});
       const timeoutMs = opts.timeoutMs ?? DEFAULT_TIMEOUT_MS;
+      // No temperature: some models on these endpoints hard-reject anything
+      // but their own default (kimi-for-coding 400s on 0.3 — found live).
       const body = JSON.stringify({
         model,
         max_tokens: 8192,
-        temperature: 0.3,
         messages: [
           { role: "system", content: SYSTEM_PROMPT },
           { role: "user", content: opts.prompt },
@@ -66,7 +72,7 @@ export function createMoonshotApiProvider(ctx: ApiProviderContext = {}): AgentWo
       for (let attempt = 0; ; attempt++) {
         let res: Response;
         try {
-          res = await doFetch(ENDPOINT, {
+          res = await doFetch(endpoint, {
             method: "POST",
             headers: { Authorization: `Bearer ${key}`, "content-type": "application/json" },
             body,

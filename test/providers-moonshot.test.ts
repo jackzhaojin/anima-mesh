@@ -28,6 +28,8 @@ describe("moonshot-api provider", () => {
     const body = JSON.parse(init.body);
     expect(body.model).toBe("kimi-k2.6");
     expect(body.max_tokens).toBe(8192);
+    // No temperature: some models hard-reject non-default values (kimi-for-coding).
+    expect(body.temperature).toBeUndefined();
     expect(body.messages).toHaveLength(2);
     expect(body.messages[0].role).toBe("system");
     expect(body.messages[1]).toEqual({ role: "user", content: "do the thing" });
@@ -35,6 +37,18 @@ describe("moonshot-api provider", () => {
     expect(result.text).toBe("the report");
     expect(result.tokens).toEqual({ prompt_tokens: 10, completion_tokens: 20 });
     expect(result.costUsd).toBeUndefined();
+  });
+
+  it("MOONSHOT_BASE_URL overrides the endpoint (subscription endpoints)", async () => {
+    const fetchImpl = vi.fn().mockResolvedValue(okResponse());
+    const provider = createMoonshotApiProvider({
+      env: { ...ENV, MOONSHOT_BASE_URL: "https://api.kimi.com/coding/v1/" },
+      fetchImpl,
+    });
+
+    await provider.run({ prompt: "p", cwd: "/", model: "kimi-for-coding" });
+
+    expect(fetchImpl.mock.calls[0]![0]).toBe("https://api.kimi.com/coding/v1/chat/completions");
   });
 
   it("assertConfigured throws without the key, naming the env var", () => {
