@@ -49,6 +49,12 @@ export default defineWorkersConfig({
             // test/fixtures.ts) — gates nothing real anywhere.
             DISCORD_PUBLIC_KEY: "e9d8505cd226e86f86d1f1eb538dbd506de6e8fa2e43e8e420416c554c36facc",
             DIRECTION_DAILY_CAP: "3",
+            DIRECTION_GMAIL_POLL_MINUTES: "15",
+            DIRECTION_GMAIL_ALLOWED_FROM: "principal@example.test",
+            GMAIL_CLIENT_ID: "test-gmail-client",
+            GMAIL_CLIENT_SECRET: "test-gmail-secret-not-real",
+            GMAIL_REFRESH_TOKEN: "test-gmail-refresh-not-real",
+            AGENT_EMAIL: "persona@example.test",
           },
         },
       },

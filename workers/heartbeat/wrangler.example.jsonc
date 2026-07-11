@@ -25,9 +25,13 @@
     "BEAT_HOUR": "8"
     // "MOONSHOT_BASE_URL": "https://api.kimi.com/coding/v1", // when the key is endpoint-scoped
     // "DISCORD_PUBLIC_KEY": "<discord app verify key>",      // enables POST /interactions (inbound direction)
-    // "DIRECTION_DAILY_CAP": "20"                            // direction budget (decision Q4)
+    // "DIRECTION_DAILY_CAP": "20",                           // direction budget (decision Q4)
+    // "DIRECTION_GMAIL_POLL_MINUTES": "20",                  // Gmail poll cadence; 0/absent = inbound email off
+    // "DIRECTION_GMAIL_ALLOWED_FROM": "<principal email>"    // only this sender's mail becomes directions
   }
   // Secrets (wrangler secret put): GITHUB_TOKEN, MOONSHOT_API_KEY,
-  // DISCORD_BOT_TOKEN, DISCORD_DM_USER_ID, BEAT_TRIGGER_TOKEN.
+  // DISCORD_BOT_TOKEN, DISCORD_DM_USER_ID, BEAT_TRIGGER_TOKEN;
+  // for inbound email also GMAIL_CLIENT_ID, GMAIL_CLIENT_SECRET,
+  // GMAIL_REFRESH_TOKEN (needs gmail.modify scope), AGENT_EMAIL.
   // NO ANTHROPIC_API_KEY and NO CLAUDE_CODE_OAUTH_TOKEN — ever.
 }

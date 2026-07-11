@@ -15,12 +15,18 @@ export interface Env {
   MOONSHOT_BASE_URL?: string; // set when the key is endpoint-scoped (subscription keys)
   DISCORD_PUBLIC_KEY?: string; // the Discord app's Ed25519 verify key (public info); absent = /interactions is 404
   DIRECTION_DAILY_CAP?: string; // max direction runs per local day; default 20 (decision Q4)
+  DIRECTION_GMAIL_POLL_MINUTES?: string; // Gmail poll cadence; 0/absent = inbound email off (decision Q3b)
+  DIRECTION_GMAIL_ALLOWED_FROM?: string; // only mail from this address becomes a direction (decision Q6)
   // -- secrets --
   GITHUB_TOKEN: string;
   MOONSHOT_API_KEY: string; // the cloud tier's ONLY cognition key (no Claude key exists on Workers)
   DISCORD_BOT_TOKEN?: string;
   DISCORD_DM_USER_ID?: string; // doubles as the direction sender allowlist (v1: the principal only)
   BEAT_TRIGGER_TOKEN: string;
+  GMAIL_CLIENT_ID?: string; // persona Gmail OAuth (inbound poll + reply); send scope exists, modify needs re-consent
+  GMAIL_CLIENT_SECRET?: string;
+  GMAIL_REFRESH_TOKEN?: string;
+  AGENT_EMAIL?: string; // the persona's sending identity
 }
 
 /** Flatten the Worker env into the engine's injectable env record. */
@@ -31,5 +37,9 @@ export function envRecord(env: Env): Record<string, string | undefined> {
     MOONSHOT_BASE_URL: env.MOONSHOT_BASE_URL,
     DISCORD_BOT_TOKEN: env.DISCORD_BOT_TOKEN,
     DISCORD_DM_USER_ID: env.DISCORD_DM_USER_ID,
+    GMAIL_CLIENT_ID: env.GMAIL_CLIENT_ID,
+    GMAIL_CLIENT_SECRET: env.GMAIL_CLIENT_SECRET,
+    GMAIL_REFRESH_TOKEN: env.GMAIL_REFRESH_TOKEN,
+    AGENT_EMAIL: env.AGENT_EMAIL,
   };
 }

@@ -19,10 +19,15 @@ export default {
     const url = new URL(req.url);
     const stub = env.HEARTBEAT_DO.get(env.HEARTBEAT_DO.idFromName("main"));
 
-    // First-arm bootstrapping: any request ensures the alarm exists
-    // (alarms survive deploys; this is idempotent).
+    // First-arm bootstrapping: any request ensures the alarms exist
+    // (alarms survive deploys; both calls are idempotent).
     if (url.pathname !== "/ensure-alarm") {
       await stub.fetch("https://do/ensure-alarm");
+      if (Number(env.DIRECTION_GMAIL_POLL_MINUTES ?? 0) > 0) {
+        await env.DIRECTION_DO.get(env.DIRECTION_DO.idFromName("main")).fetch("https://do/ensure-poll", {
+          method: "POST",
+        });
+      }
     }
 
     if (url.pathname === "/healthz" && req.method === "GET") {

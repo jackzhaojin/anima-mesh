@@ -96,9 +96,12 @@ describe("the sender gate (Q5)", () => {
 
   it("recorded denials fold into the ledger on the next drain — one commit, no commit-per-knock", async () => {
     await send(principalCommand("sneaky", "999"));
-    // A denial alone arms nothing — its audit rides the next direction's drain.
+    // A denial alone arms nothing IMMEDIATE — the only alarm is the far-off
+    // Gmail poll slot (the router bootstrap arms it on every request); the
+    // denial's audit rides the next direction's drain.
     const alarmAfterDenial = await runInDurableObject(directionStub(), (_i, state) => state.storage.getAlarm());
-    expect(alarmAfterDenial).toBeNull();
+    expect(alarmAfterDenial).not.toBeNull();
+    expect(alarmAfterDenial!).toBeGreaterThan(Date.now() + 10 * 60_000);
 
     const gh = mockGitHub();
     mockKimi("Understood — handled.");
