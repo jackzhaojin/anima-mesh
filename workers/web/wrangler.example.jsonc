@@ -1,0 +1,22 @@
+// TEMPLATE ONLY — the real deploy config lives in the INSTANCE repo's
+// cloud/ workspace (D12: the engine is generic; deploying is an instance
+// act). Copy, fill account_id and vars, deploy from there.
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "animamesh-web",
+  "main": "src/index.ts", // instance configs point at the engine checkout instead
+  "account_id": "<CLOUDFLARE ACCOUNT ID>",
+  "compatibility_date": "2026-07-01",
+  "observability": { "enabled": true },
+  "vars": {
+    "BRAIN_REPO": "<owner/name>",
+    "BRAIN_REF": "main",
+    "WEB_ALLOWED_EMAILS": "<principal email>", // comma-separated; the ONLY identities that may log in
+    "HEARTBEAT_URL": "https://<heartbeat worker hostname>",
+    "DASHBOARD_TITLE": "AnimaMesh"
+  }
+  // Secrets (wrangler secret put): GOOGLE_OAUTH_CLIENT_ID,
+  // GOOGLE_OAUTH_CLIENT_SECRET, SESSION_SECRET (openssl rand -hex 32),
+  // GITHUB_TOKEN (read), BEAT_TRIGGER_TOKEN (same value as the heartbeat's).
+  // This Worker deliberately holds NO cognition or persona-channel secrets.
+}

@@ -189,6 +189,14 @@ describe("GitHubInstanceStore reads", () => {
     expect(await store.getApproval("nope")).toBeUndefined();
   });
 
+  it("concurrent readers share ONE snapshot fetch — found by the web dashboard's parallel reads", async () => {
+    const mock = githubMock();
+    const store = makeStore(mock);
+    await Promise.all([store.listReports(), store.readLedger(), store.listApprovals(), store.loadBundle()]);
+    expect(mock.calls.filter((c) => c.url.includes("/git/ref/heads/"))).toHaveLength(1);
+    expect(mock.calls.filter((c) => c.url.includes("/tarball/"))).toHaveLength(1);
+  });
+
   it("sends a User-Agent on every request", async () => {
     const mock = githubMock();
     const store = makeStore(mock);

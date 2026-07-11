@@ -1,0 +1,25 @@
+{
+  "name": "@anima-mesh/web-worker",
+  "version": "0.1.0",
+  "private": true,
+  "description": "AnimaMesh web tier: Google-OIDC-gated dashboard + trigger-beat over the GitHub-hosted brain. Deploy config lives in the instance repo; wrangler.example.jsonc here is a template.",
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "workerd",
+      "esbuild"
+    ]
+  },
+  "devDependencies": {
+    "@cloudflare/vitest-pool-workers": "^0.12.0",
+    "@cloudflare/workers-types": "^5.20260708.1",
+    "@types/node": "^26.1.1",
+    "typescript": "^5.7.0",
+    "vitest": "~3.2.0",
+    "wrangler": "^4.0.0"
+  }
+}

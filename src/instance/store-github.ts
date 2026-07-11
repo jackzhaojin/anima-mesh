@@ -50,6 +50,8 @@ export class GitHubInstanceStore implements InstanceStore {
   private readonly identity: { name: string; email: string };
 
   private snapshot?: Snapshot;
+  /** In-flight snapshot load — concurrent readers must share ONE fetch. */
+  private loading?: Promise<Snapshot>;
   private config?: InstanceConfig;
   /** Full-file pending writes (reports, future concept edits). */
   private readonly pendingWrites = new Map<string, string>();
@@ -97,6 +99,18 @@ export class GitHubInstanceStore implements InstanceStore {
 
   private async load(): Promise<Snapshot> {
     if (this.snapshot) return this.snapshot;
+    // Memoize the PROMISE, not just the result: parallel readers (the web
+    // dashboard fires listReports/readLedger/listApprovals concurrently)
+    // must share one ref+tarball fetch, not race three.
+    this.loading ??= this.doLoad();
+    try {
+      return await this.loading;
+    } finally {
+      this.loading = undefined;
+    }
+  }
+
+  private async doLoad(): Promise<Snapshot> {
     const ref = await this.api("GET", `/repos/${this.repo}/git/ref/heads/${this.ref}`);
     const baseSha: string = ref.object.sha;
     const res = await this.doFetch(`${this.apiBase}/repos/${this.repo}/tarball/${baseSha}`, {

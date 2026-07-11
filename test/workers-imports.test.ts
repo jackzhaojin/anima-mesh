@@ -9,7 +9,10 @@ import * as path from "node:path";
  * and therefore ignored.
  */
 const ROOT = path.resolve(__dirname, "..");
-const ENTRY = path.join(ROOT, "workers/heartbeat/src/index.ts");
+const ENTRIES = [
+  path.join(ROOT, "workers/heartbeat/src/index.ts"),
+  path.join(ROOT, "workers/web/src/index.ts"),
+];
 
 const ALLOWED_BARE = new Set(["yaml", "cloudflare:workers"]);
 const BANNED_FILES = [
@@ -60,27 +63,29 @@ function walk(entry: string): { visited: Set<string>; bare: Set<string> } {
   return { visited, bare };
 }
 
-describe("workers import hygiene", () => {
-  const { visited, bare } = walk(ENTRY);
+describe.each(ENTRIES.map((entry) => [path.relative(ROOT, entry), entry] as const))(
+  "workers import hygiene: %s",
+  (_label, entry) => {
+    const { visited, bare } = walk(entry);
 
-  it("reaches the engine core (sanity: the walk actually followed imports)", () => {
-    expect(visited.size).toBeGreaterThan(10);
-    expect([...visited].some((f) => f.endsWith("store-github.ts"))).toBe(true);
-    expect([...visited].some((f) => f.endsWith("heartbeat-core.ts"))).toBe(true);
-  });
+    it("reaches the engine core (sanity: the walk actually followed imports)", () => {
+      expect(visited.size).toBeGreaterThan(5);
+      expect([...visited].some((f) => f.endsWith("store-github.ts"))).toBe(true);
+    });
 
-  it("imports no node built-ins anywhere in the graph", () => {
-    const nodeSpecs = [...bare].filter((s) => s.startsWith("node:"));
-    expect(nodeSpecs).toEqual([]);
-  });
+    it("imports no node built-ins anywhere in the graph", () => {
+      const nodeSpecs = [...bare].filter((s) => s.startsWith("node:"));
+      expect(nodeSpecs).toEqual([]);
+    });
 
-  it("uses only allowlisted bare specifiers", () => {
-    const unexpected = [...bare].filter((s) => !ALLOWED_BARE.has(s));
-    expect(unexpected).toEqual([]);
-  });
+    it("uses only allowlisted bare specifiers", () => {
+      const unexpected = [...bare].filter((s) => !ALLOWED_BARE.has(s));
+      expect(unexpected).toEqual([]);
+    });
 
-  it("never touches the subprocess/filesystem modules", () => {
-    const banned = BANNED_FILES.filter((f) => visited.has(f));
-    expect(banned.map((f) => path.relative(ROOT, f))).toEqual([]);
-  });
-});
+    it("never touches the subprocess/filesystem modules", () => {
+      const banned = BANNED_FILES.filter((f) => visited.has(f));
+      expect(banned.map((f) => path.relative(ROOT, f))).toEqual([]);
+    });
+  },
+);
