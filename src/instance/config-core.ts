@@ -33,6 +33,24 @@ export interface InstanceConfig {
   a2a?: {
     url?: string;
   };
+  /**
+   * Inbound direction: messages addressed to the mesh's persona become
+   * agentic runs (the model decides the disposition — never a keyword
+   * router). Sender allowlists live at the channel edge (Worker secrets /
+   * `gmail.allowedFrom`); this block is behavior only.
+   */
+  direction?: {
+    /** Which agent processes directions. Default: delivery.deliverAgent ?? "chief-of-staff". */
+    agent?: string;
+    /** Max direction runs per local calendar day. Default 20. */
+    dailyCap?: number;
+    gmail?: {
+      /** Poll cadence in minutes; 0/absent = inbound email off. */
+      pollMinutes?: number;
+      /** Only messages from this address become directions. */
+      allowedFrom?: string;
+    };
+  };
 }
 
 export const CONFIG_FILENAME = "animamesh.config.json";

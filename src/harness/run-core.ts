@@ -224,7 +224,7 @@ async function buildPrompt(
   ].join("\n");
 }
 
-function levelMeaning(level: string): string {
+export function levelMeaning(level: string): string {
   switch (level) {
     case "L1": return "report-only";
     case "L2": return "draft-for-approval";
@@ -234,7 +234,7 @@ function levelMeaning(level: string): string {
   }
 }
 
-async function bundleContext(store: InstanceStore, config: InstanceConfig): Promise<string> {
+export async function bundleContext(store: InstanceStore, config: InstanceConfig): Promise<string> {
   // Tolerant reads — a missing ops file is context absence, not a crash.
   const parts: string[] = ["\n## Bundle context (source of truth excerpts)"];
   // ops/nags.md: the persistent-reminder surface — principals opt in to being
@@ -254,7 +254,7 @@ const LATEST_REPORTS = 3;
  * pending approvals — what a coordinating hub (and any spoke) should see.
  * Read-only context; still L1-safe.
  */
-async function instanceContext(store: InstanceStore): Promise<string> {
+export async function instanceContext(store: InstanceStore): Promise<string> {
   const parts: string[] = [];
   const files = (await store.listReports()).slice(-LATEST_REPORTS);
   if (files.length > 0) {
