@@ -60,7 +60,9 @@ export class GitHubInstanceStore implements InstanceStore {
     this.repo = options.repo;
     this.ref = options.ref ?? "main";
     this.token = options.token;
-    this.doFetch = options.fetchImpl ?? fetch;
+    // Wrapped, not aliased: calling a bare global `fetch` with `this` bound
+    // to the store is an Illegal invocation on Workers.
+    this.doFetch = options.fetchImpl ?? ((input, init) => fetch(input, init));
     this.apiBase = (options.apiBase ?? "https://api.github.com").replace(/\/+$/, "");
     this.identity = options.identity ?? DEFAULT_IDENTITY;
   }
