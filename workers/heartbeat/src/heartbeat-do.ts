@@ -36,8 +36,26 @@ export class HeartbeatDO extends DurableObject<Env> {
     if (url.pathname === "/status") {
       const lastBeat = (await this.ctx.storage.get<LastBeat>(LAST_BEAT_KEY)) ?? null;
       const alarm = await this.ctx.storage.getAlarm();
+      // This feeds the UNAUTHENTICATED /healthz: counts and timestamps ONLY.
+      // Failure/error strings can carry repo coordinates and provider error
+      // bodies — they stay in DO storage, the token-gated /beat response,
+      // and wrangler tail.
+      const sanitized = lastBeat
+        ? {
+            at: lastBeat.at,
+            kind: lastBeat.kind,
+            ok: !lastBeat.error && (lastBeat.summary?.failures.length ?? 0) === 0,
+            date: lastBeat.summary?.date,
+            due: lastBeat.summary?.due,
+            ran: lastBeat.summary?.ran,
+            skipped: lastBeat.summary?.skipped,
+            failureCount: lastBeat.error ? 1 : (lastBeat.summary?.failures.length ?? 0),
+            delivered: lastBeat.summary?.delivered ?? false,
+            commitSha: lastBeat.summary?.commitSha,
+          }
+        : null;
       return Response.json({
-        lastBeat,
+        lastBeat: sanitized,
         nextAlarm: alarm === null ? null : new Date(alarm).toISOString(),
       });
     }
