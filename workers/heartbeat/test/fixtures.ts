@@ -23,10 +23,14 @@ import type { Env } from "../src/env.js";
  */
 export async function wipeHeartbeatDo(): Promise<void> {
   const e = env as Env;
+  await wipeDo(() => e.HEARTBEAT_DO.get(e.HEARTBEAT_DO.idFromName("main")));
+  await wipeDo(() => e.DIRECTION_DO.get(e.DIRECTION_DO.idFromName("main")));
+}
+
+async function wipeDo(makeStub: () => DurableObjectStub): Promise<void> {
   for (let attempt = 0; ; attempt++) {
-    const stub = e.HEARTBEAT_DO.get(e.HEARTBEAT_DO.idFromName("main"));
     try {
-      await runInDurableObject(stub, async (_i, state) => {
+      await runInDurableObject(makeStub(), async (_i, state) => {
         await state.storage.deleteAll();
         await state.storage.deleteAlarm();
       });
@@ -36,6 +40,62 @@ export async function wipeHeartbeatDo(): Promise<void> {
       throw err;
     }
   }
+}
+
+// ---- Discord interaction signing (TEST-ONLY keypair) ------------------------
+
+/**
+ * The private half of the TEST-ONLY Ed25519 keypair whose public half sits
+ * in vitest.config.ts as DISCORD_PUBLIC_KEY. Gates nothing real anywhere.
+ */
+const TEST_DISCORD_PRIVATE_PKCS8_B64 = "MC4CAQAwBQYDK2VwBCIEIL6Kzp/A0umM4XdgxBxtXPTLPdWi7e+rSFUvyR+sGdY+";
+
+/** Build a correctly signed Discord interaction request. */
+export async function signedInteraction(payload: unknown, url = "https://worker.test/interactions"): Promise<Request> {
+  const body = JSON.stringify(payload);
+  const timestamp = String(Math.floor(Date.now() / 1000));
+  const raw = Uint8Array.from(atob(TEST_DISCORD_PRIVATE_PKCS8_B64), (c) => c.charCodeAt(0));
+  const key = await crypto.subtle.importKey("pkcs8", raw, { name: "Ed25519" }, false, ["sign"]);
+  const sig = new Uint8Array(await crypto.subtle.sign("Ed25519", key, new TextEncoder().encode(timestamp + body)));
+  return new Request(url, {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      "x-signature-ed25519": [...sig].map((b) => b.toString(16).padStart(2, "0")).join(""),
+      "x-signature-timestamp": timestamp,
+    },
+    body,
+  });
+}
+
+/** A principal-sent slash command carrying free text. */
+export function principalCommand(text: string, senderId = "42"): unknown {
+  return {
+    type: 2,
+    id: `inter-${text.length}-${senderId}`,
+    application_id: "app-1",
+    token: "tok-1",
+    data: { name: "direct", options: [{ name: "message", type: 3, value: text }] },
+    member: { user: { id: senderId } },
+  };
+}
+
+export interface FollowupScript {
+  contents: string[];
+}
+
+/** Script `times` interaction-followup webhook posts into one capture. */
+export function mockDiscordFollowup(times = 1): FollowupScript {
+  const script: FollowupScript = { contents: [] };
+  fetchMock
+    .get("https://discord.com")
+    .intercept({ method: "POST", path: "/api/v10/webhooks/app-1/tok-1" })
+    .reply(200, (req) => {
+      script.contents.push((JSON.parse(req.body as string) as { content: string }).content);
+      return { id: "followup-1" };
+    })
+    .times(times);
+  return script;
 }
 
 // ---- raw tar builder --------------------------------------------------------

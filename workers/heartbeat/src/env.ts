@@ -6,17 +6,20 @@
 export interface Env {
   // -- bindings --
   HEARTBEAT_DO: DurableObjectNamespace;
+  DIRECTION_DO: DurableObjectNamespace;
   // -- vars (strings; coerce numbers explicitly) --
   BRAIN_REPO: string; // "owner/name"
   BRAIN_REF: string; // "main"
   BEAT_TIMEZONE: string; // IANA, e.g. "America/New_York"
   BEAT_HOUR: string; // "8"
   MOONSHOT_BASE_URL?: string; // set when the key is endpoint-scoped (subscription keys)
+  DISCORD_PUBLIC_KEY?: string; // the Discord app's Ed25519 verify key (public info); absent = /interactions is 404
+  DIRECTION_DAILY_CAP?: string; // max direction runs per local day; default 20 (decision Q4)
   // -- secrets --
   GITHUB_TOKEN: string;
   MOONSHOT_API_KEY: string; // the cloud tier's ONLY cognition key (no Claude key exists on Workers)
   DISCORD_BOT_TOKEN?: string;
-  DISCORD_DM_USER_ID?: string;
+  DISCORD_DM_USER_ID?: string; // doubles as the direction sender allowlist (v1: the principal only)
   BEAT_TRIGGER_TOKEN: string;
 }
 

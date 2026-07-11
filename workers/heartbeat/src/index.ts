@@ -3,8 +3,10 @@ import { githubToken } from "../../../src/instance/github-auth.js";
 import { buildAgentCardFromBundle } from "../../../src/a2a/card-core.js";
 import { envRecord, type Env } from "./env.js";
 import { HeartbeatDO } from "./heartbeat-do.js";
+import { DirectionDO } from "./direction-do.js";
+import { handleInteraction } from "./interactions.js";
 
-export { HeartbeatDO };
+export { HeartbeatDO, DirectionDO };
 
 /**
  * The heartbeat Worker: three public routes, everything else 404. All A2A
@@ -26,6 +28,12 @@ export default {
     if (url.pathname === "/healthz" && req.method === "GET") {
       // No auth: summary counts only, no secrets.
       return stub.fetch("https://do/status");
+    }
+
+    if (url.pathname === "/interactions" && req.method === "POST") {
+      // Inbound direction (Discord webhook). Absent public key = surface off.
+      if (!env.DISCORD_PUBLIC_KEY) return new Response("not found", { status: 404 });
+      return handleInteraction(req, env);
     }
 
     if (url.pathname === "/beat" && req.method === "POST") {

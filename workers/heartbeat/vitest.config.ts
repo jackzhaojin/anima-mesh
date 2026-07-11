@@ -30,6 +30,7 @@ export default defineWorkersConfig({
           compatibilityFlags: ["nodejs_compat"],
           durableObjects: {
             HEARTBEAT_DO: { className: "HeartbeatDO", useSQLite: true },
+            DIRECTION_DO: { className: "DirectionDO", useSQLite: true },
           },
           bindings: {
             // Mirrors the production Env contract (src/env.ts) with obviously
@@ -44,6 +45,10 @@ export default defineWorkersConfig({
             DISCORD_BOT_TOKEN: "test-bot-token-not-real",
             DISCORD_DM_USER_ID: "42",
             BEAT_TRIGGER_TOKEN: "test-beat-token",
+            // TEST-ONLY Ed25519 keypair (public half here, private half in
+            // test/fixtures.ts) — gates nothing real anywhere.
+            DISCORD_PUBLIC_KEY: "e9d8505cd226e86f86d1f1eb538dbd506de6e8fa2e43e8e420416c554c36facc",
+            DIRECTION_DAILY_CAP: "3",
           },
         },
       },

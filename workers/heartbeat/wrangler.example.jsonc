@@ -9,15 +9,23 @@
   "compatibility_date": "2026-07-01",
   "observability": { "enabled": true },
   "durable_objects": {
-    "bindings": [{ "name": "HEARTBEAT_DO", "class_name": "HeartbeatDO" }]
+    "bindings": [
+      { "name": "HEARTBEAT_DO", "class_name": "HeartbeatDO" },
+      { "name": "DIRECTION_DO", "class_name": "DirectionDO" }
+    ]
   },
-  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["HeartbeatDO"] }],
+  "migrations": [
+    { "tag": "v1", "new_sqlite_classes": ["HeartbeatDO"] },
+    { "tag": "v2", "new_sqlite_classes": ["DirectionDO"] }
+  ],
   "vars": {
     "BRAIN_REPO": "<owner/name>",
     "BRAIN_REF": "main",
     "BEAT_TIMEZONE": "America/New_York",
     "BEAT_HOUR": "8"
-    // "MOONSHOT_BASE_URL": "https://api.kimi.com/coding/v1"  // when the key is endpoint-scoped
+    // "MOONSHOT_BASE_URL": "https://api.kimi.com/coding/v1", // when the key is endpoint-scoped
+    // "DISCORD_PUBLIC_KEY": "<discord app verify key>",      // enables POST /interactions (inbound direction)
+    // "DIRECTION_DAILY_CAP": "20"                            // direction budget (decision Q4)
   }
   // Secrets (wrangler secret put): GITHUB_TOKEN, MOONSHOT_API_KEY,
   // DISCORD_BOT_TOKEN, DISCORD_DM_USER_ID, BEAT_TRIGGER_TOKEN.
