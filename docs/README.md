@@ -13,7 +13,8 @@ specifics (those live in each instance's own repo — see the boundary doc).
 3. [engine-vs-instance.md](engine-vs-instance.md) — the sorting rule for
    where knowledge and code belong (run its checklist whenever unsure)
 4. [starting-a-company.md](starting-a-company.md) — empty directory → a
-   mesh running a real company
+   mesh running a real company; opens with the two-repo topology diagram
+   (what's in the engine vs. what's in your brain)
 5. [deploying-cloud.md](deploying-cloud.md) — the generic Cloudflare
    runbook (two Workers, secrets contract, Discord wiring, multi-company)
 6. [learnings/](learnings/README.md) — hard-won platform knowledge with

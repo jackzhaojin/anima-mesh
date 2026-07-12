@@ -99,6 +99,13 @@ waiting for the alarm: `POST /beat` with the bearer token, then check
 
 ## Operating notes
 
+- **The cloud is a second writer to your brain repo.** Every beat and every
+  direction commits its evidence straight to the instance's GitHub repo,
+  authored by the mesh identity (e.g. `animamesh-cloud`). A local clone
+  drifts on its own — `git pull --rebase` before you work, and use
+  `git log --author=<mesh-identity>` to see what ran while you were away. The
+  writers are safe together: the CLI rebases before committing, the cloud
+  store appends one commit per run and never force-pushes.
 - **Rotation drill:** rotate at the provider → `wrangler secret put` again →
   next beat proves it (no deploy needed) → note it in the instance log.
 - **Don't deploy while a beat is in flight** — a deploy evicts the running

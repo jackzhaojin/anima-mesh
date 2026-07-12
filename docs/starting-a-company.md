@@ -12,6 +12,72 @@ append-only ledger, file-based approvals, and a config that pins this engine
 by tag. The engine animates it; you review and approve. Humans do judgment
 and signatures; agents do everything preparable.
 
+## The two repos — what's in the engine vs. what's in your brain
+
+![The engine and the instance](engine-and-instance.svg)
+
+AnimaMesh is deliberately split into two repositories with a **one-way
+dependency**. Knowing which half owns what is the single most important thing
+to understand before you start — the sorting checklist is in
+[engine-vs-instance.md](engine-vs-instance.md); this is the shape.
+
+**`anima-mesh` — the engine (public).** All generic logic and nothing else:
+
+| Path | What it holds |
+|---|---|
+| `src/harness/` | the run loop — heartbeat and direction cores |
+| `src/providers/` | the model chokepoint (moonshot-api, anthropic-api, …) |
+| `src/gates/` + `src/autonomy/` | the L1–L4 ladder, enforced in code |
+| `src/ledger/` + `src/okf/` | append-only audit + the bundle format |
+| `src/instance/` | the storage seam — read a brain from disk *or* GitHub |
+| `src/channels/` + `src/a2a/` | Discord/Gmail/Notion delivery + agent card |
+| `src/init/` + `src/cli.ts` | scaffold a brain · run · gate · report |
+| `workers/heartbeat/` + `workers/web/` | the cloud tier (beat + directions + dashboard) |
+| `templates/agents/` | the shipped roster, with `{{PLACEHOLDER}}` identity |
+| `docs/` | this shelf |
+
+It **never** names a company, person, persona, real email, or secret. You
+pin it by tag and upgrade deliberately; any AI model can read the whole thing
+because there's nothing private in it.
+
+**Your brain — the instance (private).** Everything about one company, as
+git-tracked plain files:
+
+| Path | What it holds |
+|---|---|
+| `animamesh.config.json` | the pairing: `engine.ref` pin, `cognition.overrides`, `direction`/`delivery`, identity/persona, activation gates |
+| `bundle/constitution.md` | immutable hard limits (machine-read by the gates) |
+| `bundle/facts/ decisions/ events/` | stable / dated-immutable / append-only knowledge |
+| `bundle/agents/*.md` | each agent as a concept file (level · model · harness) |
+| `bundle/ops/calendar.md` + `ops/nags.md` | what agents wake to check + reminders that repeat |
+| `bundle/index.md` + `log.md` | reserved (log is append-only) |
+| `ledger/actions.jsonl` | the append-only action ledger (audit seam) |
+| `approvals/` `reports/` `drafts/` | the "needs you" gate + run artifacts |
+| `cloud/` | this company's `wrangler.jsonc` deploy configs |
+| `.env.local` | secrets, git-ignored, mode 600 — referenced by name, never committed |
+
+**Starting company #2** is just a second brain pointed at the same engine
+tag — nothing is shared between companies, and nothing carries over except
+everything you've taught the engine.
+
+### Staying in sync — both runtimes write to your brain
+
+The engine runs your brain from **two places over the same files** (the
+storage seam): the **laptop CLI** over a local clone, and the **cloud Worker**
+over the GitHub copy. Both are writers — a cloud beat or an emailed/Discord
+direction lands as a commit authored by the mesh (e.g. `animamesh-cloud`),
+pushed straight to your brain repo. So your local clone goes stale on its own:
+
+```bash
+git pull --rebase --autostash        # before you work — pick up what the cloud wrote
+git log --author=<mesh-identity>     # what ran while you were away
+```
+
+The two writers coexist safely: the CLI pulls `--rebase` before committing,
+and the cloud store appends one commit per run and **never force-pushes**. If
+you skip the pull, your next local commit just has to rebase over the cloud's
+— harmless, but pulling first keeps history clean.
+
 ## 1. Scaffold the brain
 
 ```bash

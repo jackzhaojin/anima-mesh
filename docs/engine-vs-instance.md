@@ -9,7 +9,9 @@ git tag (`animamesh.config.json → engine.ref`); the engine never knows any
 instance exists.
 
 This file is the sorting rule. When you're about to write something down and
-aren't sure where it goes, run the checklist.
+aren't sure where it goes, run the checklist. For the visual layout of what
+each repo contains, see the diagram in
+[starting-a-company.md](starting-a-company.md).
 
 ## The checklist
 
