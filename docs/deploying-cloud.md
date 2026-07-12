@@ -56,6 +56,23 @@ the example file shows the shape.
 The web Worker's contract is in
 [workers/web/README.md](../workers/web/README.md) — narrower on purpose.
 
+**Give the dashboard a public DNS name.** Google OAuth needs a stable HTTPS
+origin for its redirect URI, and `*.workers.dev` hostnames are ugly to brand
+and easy to fat-finger into the wrong consent screen. If the instance owns a
+domain on its Cloudflare zone, one line in the web Worker's config does
+everything (DNS record, certificate, routing):
+
+```jsonc
+"routes": [{ "pattern": "dash.example.com", "custom_domain": true }]
+```
+
+Deploy, and the Worker answers at `https://dash.example.com`; the OIDC
+redirect URI derives from the request origin, so it becomes
+`https://dash.example.com/auth/callback` with no code or var changes.
+Register exactly that URI on the Google OAuth client. (The `workers.dev`
+route is disabled automatically once a custom domain exists — one hostname,
+one origin, one redirect URI.)
+
 ## Deploy and verify
 
 ```bash

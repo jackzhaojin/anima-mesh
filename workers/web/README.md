@@ -43,6 +43,14 @@ its own repo, fills vars (`BRAIN_REPO`, `BRAIN_REF`, `WEB_ALLOWED_EMAILS`,
 `https://<worker-host>/auth/callback`), `SESSION_SECRET`, `GITHUB_TOKEN`
 (read-only), `BEAT_TRIGGER_TOKEN`.
 
+**Recommended: a custom domain** on the instance's Cloudflare zone
+(`"routes": [{ "pattern": "dash.example.com", "custom_domain": true }]`) —
+a stable, branded origin for Google's redirect URI; the OIDC flow derives
+its redirect from the request origin, so no other change is needed. A staged
+deploy (custom domain + `SESSION_SECRET`/`GITHUB_TOKEN`/`BEAT_TRIGGER_TOKEN`,
+Google secrets later) is safe: the anonymous surface is a sign-in link and
+nothing else, and login simply fails until the client exists.
+
 ## Tests
 
 `pnpm test` here runs the workerd-local suite (`@cloudflare/vitest-pool-workers`):
