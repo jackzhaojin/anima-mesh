@@ -40,8 +40,10 @@ its own repo, fills vars (`BRAIN_REPO`, `BRAIN_REF`, `WEB_ALLOWED_EMAILS`,
 `HEARTBEAT_URL`), points `main` at this package, and loads secrets via
 `wrangler secret put`: `GOOGLE_OAUTH_CLIENT_ID`, `GOOGLE_OAUTH_CLIENT_SECRET`
 (a Google Cloud "Web application" OAuth client whose redirect URI is
-`https://<worker-host>/auth/callback`), `SESSION_SECRET`, `GITHUB_TOKEN`
-(read-only), `BEAT_TRIGGER_TOKEN`.
+`https://<worker-host>/auth/callback` — **name the client after the
+dashboard's hostname**, not the engine: one client per company, and
+hostname-named clients stay distinguishable when you run several),
+`SESSION_SECRET`, `GITHUB_TOKEN` (read-only), `BEAT_TRIGGER_TOKEN`.
 
 **Recommended: a custom domain** on the instance's Cloudflare zone
 (`"routes": [{ "pattern": "dash.example.com", "custom_domain": true }]`) —
