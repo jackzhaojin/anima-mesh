@@ -66,12 +66,18 @@ export async function gatherDashboard(env: Env): Promise<DashboardData> {
       .catch(() => []),
   ]);
 
-  // The newest non-direction report is "the brief" (direction artifacts use
-  // the dot-name precisely so they never masquerade as briefs). Only
+  // "The brief" is the HUB's newest report (direction artifacts use the
+  // dot-name precisely so they never masquerade as briefs). Only
   // date-stamped run artifacts qualify — reports/ also holds a README.md,
   // which sorts after every "2026-…" name and stole the panel (found live
-  // on first dashboard login, 2026-07-12).
-  const briefs = reports.filter((r) => /^\d{4}-\d{2}-\d{2}-/.test(r) && !r.includes(".direction-"));
+  // on first dashboard login, 2026-07-12). Within a day, names sort by
+  // agent alphabetically, so prefer the configured hub agent (the delivery
+  // matcher's `-{agent}-` convention) and fall back to any dated report.
+  const config = await store.loadConfig().catch(() => null);
+  const hub = config?.direction?.agent ?? config?.delivery?.deliverAgent ?? "chief-of-staff";
+  const dated = reports.filter((r) => /^\d{4}-\d{2}-\d{2}-/.test(r) && !r.includes(".direction-"));
+  const hubReports = dated.filter((r) => r.includes(`-${hub}-`));
+  const briefs = hubReports.length > 0 ? hubReports : dated;
   const latestBriefName = briefs[briefs.length - 1] ?? null;
   const latestBrief = latestBriefName ? await store.readReport(latestBriefName).catch(() => null) : null;
 

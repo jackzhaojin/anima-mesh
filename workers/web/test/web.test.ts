@@ -168,6 +168,18 @@ describe("the dashboard (Q2: view)", () => {
     expect(html).toContain("All quiet; runway is fine.");
     expect(html).not.toContain("NOT a brief");
   });
+
+  it("the latest brief is the HUB's report, not a newer spoke's", async () => {
+    const session = await login();
+    mockGitHubReads();
+    mockHealthz();
+    const res = await SELF.fetch("https://web.test/", { headers: { cookie: `am_session=${session}` } });
+    const html = await res.text();
+    // The research-watch report is dated a day later, but the panel shows
+    // the hub agent's brief (the delivery `-{agent}-` convention).
+    expect(html).toContain("All quiet; runway is fine.");
+    expect(html).not.toContain("spoke noise");
+  });
 });
 
 describe("the one action (Q2: trigger-beat)", () => {

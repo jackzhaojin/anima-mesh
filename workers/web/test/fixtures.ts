@@ -74,6 +74,11 @@ export function brainFiles(): Record<string, string> {
     // "README.md" sorts AFTER every date-stamped name — the live 2026-07-12
     // bug where it stole the "Latest brief" panel. Tests must keep it here.
     "reports/README.md": "# reports/ directory docs — NOT a brief\n",
+    // A NEWER spoke report that sorts after the hub's: the panel must still
+    // show the hub's brief (second live 2026-07-12 lesson — same-day names
+    // sort by agent alphabetically, and the spoke stole the panel).
+    "reports/2026-07-11-research-watch-run0dddd.md":
+      "---\ntype: report\n---\n\n# Spoke findings\n\nspoke noise, not the brief\n",
     "approvals/appr-1.json": JSON.stringify({
       id: "appr-1",
       actionType: "government-filing",
