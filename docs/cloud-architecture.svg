@@ -1,0 +1,169 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 880" font-family="ui-sans-serif, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif">
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#57606a"/>
+    </marker>
+    <marker id="arrow-dashed" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#8c959f"/>
+    </marker>
+  </defs>
+
+  <rect x="0" y="0" width="1280" height="880" fill="#ffffff"/>
+
+  <!-- Title -->
+  <text x="40" y="46" font-size="21" font-weight="700" fill="#1f2328">AnimaMesh cloud tier — one engine, any company's brain</text>
+  <text x="40" y="70" font-size="13" fill="#57606a">Scheduled beats + inbound directions + a founder-only dashboard. Git is the only state; every run lands as a commit.</text>
+
+  <!-- ==================== LEFT: THE PRINCIPAL ==================== -->
+  <text x="160" y="122" font-size="12" font-weight="700" fill="#57606a" text-anchor="middle" letter-spacing="1">THE PRINCIPAL (one human)</text>
+
+  <!-- Discord client -->
+  <rect x="40" y="140" width="240" height="180" rx="10" fill="#eef1fe" stroke="#5865f2" stroke-width="1.5"/>
+  <text x="56" y="168" font-size="15" font-weight="700" fill="#3b45b0">Discord</text>
+  <text x="56" y="190" font-size="12" fill="#3f4660">DMs with the mesh's persona</text>
+  <text x="56" y="210" font-size="12" fill="#3f4660">• sends /direct (any request,</text>
+  <text x="66" y="227" font-size="12" fill="#3f4660">read agentically — no keywords)</text>
+  <text x="56" y="249" font-size="12" fill="#3f4660">• receives the daily brief</text>
+  <text x="56" y="269" font-size="12" fill="#3f4660">• receives direction replies</text>
+  <text x="56" y="289" font-size="12" fill="#3f4660">• receives failure DMs</text>
+
+  <!-- Browser -->
+  <rect x="40" y="480" width="240" height="150" rx="10" fill="#e9f5ee" stroke="#1a7f37" stroke-width="1.5"/>
+  <text x="56" y="508" font-size="15" font-weight="700" fill="#116329">Browser</text>
+  <text x="56" y="530" font-size="12" fill="#2f4a3a">the observability surface:</text>
+  <text x="56" y="550" font-size="12" fill="#2f4a3a">• log in with Google (allowlist)</text>
+  <text x="56" y="570" font-size="12" fill="#2f4a3a">• see beats, ledger, reports,</text>
+  <text x="66" y="587" font-size="12" fill="#2f4a3a">approvals, engine pin</text>
+  <text x="56" y="609" font-size="12" fill="#2f4a3a">• trigger a beat now</text>
+
+  <!-- ==================== CENTER: CLOUDFLARE ==================== -->
+  <rect x="340" y="110" width="540" height="646" rx="14" fill="#fff8f0" stroke="#f6821f" stroke-width="1.5"/>
+  <text x="360" y="136" font-size="12" font-weight="700" fill="#9a5b13" letter-spacing="1">CLOUDFLARE — always on, no servers, nothing runs between events</text>
+
+  <!-- heartbeat Worker -->
+  <rect x="370" y="156" width="480" height="298" rx="10" fill="#ffffff" stroke="#8c959f" stroke-width="1.2"/>
+  <text x="386" y="182" font-size="15" font-weight="700" fill="#1f2328">heartbeat Worker <tspan font-weight="400" fill="#57606a" font-size="12">— the mesh's runtime</tspan></text>
+
+  <!-- HeartbeatDO -->
+  <rect x="390" y="200" width="212" height="158" rx="8" fill="#edf5ff" stroke="#54aeff" stroke-width="1.2"/>
+  <text x="404" y="224" font-size="13.5" font-weight="700" fill="#0a5bd3">HeartbeatDO</text>
+  <text x="404" y="246" font-size="12" fill="#33445c">daily alarm, DST-correct</text>
+  <text x="404" y="266" font-size="12" fill="#33445c">runs every due agent</text>
+  <text x="404" y="286" font-size="12" fill="#33445c">spokes first, hub last;</text>
+  <text x="404" y="303" font-size="12" fill="#33445c">a failed spoke never</text>
+  <text x="404" y="320" font-size="12" fill="#33445c">kills the beat</text>
+  <text x="404" y="343" font-size="12" fill="#33445c" font-style="italic">re-arms in finally</text>
+
+  <!-- DirectionDO -->
+  <rect x="618" y="200" width="212" height="158" rx="8" fill="#edf5ff" stroke="#54aeff" stroke-width="1.2"/>
+  <text x="632" y="224" font-size="13.5" font-weight="700" fill="#0a5bd3">DirectionDO</text>
+  <text x="632" y="246" font-size="12" fill="#33445c">inbound queue + daily</text>
+  <text x="632" y="263" font-size="12" fill="#33445c">budget + sender gate</text>
+  <text x="632" y="285" font-size="12" fill="#33445c">drains on an immediate</text>
+  <text x="632" y="302" font-size="12" fill="#33445c">alarm; one agentic run</text>
+  <text x="632" y="319" font-size="12" fill="#33445c">per message</text>
+  <text x="632" y="343" font-size="12" fill="#33445c" font-style="italic">optional Gmail poll</text>
+
+  <!-- routes strip -->
+  <text x="610" y="390" font-size="11.5" fill="#57606a" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, monospace">GET /healthz · POST /beat (bearer token) · POST /interactions (Ed25519)</text>
+  <text x="610" y="410" font-size="11.5" fill="#57606a" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, monospace">GET /.well-known/agent-card.json</text>
+  <text x="610" y="440" font-size="11.5" fill="#9a5b13" text-anchor="middle" font-style="italic">replies go out only AFTER the evidence commit lands</text>
+
+  <!-- web Worker -->
+  <rect x="370" y="536" width="480" height="196" rx="10" fill="#ffffff" stroke="#8c959f" stroke-width="1.2"/>
+  <text x="386" y="562" font-size="15" font-weight="700" fill="#1f2328">web Worker <tspan font-weight="400" fill="#57606a" font-size="12">— the dashboard (a separate deploy)</tspan></text>
+  <text x="386" y="588" font-size="12" fill="#33445c">in-Worker Google OIDC; email allowlist re-checked on EVERY request</text>
+  <text x="386" y="608" font-size="12" fill="#33445c">nothing is served unauthenticated — strangers see only a login redirect</text>
+  <text x="386" y="628" font-size="12" fill="#33445c">server-rendered HTML: last beat, ledger tail, reports, pending approvals</text>
+  <text x="386" y="648" font-size="12" fill="#33445c">narrow env: read token + beat trigger only — it can neither think nor</text>
+  <text x="386" y="665" font-size="12" fill="#33445c">speak as the persona</text>
+  <text x="386" y="690" font-size="11.5" fill="#57606a" font-family="ui-monospace, SFMono-Regular, Menlo, monospace">/ · /auth/login · /auth/callback · /logout · POST /actions/beat</text>
+
+  <!-- web -> heartbeat internal arrow -->
+  <path d="M 610 536 L 610 458" stroke="#57606a" stroke-width="1.3" fill="none" marker-end="url(#arrow)"/>
+  <text x="622" y="492" font-size="11" fill="#57606a">POST /beat</text>
+  <text x="622" y="507" font-size="11" fill="#57606a">(token stays server-side)</text>
+
+  <!-- ==================== RIGHT: GITHUB + MODELS + LAPTOP ==================== -->
+
+  <!-- GitHub brain -->
+  <rect x="940" y="140" width="300" height="252" rx="10" fill="#f6f8fa" stroke="#57606a" stroke-width="1.5"/>
+  <text x="956" y="168" font-size="15" font-weight="700" fill="#1f2328">the brain — private GitHub repo</text>
+  <text x="956" y="190" font-size="12" fill="#414a55">bundle/ (facts · decisions · agents ·</text>
+  <text x="966" y="207" font-size="12" fill="#414a55">constitution — one concept per file)</text>
+  <text x="956" y="229" font-size="12" fill="#414a55">ledger/actions.jsonl (append-only)</text>
+  <text x="956" y="249" font-size="12" fill="#414a55">reports/ · approvals/ · drafts/</text>
+  <line x1="956" y1="264" x2="1224" y2="264" stroke="#d0d7de"/>
+  <text x="956" y="286" font-size="12" fill="#414a55" font-weight="600">read: one tarball per run</text>
+  <text x="956" y="306" font-size="12" fill="#414a55" font-weight="600">write: one commit per beat/drain,</text>
+  <text x="966" y="323" font-size="12" fill="#414a55" font-weight="600">authored by the mesh, never forced</text>
+  <text x="956" y="349" font-size="12" fill="#57606a" font-style="italic">git log is the audit trail</text>
+  <text x="956" y="374" font-size="12" fill="#57606a" font-style="italic">swap the repo → run another company</text>
+
+  <!-- Model APIs -->
+  <rect x="940" y="452" width="300" height="128" rx="10" fill="#faf5ff" stroke="#8250df" stroke-width="1.5"/>
+  <text x="956" y="480" font-size="15" font-weight="700" fill="#6639ba">model vendor APIs</text>
+  <text x="956" y="502" font-size="12" fill="#4a3f63">pure fetch — no SDKs, no subprocesses</text>
+  <text x="956" y="522" font-size="12" fill="#4a3f63">each agent declares model + harness;</text>
+  <text x="956" y="539" font-size="12" fill="#4a3f63">cognition.overrides reroutes per instance</text>
+  <text x="956" y="561" font-size="12" fill="#6e5a94" font-style="italic">gateway traps: see docs/learnings/</text>
+
+  <!-- Laptop tier -->
+  <rect x="940" y="628" width="300" height="112" rx="10" fill="none" stroke="#8c959f" stroke-width="1.3" stroke-dasharray="6 4"/>
+  <text x="956" y="656" font-size="15" font-weight="700" fill="#57606a">laptop tier (optional)</text>
+  <text x="956" y="678" font-size="12" fill="#57606a">the same engine via CLI over a clone —</text>
+  <text x="956" y="695" font-size="12" fill="#57606a">safe second writer (pull --rebase first);</text>
+  <text x="956" y="712" font-size="12" fill="#57606a">home of the subprocess harnesses</text>
+
+  <!-- ==================== ARROWS: DISCORD <-> WORKER ==================== -->
+  <!-- 1: /direct in -->
+  <path d="M 280 205 L 366 205" stroke="#57606a" stroke-width="1.3" fill="none" marker-end="url(#arrow)"/>
+  <circle cx="302" cy="205" r="9" fill="#5865f2"/>
+  <text x="302" y="209" font-size="11" fill="#ffffff" text-anchor="middle" font-weight="700">1</text>
+  <text x="332" y="196" font-size="11" fill="#57606a" text-anchor="middle">/direct</text>
+
+  <!-- 2: deferred reply out -->
+  <path d="M 370 258 L 284 258" stroke="#57606a" stroke-width="1.3" fill="none" marker-end="url(#arrow)"/>
+  <circle cx="348" cy="258" r="9" fill="#5865f2"/>
+  <text x="348" y="262" font-size="11" fill="#ffffff" text-anchor="middle" font-weight="700">2</text>
+  <text x="316" y="249" font-size="11" fill="#57606a" text-anchor="middle">reply</text>
+
+  <!-- 3: daily brief out -->
+  <path d="M 370 305 L 284 305" stroke="#57606a" stroke-width="1.3" fill="none" marker-end="url(#arrow)"/>
+  <circle cx="348" cy="305" r="9" fill="#5865f2"/>
+  <text x="348" y="309" font-size="11" fill="#ffffff" text-anchor="middle" font-weight="700">3</text>
+  <text x="316" y="296" font-size="11" fill="#57606a" text-anchor="middle">daily brief</text>
+
+  <!-- ==================== ARROWS: WORKER <-> GITHUB ==================== -->
+  <path d="M 936 218 L 854 218" stroke="#57606a" stroke-width="1.3" fill="none" marker-end="url(#arrow)"/>
+  <text x="895" y="208" font-size="11" fill="#57606a" text-anchor="middle">reads: one tarball</text>
+  <path d="M 850 268 L 936 268" stroke="#57606a" stroke-width="1.3" fill="none" marker-end="url(#arrow)"/>
+  <text x="895" y="288" font-size="11" fill="#57606a" text-anchor="middle">writes: one commit</text>
+
+  <!-- ==================== ARROW: WORKER -> MODELS ==================== -->
+  <path d="M 850 350 C 905 350, 905 490, 936 490" stroke="#57606a" stroke-width="1.3" fill="none" marker-end="url(#arrow)"/>
+  <text x="901" y="425" font-size="11" fill="#57606a" text-anchor="middle">cognition</text>
+  <text x="901" y="440" font-size="11" fill="#57606a" text-anchor="middle">(pure fetch)</text>
+
+  <!-- ==================== ARROW: WEB -> GITHUB (through the channel between zones) ==================== -->
+  <path d="M 854 640 C 914 640, 914 480, 958 398" stroke="#57606a" stroke-width="1.3" fill="none" marker-end="url(#arrow)"/>
+  <text x="908" y="666" font-size="11" fill="#57606a" text-anchor="middle">reads the brain</text>
+  <text x="908" y="681" font-size="11" fill="#57606a" text-anchor="middle">(view only)</text>
+
+  <!-- ==================== ARROWS: BROWSER <-> WEB WORKER ==================== -->
+  <path d="M 280 545 L 366 545" stroke="#57606a" stroke-width="1.3" fill="none" marker-end="url(#arrow)"/>
+  <text x="323" y="537" font-size="11" fill="#57606a" text-anchor="middle">Google OIDC</text>
+  <path d="M 370 592 L 284 592" stroke="#57606a" stroke-width="1.3" fill="none" marker-end="url(#arrow)"/>
+  <text x="323" y="612" font-size="11" fill="#57606a" text-anchor="middle">dashboard HTML</text>
+
+  <!-- ==================== ARROW: LAPTOP <-> GITHUB (outer right channel) ==================== -->
+  <path d="M 1240 684 C 1270 684, 1270 330, 1244 316" stroke="#8c959f" stroke-width="1.3" fill="none" stroke-dasharray="6 4" marker-end="url(#arrow-dashed)"/>
+  <text transform="rotate(-90 1262 502)" x="1262" y="502" font-size="11" fill="#8c959f" text-anchor="middle">git pull / push</text>
+
+  <!-- ==================== LEGEND ==================== -->
+  <line x1="40" y1="772" x2="1240" y2="772" stroke="#d0d7de"/>
+  <text x="40" y="796" font-size="12" fill="#414a55"><tspan font-weight="700" fill="#3b45b0">1→2 a direction:</tspan> the principal messages the mesh → Ed25519 signature + sender gate + daily budget → DirectionDO queues it → an agent reads it</text>
+  <text x="132" y="814" font-size="12" fill="#414a55">with full brain context and decides the disposition itself → evidence commit → the deferred reply.</text>
+  <text x="40" y="838" font-size="12" fill="#414a55"><tspan font-weight="700" fill="#3b45b0">3 a beat:</tspan> the daily alarm fires → read the brain → run every due agent → verify at the seams → one commit → the hub's brief lands in Discord.</text>
+  <text x="40" y="862" font-size="12" fill="#414a55"><tspan font-weight="700" fill="#116329">the dashboard:</tspan> Google-authenticated, allowlisted, read-only + one action — it observes the same git evidence everything else writes.</text>
+</svg>

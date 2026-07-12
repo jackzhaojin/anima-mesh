@@ -74,11 +74,13 @@ your-brain/                      ← private instance (yours, never public)
   with a paper trail.
 - **The model chokepoint.** Each agent concept declares its `model` and
   `harness`; swapping vendors is a config edit, never a rebuild. Shipped
-  harnesses: `moonshot-api` (pure fetch, OpenAI-compatible — the only one a
-  cloud beat may run), `claude-code` (headless CLI), `claude-agent-sdk`
-  (Claude on subscription auth; subprocess, so laptop-tier by architecture),
-  `opencode` (any opencode-configured model), `fake` (deterministic, for the
-  regression suite).
+  harnesses: `moonshot-api` and `anthropic-api` (pure fetch — the two a cloud
+  beat may run), `claude-code` (headless CLI), `claude-agent-sdk`
+  (subprocess, laptop-tier by architecture), `opencode` (any
+  opencode-configured model), `fake` (deterministic, for the regression
+  suite). An instance can redirect a declared harness at runtime via
+  `animamesh.config.json → cognition.overrides` — vendor trouble becomes a
+  config edit, with the agent's declared identity untouched.
 - **Two runtimes, one engine.** The same heartbeat runs from a laptop CLI
   over a local directory, or from a **Cloudflare Worker + Durable Object
   alarm** (`workers/heartbeat/`) over a GitHub-hosted brain — the
@@ -97,6 +99,15 @@ your-brain/                      ← private instance (yours, never public)
   every heartbeat — with age — until done. Heartbeats are resilient (a failed
   spoke never kills the beat) and daily means *daily*: local-calendar
   semantics, immune to odd-hour manual runs.
+- **The principal reaches the mesh, too — agentically.** A **direction** is
+  the second entry point beside the heartbeat: an inbound message (Discord
+  slash command via Ed25519-verified interactions, or a polled Gmail inbox)
+  becomes one agentic run — the model reads the message with full bundle
+  context and decides the disposition itself; no keyword routing exists.
+  Directions are sender-allowlisted and budget-capped at the channel edge,
+  ledgered as `direction-*` actions, and reply only **after** the evidence
+  commit lands. A separate `workers/web` Worker gives the principal a
+  Google-OIDC dashboard (allowlist-only, nothing served unauthenticated).
 
 ## Quickstart
 
@@ -128,11 +139,18 @@ out** — checked by the same validator every instance is checked by.
 
 | Where | What |
 |---|---|
+| [docs/](docs/README.md) | **The operator's shelf — start here**, with a read order for new sessions |
+| [docs/architecture.md](docs/architecture.md) | The whole system on one page: cloud diagram, Discord flows, design constraints |
+| [docs/starting-a-company.md](docs/starting-a-company.md) | Empty directory → a mesh running a real company (repeatable for company #2, #3, …) |
+| [docs/deploying-cloud.md](docs/deploying-cloud.md) | Generic Cloudflare runbook: two Workers, secrets contract, Discord wiring |
+| [docs/engine-vs-instance.md](docs/engine-vs-instance.md) | The sorting rule: what belongs in this public engine vs a private brain |
+| [docs/learnings/](docs/learnings/README.md) | Hard-won platform knowledge (vendor gateways, Workers egress, …) with evidence |
 | [CLAUDE.md](CLAUDE.md) | Working agreements for AI coding sessions in this repo |
 | [src/README.md](src/README.md) | Module-by-module architecture map |
 | [templates/README.md](templates/README.md) | The agent roster templates and their placeholder contract |
 | [test/README.md](test/README.md) | What the regression suite guarantees and how to extend it |
-| [workers/heartbeat/README.md](workers/heartbeat/README.md) | The cloud-tier heartbeat Worker and how instances deploy it |
+| [workers/heartbeat/README.md](workers/heartbeat/README.md) | The cloud-tier heartbeat + direction Worker and how instances deploy it |
+| [workers/web/README.md](workers/web/README.md) | The principal's dashboard Worker (Google OIDC, allowlist-only) |
 | [references/README.md](references/README.md) | Proof-of-concept integrations that informed the design |
 
 ## Testing
@@ -145,9 +163,13 @@ conformance and complete a full agent run against the fake provider.
 
 ## Status
 
-v0.3.0 — pre-release. Package name on npm to be confirmed; pinned consumers
-should reference the repo by tag. v0.3.0 adds the storage seam
-(`InstanceStore`: fs + GitHub), the `moonshot-api` and `claude-agent-sdk`
-providers, and the `workers/heartbeat` cloud tier.
+v0.5.2 — pre-release. Package name on npm to be confirmed; pinned consumers
+should reference the repo by tag. Highlights by line: v0.3 the storage seam
+(`InstanceStore`: fs + GitHub) and the `workers/heartbeat` cloud tier; v0.4
+directions (Discord interactions + Gmail poll), the `workers/web` dashboard,
+golden-day + AI-driven eval gates; v0.5 the `anthropic-api` provider
+(subscription OAuth over plain fetch) and `cognition.overrides`. Patch tags
+carry fixes — see [docs/learnings/](docs/learnings/README.md) for the ones
+worth reading.
 
 Apache-2.0 © 2026 Jack Jin — see [LICENSE](LICENSE)

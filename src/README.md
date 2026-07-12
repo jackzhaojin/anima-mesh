@@ -72,10 +72,17 @@ model-related crosses this seam and nothing else does.
   of what a cloud beat may run — and `resolveProvider(harness, ctx?)`, where
   `ctx` (`ApiProviderContext`: injected env + fetchImpl) binds API providers
   to Worker secrets or an instance's `.env` files.
-- `moonshot-api.ts` — OpenAI-compatible chat completions by pure fetch: the
-  cloud tier's cognition. `MOONSHOT_BASE_URL` overrides the endpoint
-  (subscription keys are endpoint-scoped); 429/5xx backoff; no `temperature`
-  (some models hard-reject non-defaults); tokens surfaced to the ledger.
+- `moonshot-api.ts` — OpenAI-compatible chat completions by pure fetch.
+  `MOONSHOT_BASE_URL` overrides the endpoint (subscription keys are
+  endpoint-scoped); 429/5xx backoff; no `temperature` (some models
+  hard-reject non-defaults); tokens surfaced to the ledger.
+- `anthropic-api.ts` — Claude Messages API by pure fetch on a subscription
+  OAuth token (`CLAUDE_CODE_OAUTH_TOKEN`): Workers-capable Claude cognition,
+  no SDK, no subprocess, no metered key. **The system prompt shape is
+  load-bearing**: identity sentence as its own first block, or the gateway
+  rejects large requests (docs/learnings/2026-07-12). Error paths
+  distinguish quota 429s (window status + reset time appended) from
+  request-shape 429s, and name HTML block pages instead of spraying markup.
 - `node-providers.ts` — the subprocess providers, registered as an import
   side effect by Node entrypoints only (never by `workers/`):
   - `claude-code.ts` — spawns `claude -p … --output-format text`.
@@ -108,10 +115,23 @@ default the store to the local directory and register subprocess providers.
   cron drift; spokes first, hub last; **one spoke's failure never aborts the
   beat**; commercial agents skip while dual-gated; `cloudTier: true` skips
   any harness not in `CLOUD_HARNESSES`, with reason.
+- `direction-core.ts` — `runDirectionCore`: the second entry point beside the
+  heartbeat. An inbound principal message (Discord interaction, polled email)
+  becomes ONE agentic run with full bundle context; the model decides the
+  disposition itself (answer / recommend / flag / "nothing to do") — no
+  keyword routing. Ledger actions are `direction-*` (never `run-*`, so a
+  midday direction can't eat tomorrow's daily dedup); the artifact is
+  `{date}-{agent}.direction-{runid}.md` (the dot keeps brief delivery blind
+  to it); replies are cut at 1900 chars for channel limits. Sender gating
+  and budgets live at the channel edge (the Worker), not here.
 - `verifiers-core.ts` / `verifiers.ts` — the three seam checks
   (+ conformance): expected outputs exist, no gated ledger entry without its
   approval, all declared actions logged, bundle still conformant. Store-aware
   variants in core; disk-fidelity wrappers for the CLI.
+- Cognition routing: `effectiveCognition(agent, config)` (in `agents/`)
+  applies `config.cognition.overrides` — the declared harness/model stays
+  the agent's identity; the override is what actually runs, is what the
+  cloud gate judges, and is what evidence records.
 
 ## channels/ + a2a/ — reaching the principal, and the world
 
@@ -122,16 +142,23 @@ default the store to the local directory and register subprocess providers.
   (`streaming: false` — short connections by design; dual-gated commercial
   agents are not advertised). `a2a/card.ts` is the fs wrapper.
 
-## workers/heartbeat/ — the cloud tier (repo root, own workspace)
+## workers/ — the cloud tier (repo root, own workspaces)
 
-A Cloudflare Worker + one Durable Object: DST-correct daily alarm
-(`alarm-time.ts`), beat mutex, `runCloudBeat` = `heartbeatCore` over a
-`GitHubInstanceStore` with `moonshot-api` cognition, one commit per beat,
-brief delivery + failure DM ("silence must mean success"). Routes:
-`/healthz`, token-gated `POST /beat`, `/.well-known/agent-card.json`.
-`test/workers-imports.test.ts` walks its import graph and fails on any
-`node:*` or subprocess module. Deploy config lives in the instance repo;
-`wrangler.example.jsonc` here is a template.
+`workers/heartbeat/`: a Cloudflare Worker + two Durable Objects. `HeartbeatDO`
+holds the DST-correct daily alarm (`alarm-time.ts`) and beat mutex;
+`runCloudBeat` = `heartbeatCore` over a `GitHubInstanceStore` with fetch-based
+cognition (`CLOUD_HARNESSES`), one commit per beat, brief delivery + failure
+DM ("silence must mean success"). `DirectionDO` owns the inbound side:
+Ed25519-verified Discord interactions (`interactions.ts`), sender allowlist,
+per-day budget, optional Gmail poll, queue + immediate alarm drain →
+`runDirectionCore`, deferred replies sent only after the evidence commit.
+Routes: `/healthz`, token-gated `POST /beat`, `POST /interactions`,
+`/.well-known/agent-card.json`. `test/workers-imports.test.ts` walks the
+import graph and fails on any `node:*` or subprocess module. Deploy config
+lives in the instance repo; `wrangler.example.jsonc` here is a template.
+
+`workers/web/`: the principal's dashboard (in-Worker Google OIDC, allowlist
+re-checked per request, narrow env) — see `workers/web/README.md`.
 
 ## init/ — a brain from nothing
 

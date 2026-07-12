@@ -1,7 +1,9 @@
 # CLAUDE.md — anima-mesh (public engine)
 
 Working agreements for AI sessions in this repo. Read [README.md](README.md)
-first for what AnimaMesh is; this file is about how to work on it.
+first for what AnimaMesh is, then [docs/README.md](docs/README.md) — the
+operator's shelf, with a read order for new sessions; this file is about how
+to work on the code.
 
 ## The one hard rule
 
@@ -11,6 +13,10 @@ uses the engine. Identity is configuration (`{{PLACEHOLDER}}` vars in
 templates, `animamesh.config.json` in instances) — never a literal in engine
 code, templates, tests, or docs. Before any commit: scan the diff for instance
 names, real emails, and secrets. `.env*` files never enter this repo.
+When unsure whether knowledge is engine-general or instance-specific, run the
+checklist in [docs/engine-vs-instance.md](docs/engine-vs-instance.md).
+Platform lessons learned in production go in [docs/learnings/](docs/learnings/README.md)
+— symptom-first, with evidence, de-identified.
 
 ## Commands
 
@@ -35,16 +41,23 @@ src/
   autonomy/     L1→L4 ladder; external actions ALWAYS gated, even at L4
   agents/       AgentConcept from concept files · D11 commercial dual-gate
   providers/    THE CHOKEPOINT: AgentWorkerProvider seam + registry.
-                index.ts is the Workers-safe core (moonshot-api, fake,
-                CLOUD_HARNESSES, resolveProvider(harness, ctx?));
+                index.ts is the Workers-safe core (moonshot-api, anthropic-api,
+                fake, CLOUD_HARNESSES, resolveProvider(harness, ctx?));
                 node-providers.ts registers the subprocess ones on import
-                (claude-code, claude-agent-sdk, opencode) — Node entrypoints only
+                (claude-code, claude-agent-sdk, opencode) — Node entrypoints only.
+                anthropic-api = subscription OAuth over plain fetch; its system
+                prompt SHAPE is load-bearing (docs/learnings/2026-07-12)
   instance/     config loading/resolution · THE STORAGE SEAM: store.ts
                 interface, store-fs (local), store-github (tarball read,
                 one commit per flush, never force) · tar.ts · github-auth.ts
   harness/      run-core/heartbeat-core (Workers-safe; store required;
-                tz-aware dates; cloudTier skips non-CLOUD_HARNESSES) with
-                run.ts/heartbeat.ts Node wrappers · verifiers(-core)
+                tz-aware dates; cloudTier skips non-CLOUD_HARNESSES; the
+                EFFECTIVE harness — after config cognition.overrides — is
+                what's gated and recorded) with run.ts/heartbeat.ts Node
+                wrappers · direction-core (inbound message → ONE agentic run;
+                direction-* ledger actions so directions never eat the daily
+                dedup; dot-named artifacts so brief delivery skips them) ·
+                verifiers(-core)
   channels/     delivery registry (registry.ts, Workers-safe: discord/notion/
                 gmail/console, injected env) · index.ts fs wrapper
   a2a/          agent card: card-core.ts pure assembly · card.ts fs wrapper
@@ -54,8 +67,13 @@ src/
                 code, driven in-process by tests; `github:owner/repo#ref`
                 instance scheme runs against a remote brain
 workers/heartbeat/  the cloud tier: Worker + HeartbeatDO (DST-correct daily
-                alarm, beat mutex) — own workspace, pure Web platform;
-                deploy config lives in the INSTANCE repo
+                alarm, beat mutex) + DirectionDO (direction queue, Ed25519
+                Discord interactions, optional Gmail poll, daily budget) —
+                own workspace, pure Web platform; deploy config lives in the
+                INSTANCE repo
+workers/web/    the principal's dashboard Worker: in-Worker Google OIDC,
+                email allowlist re-checked per request, narrow env (no
+                cognition/persona secrets) — see workers/web/README.md
 templates/agents/   the shipped roster (see templates/README.md)
 test/               regression suite (see test/README.md)
 references/poc/     read-only PoC examples — NOT engine code, excluded from tsconfig
