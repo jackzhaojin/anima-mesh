@@ -40,6 +40,14 @@ async function login(email = "principal@example.test"): Promise<string> {
     { headers: { cookie: `am_state=${stateCookie}` }, redirect: "manual" },
   );
   expect(cb.status).toBe(302);
+  // Browser-real invariant (the Chrome comma lesson, 2026-07-12): cookies
+  // must be SEPARATE Set-Cookie lines. A joined header parses in a real
+  // browser as one cookie whose trailing Max-Age=0 expires the session.
+  const setCookies = cb.headers.getSetCookie?.() ?? [];
+  expect(setCookies).toHaveLength(2);
+  for (const line of setCookies) expect(line).not.toContain(",");
+  const sessionLine = setCookies.find((l) => l.startsWith("am_session="))!;
+  expect(sessionLine).toContain("Max-Age=604800");
   const session = cookieOf(cb, "am_session");
   expect(session).not.toBeNull();
   return session!;

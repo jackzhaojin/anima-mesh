@@ -162,18 +162,17 @@ export async function handleCallback(req: Request, env: Env, origin: string): Pr
     env.SESSION_SECRET,
     b64urlEncode(enc.encode(JSON.stringify({ email: claims.email, exp: Math.floor(Date.now() / 1000) + SESSION_TTL_S }))),
   );
+  // Set-Cookie headers MUST be separate header lines (Headers.append) —
+  // browsers do NOT split Set-Cookie on commas, so a joined header parses
+  // as ONE cookie whose trailing Max-Age=0 immediately expires the session
+  // (found live in Chrome 2026-07-12; workerd tests round-tripped the
+  // joined form through our own parser and missed it).
+  const headers = new Headers({ Location: "/" });
+  headers.append("Set-Cookie", cookie(SESSION_COOKIE, session, SESSION_TTL_S));
+  headers.append("Set-Cookie", cookie(STATE_COOKIE, "", 0)); // state is single-use
   return {
     ok: true,
-    response: new Response(null, {
-      status: 302,
-      headers: {
-        Location: "/",
-        "Set-Cookie": [
-          cookie(SESSION_COOKIE, session, SESSION_TTL_S),
-          cookie(STATE_COOKIE, "", 0), // state is single-use
-        ].join(", "),
-      },
-    }),
+    response: new Response(null, { status: 302, headers }),
   };
 }
 
