@@ -156,6 +156,18 @@ describe("the dashboard (Q2: view)", () => {
     expect(html.indexOf("Latest brief")).toBeGreaterThan(-1);
     expect(html).not.toContain("secret question"); // direction body not inlined as the brief
   });
+
+  it("the latest brief is never reports/README.md (only date-stamped artifacts qualify)", async () => {
+    const session = await login();
+    mockGitHubReads();
+    mockHealthz();
+    const res = await SELF.fetch("https://web.test/", { headers: { cookie: `am_session=${session}` } });
+    const html = await res.text();
+    // README.md sorts after every "2026-…" name; it stole the panel live on
+    // first dashboard login (2026-07-12). The real brief must win.
+    expect(html).toContain("All quiet; runway is fine.");
+    expect(html).not.toContain("NOT a brief");
+  });
 });
 
 describe("the one action (Q2: trigger-beat)", () => {

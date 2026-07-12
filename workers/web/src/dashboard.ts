@@ -67,8 +67,11 @@ export async function gatherDashboard(env: Env): Promise<DashboardData> {
   ]);
 
   // The newest non-direction report is "the brief" (direction artifacts use
-  // the dot-name precisely so they never masquerade as briefs).
-  const briefs = reports.filter((r) => !r.includes(".direction-"));
+  // the dot-name precisely so they never masquerade as briefs). Only
+  // date-stamped run artifacts qualify — reports/ also holds a README.md,
+  // which sorts after every "2026-…" name and stole the panel (found live
+  // on first dashboard login, 2026-07-12).
+  const briefs = reports.filter((r) => /^\d{4}-\d{2}-\d{2}-/.test(r) && !r.includes(".direction-"));
   const latestBriefName = briefs[briefs.length - 1] ?? null;
   const latestBrief = latestBriefName ? await store.readReport(latestBriefName).catch(() => null) : null;
 

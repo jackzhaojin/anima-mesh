@@ -71,6 +71,9 @@ export function brainFiles(): Record<string, string> {
       "---\ntype: report\n---\n\n# The daily brief\n\nAll quiet; runway is fine.\n",
     "reports/2026-07-11-chief-of-staff.direction-run0bbbb.md":
       "---\ntype: report\ntrigger: direction\n---\n\n## Direction received\n\nsecret question\n\n## Disposition\n\nanswered\n",
+    // "README.md" sorts AFTER every date-stamped name — the live 2026-07-12
+    // bug where it stole the "Latest brief" panel. Tests must keep it here.
+    "reports/README.md": "# reports/ directory docs — NOT a brief\n",
     "approvals/appr-1.json": JSON.stringify({
       id: "appr-1",
       actionType: "government-filing",
