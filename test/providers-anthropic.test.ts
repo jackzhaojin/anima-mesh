@@ -79,6 +79,26 @@ describe("anthropic-api provider (subscription OAuth over plain fetch)", () => {
     expect(fetchImpl).toHaveBeenCalledTimes(1);
   });
 
+  it("a 429 names the shared window and its reset time — never a bare 'Error'", async () => {
+    // Fresh Response per attempt — a reused one has a consumed body on retry.
+    const fetchImpl = vi.fn().mockImplementation(async () =>
+      new Response('{"type":"error","error":{"type":"rate_limit_error","message":"Error"}}', {
+        status: 429,
+        headers: {
+          "anthropic-ratelimit-unified-5h-status": "rejected",
+          "anthropic-ratelimit-unified-5h-reset": "1783906200",
+        },
+      }),
+    );
+    const provider = createAnthropicApiProvider({ env: ENV, fetchImpl, retryDelaysMs: [0] });
+    const err = await provider.run({ prompt: "p", cwd: "/" }).catch((e: Error) => e);
+    expect((err as Error).message).toContain("HTTP 429");
+    expect((err as Error).message).toContain("rate_limit_error");
+    expect((err as Error).message).toContain("5h window: rejected");
+    expect((err as Error).message).toContain("resets 2026-07-13T01:30:00.000Z");
+    expect((err as Error).message).toContain("shared with Claude Code sessions");
+  });
+
   it("retries 429/5xx then succeeds", async () => {
     const fetchImpl = vi
       .fn()

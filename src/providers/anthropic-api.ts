@@ -108,9 +108,21 @@ export function createAnthropicApiProvider(ctx: ApiProviderContext = {}): AgentW
         const raw = await res.text().catch(() => "");
         // An HTML body is an edge/WAF block page, not an API error — name it
         // (the api.kimi.com lesson, 2026-07-11).
-        const errBody = raw.trimStart().startsWith("<")
+        let errBody = raw.trimStart().startsWith("<")
           ? "(HTML block page from the endpoint's edge — this network is blocked from calling the endpoint; the API itself was never reached)"
           : raw.slice(0, 200);
+        if (res.status === 429) {
+          // The subscription's unified window is SHARED with Claude Code
+          // sessions — a bare "rate_limit_error" is undiagnosable without
+          // these (the 2026-07-12 /direct triage lesson).
+          const util = res.headers.get("anthropic-ratelimit-unified-5h-status");
+          const reset = Number(res.headers.get("anthropic-ratelimit-unified-5h-reset"));
+          const detail = [
+            util ? `5h window: ${util}` : null,
+            Number.isFinite(reset) && reset > 0 ? `resets ${new Date(reset * 1000).toISOString()}` : null,
+          ].filter(Boolean);
+          if (detail.length) errBody += ` [${detail.join(", ")} — quota is shared with Claude Code sessions]`;
+        }
         const retryable = res.status === 429 || res.status >= 500;
         if (retryable && attempt < retryDelays.length) {
           const retryAfter = Number(res.headers.get("retry-after"));
