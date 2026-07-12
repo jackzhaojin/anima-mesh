@@ -29,9 +29,18 @@ describe("anthropic-api provider (subscription OAuth over plain fetch)", () => {
     const body = JSON.parse(init.body);
     expect(body.model).toBe("claude-sonnet-5");
     expect(body.max_tokens).toBe(8192);
-    // The OAuth gateway requires the system prompt to BEGIN with the
-    // Claude Code identity sentence.
-    expect(body.system.startsWith("You are Claude Code, Anthropic's official CLI for Claude.")).toBe(true);
+    // The OAuth gateway validates the FIRST system block is EXACTLY the
+    // Claude Code identity sentence — its own array entry, nothing appended.
+    // Concatenating routes large requests to the disabled overage lane
+    // (bare 429 "Error") — bisected live 2026-07-12.
+    expect(Array.isArray(body.system)).toBe(true);
+    expect(body.system[0]).toEqual({
+      type: "text",
+      text: "You are Claude Code, Anthropic's official CLI for Claude.",
+    });
+    for (const block of body.system.slice(1)) {
+      expect(block.text).not.toContain("You are Claude Code");
+    }
     expect(body.messages).toEqual([{ role: "user", content: "do the thing" }]);
 
     expect(result.text).toBe("the report");
@@ -97,6 +106,17 @@ describe("anthropic-api provider (subscription OAuth over plain fetch)", () => {
     expect((err as Error).message).toContain("5h window: rejected");
     expect((err as Error).message).toContain("resets 2026-07-13T01:30:00.000Z");
     expect((err as Error).message).toContain("shared with Claude Code sessions");
+  });
+
+  it("a 429 WITHOUT quota headers names the request-shape rejection (the 2026-07-12 root cause)", async () => {
+    const fetchImpl = vi.fn().mockImplementation(async () =>
+      new Response('{"type":"error","error":{"type":"rate_limit_error","message":"Error"}}', { status: 429 }),
+    );
+    const provider = createAnthropicApiProvider({ env: ENV, fetchImpl, retryDelaysMs: [0] });
+    const err = await provider.run({ prompt: "p", cwd: "/" }).catch((e: Error) => e);
+    expect((err as Error).message).toContain("HTTP 429");
+    expect((err as Error).message).toContain("rejected the request shape");
+    expect((err as Error).message).toContain("system identity block");
   });
 
   it("retries 429/5xx then succeeds", async () => {

@@ -25,11 +25,16 @@ const DEFAULT_TIMEOUT_MS = 10 * 60 * 1000;
 const DEFAULT_RETRY_DELAYS_MS = [2_000, 8_000];
 const ANTHROPIC_VERSION = "2023-06-01";
 const OAUTH_BETA = "oauth-2025-04-20";
-// The gateway rejects OAuth-token requests whose system prompt doesn't
-// start with this exact sentence.
+// The gateway validates that the FIRST system block is EXACTLY this
+// sentence — its own block in an array, never concatenated with anything.
+// A concatenated string passes for small requests but routes large ones to
+// the overage billing lane (org-disabled → bare 429 "Error", no quota
+// headers). Bisected live 2026-07-12; matches anthropics/claude-code#40515.
 const IDENTITY = "You are Claude Code, Anthropic's official CLI for Claude.";
-const SYSTEM_PROMPT =
-  `${IDENTITY}\n\nYou are an agent worker in an AnimaMesh mesh; return only your report body as markdown.`;
+const SYSTEM_BLOCKS = [
+  { type: "text", text: IDENTITY },
+  { type: "text", text: "You are an agent worker in an AnimaMesh mesh; return only your report body as markdown." },
+];
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
@@ -62,7 +67,7 @@ export function createAnthropicApiProvider(ctx: ApiProviderContext = {}): AgentW
       const body = JSON.stringify({
         model,
         max_tokens: 8192,
-        system: SYSTEM_PROMPT,
+        system: SYSTEM_BLOCKS,
         messages: [{ role: "user", content: opts.prompt }],
       });
 
@@ -121,7 +126,16 @@ export function createAnthropicApiProvider(ctx: ApiProviderContext = {}): AgentW
             util ? `5h window: ${util}` : null,
             Number.isFinite(reset) && reset > 0 ? `resets ${new Date(reset * 1000).toISOString()}` : null,
           ].filter(Boolean);
-          if (detail.length) errBody += ` [${detail.join(", ")} — quota is shared with Claude Code sessions]`;
+          if (detail.length) {
+            errBody += ` [${detail.join(", ")} — quota is shared with Claude Code sessions]`;
+          } else {
+            // No quota headers at all = the OAuth gateway rejected the
+            // REQUEST SHAPE (overage-lane routing), not the quota — the
+            // 2026-07-12 root cause. Should not recur with block-form
+            // system prompts, but if it does, name it.
+            errBody +=
+              " [no quota headers — the OAuth gateway rejected the request shape, not the quota; verify the system identity block]";
+          }
         }
         const retryable = res.status === 429 || res.status >= 500;
         if (retryable && attempt < retryDelays.length) {
