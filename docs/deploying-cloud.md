@@ -123,9 +123,16 @@ deploy is an instance act; account ids and firm-naming vars stay private):
   by construction); Node 22 + pnpm; run the engine's `pnpm verify` (never
   deploy an engine state that fails its own gate); `wrangler-action` per
   Worker.
+- **Pin wrangler ≥4 in CI** (`wranglerVersion` on `wrangler-action`): the
+  action's default wrangler is 3.x, which cannot read `wrangler.jsonc` and
+  fails with a misleading "Missing entry-point". And this repo is **not** a
+  pnpm workspace — `workers/heartbeat` and `workers/web` need their own
+  frozen installs before `pnpm verify`.
 - **CI credentials:** a Cloudflare API token scoped to **Workers Scripts:
   Edit + Account Settings: Read** on the one account, stored as an Actions
-  secret with the account id. Nothing else — CI never holds runtime secrets;
+  secret with the account id. Add **Zone → Workers Routes: Edit** on the
+  dashboard's zone once a custom domain exists — deploying a Worker that
+  owns a custom domain touches the zone API. Nothing else — CI never holds runtime secrets;
   Worker secrets persist across deploys and are set only via
   `wrangler secret put`. A leaked CI token can redeploy code but cannot read
   or alter a credential.
