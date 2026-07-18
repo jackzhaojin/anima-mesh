@@ -78,7 +78,13 @@ function subpathFilter(ctx: SourceContext): string {
 }
 
 function apiHeaders(ctx: SourceContext): Record<string, string> {
-  const headers: Record<string, string> = { Accept: "application/vnd.github+json" };
+  const headers: Record<string, string> = {
+    Accept: "application/vnd.github+json",
+    "X-GitHub-Api-Version": "2022-11-28",
+    // GitHub rejects UA-less requests with 403 — and Workers' fetch, unlike
+    // curl/Node, adds no default User-Agent (the store-github lesson).
+    "User-Agent": "animamesh",
+  };
   const token = docsToken(ctx);
   if (token) headers.Authorization = `Bearer ${token}`;
   return headers;

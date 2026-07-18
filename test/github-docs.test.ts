@@ -81,6 +81,12 @@ describe("listDocs (API path)", () => {
     expect(listing.origin).toBe("acme/docs@v2");
   });
 
+  it("always sends a User-Agent — Workers' fetch adds none and GitHub 403s without one", async () => {
+    const mock = githubFetch();
+    await listDocs({ env: ENV, fetchImpl: mock.fetchImpl });
+    expect(mock.calls[0]!.headers["User-Agent"]).toBe("animamesh");
+  });
+
   it("sends GITHUB_DOCS_TOKEN as Bearer, falls back to GITHUB_TOKEN, goes tokenless when neither", async () => {
     const withDocs = githubFetch();
     await listDocs({ env: ENV, fetchImpl: withDocs.fetchImpl });
