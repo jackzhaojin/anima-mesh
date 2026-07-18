@@ -12,6 +12,20 @@ reports back: *"here's what I found, here's the draft, approve or edit."*
 The initiative inverts: **you stop driving the company's operations and start
 reviewing them.**
 
+## Where it runs
+
+**Cloud execution is the primary operating mode.** A normal AnimaMesh instance
+runs continuously on Cloudflare Workers and Durable Objects against its private,
+GitHub-hosted brain. The cloud heartbeat wakes agents on schedule, commits the
+run evidence, delivers the daily brief, and accepts inbound directions while the
+operator's laptop is closed.
+
+The CLI remains a first-class companion for scaffolding and validating a brain,
+manual or recovery runs, local development, and subprocess-only harnesses. It is
+not the production scheduler. AnimaMesh is also not a shared hosted service:
+each private instance deploys its own Workers, Durable Objects, repository, and
+secrets from this public engine.
+
 ## How it's organized
 
 **One Chief of Staff, many detached hands.**
@@ -53,6 +67,7 @@ your-brain/                      ← private instance (yours, never public)
   ledger/actions.jsonl           ← append-only action ledger (audit seam)
   approvals/                     ← file-based needs-you gate (approval seam)
   reports/ drafts/               ← run artifacts
+  cloud/                         ← this instance's Worker deploy config
 ```
 
 ## Design rules the code enforces
@@ -81,12 +96,13 @@ your-brain/                      ← private instance (yours, never public)
   suite). An instance can redirect a declared harness at runtime via
   `animamesh.config.json → cognition.overrides` — vendor trouble becomes a
   config edit, with the agent's declared identity untouched.
-- **Two runtimes, one engine.** The same heartbeat runs from a laptop CLI
-  over a local directory, or from a **Cloudflare Worker + Durable Object
-  alarm** (`workers/heartbeat/`) over a GitHub-hosted brain — the
-  `InstanceStore` seam swaps the transport. A cloud beat reads the instance
-  as one tarball and lands all its artifacts as **one commit** (never
-  force-pushed), so the repo stays the single test seam either way. No
+- **Cloud-first execution, one engine.** The primary runtime is a
+  **Cloudflare Worker + Durable Object alarm** (`workers/heartbeat/`) over a
+  GitHub-hosted brain. The laptop CLI runs the same heartbeat over a local
+  directory for bootstrap, diagnostics, manual work, and subprocess-only
+  harnesses; the `InstanceStore` seam swaps the transport. A cloud beat reads
+  the instance as one tarball and lands all its artifacts as **one commit**
+  (never force-pushed), so the repo stays the single test seam either way. No
   containers, no long-lived connections: the agent card says
   `streaming: false` on purpose.
 - **Commercial capability is dual-gated.** Sales/lead/inbound-triage templates
@@ -109,7 +125,11 @@ your-brain/                      ← private instance (yours, never public)
   commit lands. A separate `workers/web` Worker gives the principal a
   Google-OIDC dashboard (allowlist-only, nothing served unauthenticated).
 
-## Quickstart
+## Quickstart: bootstrap locally, operate in cloud
+
+Use the engine checkout to create and validate the private brain. These CLI
+commands are the setup and operator path; scheduled production execution comes
+from the per-instance cloud deployment that follows.
 
 ```bash
 pnpm install
@@ -135,6 +155,11 @@ pnpm cli report --instance ../my-brain
 The init's acceptance test is its demo: **empty directory in, conformant brain
 out** — checked by the same validator every instance is checked by.
 
+Next, push the brain to a private GitHub repository and follow
+[Deploying the cloud tier](docs/deploying-cloud.md). That is the normal
+always-on runtime: one Worker for heartbeats and directions, an optional
+separately credentialed dashboard Worker, and one evidence commit per run.
+
 ## Documentation map
 
 | Where | What |
@@ -143,6 +168,7 @@ out** — checked by the same validator every instance is checked by.
 | [docs/architecture.md](docs/architecture.md) | The whole system on one page: cloud diagram, Discord flows, design constraints |
 | [docs/starting-a-company.md](docs/starting-a-company.md) | Empty directory → a mesh running a real company (repeatable for company #2, #3, …) |
 | [docs/deploying-cloud.md](docs/deploying-cloud.md) | Generic Cloudflare runbook: two Workers, secrets contract, Discord wiring |
+| [CHANGELOG.md](CHANGELOG.md) | Each minor release line: its value, maturity, and operator upgrade steps |
 | [docs/engine-vs-instance.md](docs/engine-vs-instance.md) | The sorting rule: what belongs in this public engine vs a private brain |
 | [docs/learnings/](docs/learnings/README.md) | Hard-won platform knowledge (vendor gateways, Workers egress, …) with evidence |
 | [CLAUDE.md](CLAUDE.md) | Working agreements for AI coding sessions in this repo |
@@ -163,13 +189,14 @@ conformance and complete a full agent run against the fake provider.
 
 ## Status
 
-v0.5.2 — pre-release. Package name on npm to be confirmed; pinned consumers
-should reference the repo by tag. Highlights by line: v0.3 the storage seam
-(`InstanceStore`: fs + GitHub) and the `workers/heartbeat` cloud tier; v0.4
-directions (Discord interactions + Gmail poll), the `workers/web` dashboard,
-golden-day + AI-driven eval gates; v0.5 the `anthropic-api` provider
-(subscription OAuth over plain fetch) and `cognition.overrides`. Patch tags
-carry fixes — see [docs/learnings/](docs/learnings/README.md) for the ones
-worth reading.
+v0.7.3 — pre-release. Package name on npm to be confirmed; pinned consumers
+should reference the repo by tag. The cloud tier introduced in v0.3 is now the
+primary execution path; the CLI remains the bootstrap, operator, and
+subprocess-harness path. v0.7 adds the `github-docs` read source for GitHub-hosted
+or local working-tree document corpora and hardens cloud cognition against
+GitHub edge behavior and adaptive-thinking output exhaustion. See
+[CHANGELOG.md](CHANGELOG.md) for the value and upgrade boundary of each minor
+line, and [docs/learnings/](docs/learnings/README.md) for evidence-backed
+platform lessons.
 
 Apache-2.0 © 2026 Jack Jin — see [LICENSE](LICENSE)
