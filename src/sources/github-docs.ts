@@ -122,7 +122,10 @@ export async function listDocs(ctx: SourceContext, opts: { maxEntries?: number }
   if (!res.ok) {
     // 404 on a private repo usually means the token can't see it — say so.
     const hint = res.status === 404 && !docsToken(ctx) ? " (private repo with no token?)" : "";
-    throw new Error(`github-docs GET trees ${repo}@${ref} → HTTP ${res.status}${hint}`);
+    // GitHub's error bodies name the actual rule hit (rate limit, UA,
+    // token scope) — surface them like the msgraph adapter does.
+    const body = (await res.text().catch(() => "")).slice(0, 300);
+    throw new Error(`github-docs GET trees ${repo}@${ref} → HTTP ${res.status}${hint} ${body}`.trim());
   }
   const json = (await res.json()) as TreeResponse;
   const files = json.tree
