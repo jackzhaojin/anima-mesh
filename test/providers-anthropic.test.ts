@@ -28,7 +28,11 @@ describe("anthropic-api provider (subscription OAuth over plain fetch)", () => {
     expect(init.headers["anthropic-beta"]).toBe("oauth-2025-04-20");
     const body = JSON.parse(init.body);
     expect(body.model).toBe("claude-sonnet-5");
-    expect(body.max_tokens).toBe(8192);
+    // 16K, not 8K: max_tokens caps thinking + text combined, and adaptive
+    // thinking (on by default on claude-sonnet-5) can eat a small budget
+    // whole on hard prompts (the 2026-07-18 librarian lesson).
+    expect(body.max_tokens).toBe(16384);
+    expect(body.thinking).toBeUndefined(); // adaptive by default — never sent unless the fallback fires
     // The OAuth gateway validates the FIRST system block is EXACTLY the
     // Claude Code identity sentence — its own array entry, nothing appended.
     // Concatenating routes large requests to the disabled overage lane
@@ -64,6 +68,36 @@ describe("anthropic-api provider (subscription OAuth over plain fetch)", () => {
     const provider = createAnthropicApiProvider({ env: ENV, fetchImpl });
     const result = await provider.run({ prompt: "p", cwd: "/" });
     expect(result.text).toBe("part one\npart two");
+  });
+
+  it("retries once with thinking disabled when thinking eats the whole output budget", async () => {
+    // The 2026-07-18 librarian failure: adaptive thinking (default on
+    // claude-sonnet-5) spent every output token, leaving zero text blocks.
+    const thinkingOnly = new Response(
+      JSON.stringify({ content: [{ type: "thinking", thinking: "" }], stop_reason: "max_tokens" }),
+      { status: 200 },
+    );
+    const fetchImpl = vi.fn().mockResolvedValueOnce(thinkingOnly).mockResolvedValueOnce(okResponse("report"));
+    const provider = createAnthropicApiProvider({ env: ENV, fetchImpl });
+    const result = await provider.run({ prompt: "p", cwd: "/" });
+    expect(result.text).toBe("report");
+    expect(fetchImpl).toHaveBeenCalledTimes(2);
+    expect(JSON.parse(fetchImpl.mock.calls[0]![1].body).thinking).toBeUndefined();
+    expect(JSON.parse(fetchImpl.mock.calls[1]![1].body).thinking).toEqual({ type: "disabled" });
+  });
+
+  it("a thinking-only response still fails loud when the retry also returns no text", async () => {
+    const thinkingOnly = () =>
+      new Response(
+        JSON.stringify({ content: [{ type: "thinking", thinking: "" }], stop_reason: "max_tokens" }),
+        { status: 200 },
+      );
+    const fetchImpl = vi.fn().mockResolvedValueOnce(thinkingOnly()).mockResolvedValueOnce(thinkingOnly());
+    const provider = createAnthropicApiProvider({ env: ENV, fetchImpl });
+    await expect(provider.run({ prompt: "p", cwd: "/" })).rejects.toThrow(
+      /no text blocks \(stop_reason: max_tokens, blocks: thinking\)/,
+    );
+    expect(fetchImpl).toHaveBeenCalledTimes(2);
   });
 
   it("ANTHROPIC_BASE_URL overrides the endpoint (test/dev seam)", async () => {

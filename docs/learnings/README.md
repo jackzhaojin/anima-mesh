@@ -28,4 +28,5 @@ that instance's own repo, not here (see
 | Date | Learning |
 |---|---|
 | 2026-07-12 | [Anthropic OAuth gateway: identity must be its own system block](2026-07-12-anthropic-oauth-gateway.md) |
+| 2026-07-18 | [Adaptive thinking spends your max_tokens — small budgets yield zero text](2026-07-18-adaptive-thinking-output-budget.md) |
 | 2026-07-11 | [Some vendor edges WAF-block Cloudflare Workers egress](2026-07-11-workers-egress-waf.md) |

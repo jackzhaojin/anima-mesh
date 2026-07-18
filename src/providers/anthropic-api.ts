@@ -64,15 +64,22 @@ export function createAnthropicApiProvider(ctx: ApiProviderContext = {}): AgentW
       const endpoint = `${base}/v1/messages`;
       const progress = opts.onProgress ?? (() => {});
       const timeoutMs = opts.timeoutMs ?? DEFAULT_TIMEOUT_MS;
-      const body = JSON.stringify({
-        model,
-        max_tokens: 8192,
-        system: SYSTEM_BLOCKS,
-        messages: [{ role: "user", content: opts.prompt }],
-      });
+      // max_tokens caps thinking + text COMBINED, and models with adaptive
+      // thinking on by default (claude-sonnet-5) can spend a whole 8192
+      // budget thinking on a hard prompt and return ZERO text (stop_reason
+      // max_tokens, blocks: thinking — the 2026-07-18 librarian run). 16K
+      // leaves room to think AND write while staying non-streaming-safe.
+      let disableThinking = false;
 
       progress(`anthropic-api: starting (${model})`);
       for (let attempt = 0; ; attempt++) {
+        const body = JSON.stringify({
+          model,
+          max_tokens: 16384,
+          ...(disableThinking ? { thinking: { type: "disabled" } } : {}),
+          system: SYSTEM_BLOCKS,
+          messages: [{ role: "user", content: opts.prompt }],
+        });
         let res: Response;
         try {
           res = await doFetch(endpoint, {
@@ -96,6 +103,7 @@ export function createAnthropicApiProvider(ctx: ApiProviderContext = {}): AgentW
         if (res.ok) {
           const json = (await res.json()) as {
             content?: Array<{ type: string; text?: string }>;
+            stop_reason?: string;
             usage?: unknown;
           };
           const text = (json.content ?? [])
@@ -103,7 +111,20 @@ export function createAnthropicApiProvider(ctx: ApiProviderContext = {}): AgentW
             .map((b) => b.text)
             .join("\n");
           if (!text) {
-            throw new Error("anthropic-api → malformed response: no text content blocks");
+            // Name what DID come back — "malformed" alone is undebuggable
+            // (is it thinking-only? an empty max_tokens cutoff? a refusal?).
+            const types = (json.content ?? []).map((b) => b.type).join(",") || "none";
+            if (!disableThinking && json.stop_reason === "max_tokens" && types === "thinking") {
+              // Thinking ate the whole budget even at 16K — one retry with
+              // thinking off (accepted on sonnet-5/opus-4.8; a model that
+              // rejects it would 400, which surfaces honestly below).
+              disableThinking = true;
+              progress("anthropic-api: thinking consumed the output budget — retrying with thinking disabled");
+              continue;
+            }
+            throw new Error(
+              `anthropic-api → response contained no text blocks (stop_reason: ${json.stop_reason ?? "unknown"}, blocks: ${types})`,
+            );
           }
           progress("anthropic-api: done");
           // costUsd deliberately unset: subscription quota, not metered spend.
