@@ -12,4 +12,28 @@ export interface SourceContext {
   /** Injectable for the regression suite; defaults to global fetch. */
   fetchImpl?: typeof fetch;
   log?: (note: string) => void;
+  /**
+   * Local-filesystem capability, injected by the Node/CLI harness only —
+   * Workers never set it, so fetch-based access paths remain the only ones
+   * reachable there and the import graph stays free of node built-ins.
+   */
+  sourceFs?: SourceFs;
+}
+
+/** One file in a local working-tree listing. Path is root-relative. */
+export interface LocalFileEntry {
+  path: string;
+  size: number;
+  /** ISO instant of last modification. */
+  lastModified?: string;
+}
+
+/** The injectable local-read capability (implementation: sources/local-files.ts, Node tier). */
+export interface SourceFs {
+  listFiles(
+    rootAbs: string,
+    opts: { excludes: string[]; maxEntries: number },
+  ): Promise<{ entries: LocalFileEntry[]; truncated: boolean }>;
+  /** UTF-8 content of one file under a previously listed root. */
+  readTextFile(rootAbs: string, relPath: string): Promise<string>;
 }

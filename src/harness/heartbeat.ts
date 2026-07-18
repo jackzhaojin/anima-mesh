@@ -1,6 +1,7 @@
 import "../providers/node-providers.js"; // register subprocess providers (Node entrypoint)
 import type { InstanceStore } from "../instance/store.js";
 import { FsInstanceStore } from "../instance/store-fs.js";
+import { nodeSourceFs } from "../sources/local-files.js";
 import { heartbeatCore, type HeartbeatCoreOptions, type HeartbeatResult } from "./heartbeat-core.js";
 
 export {
@@ -30,5 +31,6 @@ export async function heartbeat(options: HeartbeatOptions): Promise<HeartbeatRes
       if (!instanceRoot) throw new Error("heartbeat: provide `store` or `instanceRoot`");
       return new FsInstanceStore(instanceRoot);
     })();
-  return heartbeatCore({ ...rest, store: resolved });
+  // Node tier: sources may read local working trees (caller can still override).
+  return heartbeatCore({ sourceFs: nodeSourceFs, ...rest, store: resolved });
 }

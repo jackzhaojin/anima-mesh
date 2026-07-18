@@ -4,6 +4,7 @@ import { resolveProvider, type AgentWorkerProvider, type ApiProviderContext } fr
 import type { InstanceStore } from "../instance/store.js";
 import type { InstanceConfig } from "../instance/config-core.js";
 import { sourceSections } from "../sources/registry.js";
+import type { SourceFs } from "../sources/types.js";
 import {
   verifyConformanceBundle,
   verifyExpectedOutputsStore,
@@ -38,6 +39,12 @@ export interface RunCoreOptions {
    * Defaults to the store's instance env (.env/.env.local on fs stores).
    */
   providerCtx?: ApiProviderContext;
+  /**
+   * Local-read capability for sources — injected by the Node wrappers
+   * (run.ts / heartbeat.ts); Workers leave it unset so sources fall back to
+   * their fetch-based access paths.
+   */
+  sourceFs?: SourceFs;
   /**
    * "per-run" (default): flush the store after verifiers — a no-op on fs.
    * "caller": the caller batches several runs into one flush (cloud beat).
@@ -123,7 +130,7 @@ export async function runAgentCore(options: RunCoreOptions): Promise<RunReport> 
   await store.appendLedger({ ts: startedAt, runId, agent: agent.name, action: "run-started", type: "report" });
 
   const providerCtx = options.providerCtx ?? { env: store.instanceEnv?.() ?? {} };
-  const prompt = await buildPrompt(agent, store, config, dateStamp, providerCtx, progress);
+  const prompt = await buildPrompt(agent, store, config, dateStamp, providerCtx, progress, options.sourceFs);
   const cognition = effectiveCognition(agent, config);
   const provider = options.provider ?? resolveProvider(cognition.harness, providerCtx);
   provider.assertConfigured();
@@ -204,6 +211,7 @@ async function buildPrompt(
   dateStamp: string,
   providerCtx?: ApiProviderContext,
   log?: (note: string) => void,
+  sourceFs?: SourceFs,
 ): Promise<string> {
   const sections: string[] = [];
   sections.push(
@@ -225,7 +233,7 @@ async function buildPrompt(
   // sections, never aborted runs.
   const external =
     agent.sources.length > 0
-      ? await sourceSections(agent.sources, { env: providerCtx?.env ?? {}, fetchImpl: providerCtx?.fetchImpl, log })
+      ? await sourceSections(agent.sources, { env: providerCtx?.env ?? {}, fetchImpl: providerCtx?.fetchImpl, log, sourceFs })
       : [];
   return [
     sections.join("\n"),

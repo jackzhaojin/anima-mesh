@@ -109,6 +109,26 @@ describe("router", () => {
     expect(body.error).toContain("MSGRAPH_CLIENT_ID");
   });
 
+  it("GET /docs/check is bearer-gated like /beat — listing paths is instance data", async () => {
+    const bare = await SELF.fetch("https://worker.test/docs/check");
+    expect(bare.status).toBe(401);
+    const wrong = await SELF.fetch("https://worker.test/docs/check", {
+      headers: { authorization: "Bearer wrong-token" },
+    });
+    expect(wrong.status).toBe(401);
+  });
+
+  it("GET /docs/check names the missing config instead of erroring opaquely", async () => {
+    // This test env deliberately has no GITHUB_DOCS_* bindings — the pre-config state.
+    const res = await SELF.fetch("https://worker.test/docs/check", {
+      headers: { authorization: `Bearer ${env.BEAT_TRIGGER_TOKEN}` },
+    });
+    expect(res.status).toBe(503);
+    const body = (await res.json()) as { ok: boolean; error: string };
+    expect(body.ok).toBe(false);
+    expect(body.error).toContain("GITHUB_DOCS_REPO");
+  });
+
   it("serves the public agent card from the remote brain, url rewritten to origin", async () => {
     mockGitHub({ flush: false }); // read-only: one snapshot, no commit
     const res = await SELF.fetch("https://worker.test/.well-known/agent-card.json");

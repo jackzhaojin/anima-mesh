@@ -2,6 +2,7 @@ import { agentsFromBundle, assertActivatable, effectiveCognition, type AgentConc
 import { CLOUD_HARNESSES, type ApiProviderContext } from "../providers/index.js";
 import type { InstanceStore } from "../instance/store.js";
 import { runAgentCore, dateStampFor, type RunReport } from "./run-core.js";
+import type { SourceFs } from "../sources/types.js";
 
 /**
  * The heartbeat trigger — one of D5's four deterministic jobs. Decides which
@@ -34,6 +35,8 @@ export interface HeartbeatCoreOptions {
   cloudTier?: boolean;
   /** Env/fetch context for API providers — threaded into every run. */
   providerCtx?: ApiProviderContext;
+  /** Local-read capability for sources — threaded into every run; Node tier only. */
+  sourceFs?: SourceFs;
   /** "per-run" (default) flushes inside each run; "caller" leaves one flush to the caller. */
   flushPolicy?: "per-run" | "caller";
   /**
@@ -164,6 +167,7 @@ export async function heartbeatCore(options: HeartbeatCoreOptions): Promise<Hear
           agentName: agent.name,
           now: options.now,
           providerCtx: options.providerCtx,
+          sourceFs: options.sourceFs,
           flushPolicy: options.flushPolicy,
           timeZone: options.timeZone,
           onProgress: progress,

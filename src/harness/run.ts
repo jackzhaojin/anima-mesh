@@ -1,6 +1,7 @@
 import "../providers/node-providers.js"; // register subprocess providers (Node entrypoint)
 import type { InstanceStore } from "../instance/store.js";
 import { FsInstanceStore } from "../instance/store-fs.js";
+import { nodeSourceFs } from "../sources/local-files.js";
 import { runAgentCore, type RunCoreOptions, type RunReport } from "./run-core.js";
 
 export type { RunReport } from "./run-core.js";
@@ -25,5 +26,6 @@ export async function runAgent(options: RunOptions): Promise<RunReport> {
       if (!instanceRoot) throw new Error("runAgent: provide `store` or `instanceRoot`");
       return new FsInstanceStore(instanceRoot);
     })();
-  return runAgentCore({ ...rest, store: resolved });
+  // Node tier: sources may read local working trees (caller can still override).
+  return runAgentCore({ sourceFs: nodeSourceFs, ...rest, store: resolved });
 }

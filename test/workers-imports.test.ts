@@ -18,6 +18,7 @@ const ALLOWED_BARE = new Set(["yaml", "cloudflare:workers"]);
 const BANNED_FILES = [
   "src/instance/store-fs.ts",
   "src/instance/env.ts",
+  "src/sources/local-files.ts",
   "src/instance/config.ts",
   "src/okf/bundle.ts",
   "src/okf/conformance-fs.ts",

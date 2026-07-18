@@ -157,6 +157,16 @@ contents"), never aborted runs.
   bounded breadth-first cabinet listing that follows Teams/SharePoint
   shortcuts (`remoteItem`) into their remote drives, and clipped text-only
   file reads. Env contract in the module header; delegated read scopes only.
+- `sources/github-docs.ts` — the `github-docs` source: a git-hosted document
+  repo as read context. One corpus, two access paths: GitHub REST (one
+  recursive git-trees call — pure fetch, runs on Workers) or a local working
+  tree when `GITHUB_DOCS_LOCAL_PATH` is set AND the harness injected the
+  `SourceFs` capability (Node tier — fresher, tokenless). Env contract in
+  the module header; token falls back `GITHUB_DOCS_TOKEN` → `GITHUB_TOKEN`.
+- `sources/local-files.ts` — the Node `SourceFs` implementation (bounded
+  deterministic walk + root-escape-proof reads). Imports node built-ins, so
+  it lives OUTSIDE the Worker import graph: `run.ts`/`heartbeat.ts` inject
+  it; `workers-imports.test.ts` bans it from Worker entries.
 - `sources/registry.ts` — `sourceSections(names, ctx)`, the harness's one
   entry point.
 

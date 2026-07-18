@@ -2,6 +2,7 @@ import { GitHubInstanceStore } from "../../../src/instance/store-github.js";
 import { githubToken } from "../../../src/instance/github-auth.js";
 import { buildAgentCardFromBundle } from "../../../src/a2a/card-core.js";
 import { listCabinet, msGraphConfigured } from "../../../src/sources/msgraph.js";
+import { listDocs, githubDocsConfigured } from "../../../src/sources/github-docs.js";
 import { envRecord, type Env } from "./env.js";
 import { HeartbeatDO } from "./heartbeat-do.js";
 import { DirectionDO } from "./direction-do.js";
@@ -70,6 +71,31 @@ export default {
           count: listing.entries.length,
           truncated: listing.truncated,
           entries: listing.entries.map((e) => ({ name: e.name, folder: e.isFolder, modified: e.lastModified?.slice(0, 10) })),
+        });
+      } catch (err) {
+        return Response.json({ ok: false, error: err instanceof Error ? err.message : String(err) }, { status: 502 });
+      }
+    }
+
+    if (url.pathname === "/docs/check" && req.method === "GET") {
+      // Operator validation for the 'github-docs' source: same bearer gate as
+      // /beat (listing paths is instance data — never expose unauthenticated).
+      const auth = req.headers.get("authorization") ?? "";
+      if (auth !== `Bearer ${env.BEAT_TRIGGER_TOKEN}`) {
+        return new Response("unauthorized", { status: 401 });
+      }
+      const ctx = { env: envRecord(env) };
+      if (!githubDocsConfigured(ctx)) {
+        return Response.json({ ok: false, error: "github-docs not configured (GITHUB_DOCS_REPO)" }, { status: 503 });
+      }
+      try {
+        const listing = await listDocs(ctx, { maxEntries: 50 });
+        return Response.json({
+          ok: true,
+          origin: listing.origin,
+          count: listing.entries.length,
+          truncated: listing.truncated,
+          entries: listing.entries.map((e) => e.path),
         });
       } catch (err) {
         return Response.json({ ok: false, error: err instanceof Error ? err.message : String(err) }, { status: 502 });

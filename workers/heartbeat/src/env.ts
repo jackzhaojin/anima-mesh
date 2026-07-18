@@ -20,6 +20,9 @@ export interface Env {
   MSGRAPH_TENANT?: string; // Entra tenant id/domain; default "common"
   MSGRAPH_DRIVE_ID?: string; // a specific drive (SharePoint library); default the consenting user's OneDrive
   MSGRAPH_CABINET_PATH?: string; // folder under the drive root that IS the cabinet; default the root
+  GITHUB_DOCS_REPO?: string; // "owner/name" — the 'github-docs' source; absent = source unconfigured here
+  GITHUB_DOCS_REF?: string; // branch/tag/SHA; default HEAD (the repo's default branch)
+  GITHUB_DOCS_PATH?: string; // only list paths under this repo subpath
   // -- secrets --
   GITHUB_TOKEN: string;
   MOONSHOT_API_KEY: string; // the cloud tier's ONLY cognition key (no Claude key exists on Workers)
@@ -34,6 +37,7 @@ export interface Env {
   MSGRAPH_CLIENT_ID?: string; // OneDrive cabinet, READ-ONLY (delegated Files.Read.All — the 'onedrive' source)
   MSGRAPH_CLIENT_SECRET?: string; // absent for public clients (device-code consent)
   MSGRAPH_REFRESH_TOKEN?: string;
+  GITHUB_DOCS_TOKEN?: string; // fine-grained PAT, Contents READ-ONLY on the docs repo; falls back to GITHUB_TOKEN
 }
 
 /** Flatten the Worker env into the engine's injectable env record. */
@@ -55,5 +59,9 @@ export function envRecord(env: Env): Record<string, string | undefined> {
     MSGRAPH_TENANT: env.MSGRAPH_TENANT,
     MSGRAPH_DRIVE_ID: env.MSGRAPH_DRIVE_ID,
     MSGRAPH_CABINET_PATH: env.MSGRAPH_CABINET_PATH,
+    GITHUB_DOCS_REPO: env.GITHUB_DOCS_REPO,
+    GITHUB_DOCS_REF: env.GITHUB_DOCS_REF,
+    GITHUB_DOCS_PATH: env.GITHUB_DOCS_PATH,
+    GITHUB_DOCS_TOKEN: env.GITHUB_DOCS_TOKEN,
   };
 }

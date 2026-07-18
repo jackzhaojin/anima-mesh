@@ -31,6 +31,9 @@
     // "MSGRAPH_TENANT": "<entra tenant id or domain>",        // 'onedrive' source; default "common"
     // "MSGRAPH_DRIVE_ID": "<drive id>",                       // a specific drive; default the consenting user's OneDrive
     // "MSGRAPH_CABINET_PATH": "<folder under the drive root>" // default the drive root
+    // "GITHUB_DOCS_REPO": "<owner/docs-repo>",                // 'github-docs' source; absent = unconfigured
+    // "GITHUB_DOCS_REF": "main",                              // default HEAD (the repo's default branch)
+    // "GITHUB_DOCS_PATH": "<subpath>"                         // only list paths under this subpath
   }
   // Secrets (wrangler secret put): GITHUB_TOKEN, MOONSHOT_API_KEY,
   // DISCORD_BOT_TOKEN, DISCORD_DM_USER_ID, BEAT_TRIGGER_TOKEN;
@@ -38,6 +41,9 @@
   // GMAIL_REFRESH_TOKEN (needs gmail.modify scope), AGENT_EMAIL;
   // for the 'onedrive' read source MSGRAPH_CLIENT_ID, MSGRAPH_REFRESH_TOKEN
   // (+ MSGRAPH_CLIENT_SECRET only for confidential clients) — delegated
-  // Files.Read.All consent, read-only; validate with GET /graph/check.
+  // Files.Read.All consent, read-only; validate with GET /graph/check;
+  // for the 'github-docs' read source GITHUB_DOCS_TOKEN (fine-grained PAT,
+  // Contents READ-ONLY on the docs repo; falls back to GITHUB_TOKEN; public
+  // repos need none) — validate with GET /docs/check.
   // NO ANTHROPIC_API_KEY and NO CLAUDE_CODE_OAUTH_TOKEN — ever.
 }
