@@ -35,7 +35,13 @@
     // "GITHUB_DOCS_REF": "main",                              // default HEAD (the repo's default branch)
     // "GITHUB_DOCS_PATH": "<subpath>"                         // only list paths under this subpath
   }
-  // Secrets (wrangler secret put): GITHUB_TOKEN, BEAT_TRIGGER_TOKEN;
+  // Secrets (wrangler secret put): brain-repo auth is the GitHub App trio
+  // GITHUB_APP_ID, GITHUB_APP_INSTALLATION_ID, GITHUB_APP_PRIVATE_KEY
+  // (PKCS#8 PEM — convert GitHub's PKCS#1 download with
+  // `openssl pkcs8 -topk8 -nocrypt`, and PIPE the file in:
+  // `wrangler secret put GITHUB_APP_PRIVATE_KEY < app.pem`) — or the legacy
+  // fine-grained PAT in GITHUB_TOKEN when no App var is set; plus
+  // BEAT_TRIGGER_TOKEN;
   // cognition uses MOONSHOT_API_KEY and/or CLAUDE_CODE_OAUTH_TOKEN;
   // Discord surfaces use DISCORD_BOT_TOKEN and DISCORD_DM_USER_ID;
   // for inbound email also GMAIL_CLIENT_ID, GMAIL_CLIENT_SECRET,

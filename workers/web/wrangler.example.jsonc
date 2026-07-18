@@ -17,6 +17,9 @@
   }
   // Secrets (wrangler secret put): GOOGLE_OAUTH_CLIENT_ID,
   // GOOGLE_OAUTH_CLIENT_SECRET, SESSION_SECRET (openssl rand -hex 32),
-  // GITHUB_TOKEN (read), BEAT_TRIGGER_TOKEN (same value as the heartbeat's).
+  // brain read auth — the GitHub App trio GITHUB_APP_ID,
+  // GITHUB_APP_INSTALLATION_ID, GITHUB_APP_PRIVATE_KEY (PKCS#8 PEM), or the
+  // legacy PAT in GITHUB_TOKEN when no App var is set —
+  // and BEAT_TRIGGER_TOKEN (same value as the heartbeat's).
   // This Worker deliberately holds NO cognition or persona-channel secrets.
 }

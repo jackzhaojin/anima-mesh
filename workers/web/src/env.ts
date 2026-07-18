@@ -19,8 +19,12 @@ export interface Env {
   GOOGLE_OAUTH_CLIENT_SECRET: string;
   /** HMAC key for state + session cookies. Rotate to invalidate all sessions. */
   SESSION_SECRET: string;
-  /** Read access to the brain repo (the dashboard's data). */
-  GITHUB_TOKEN: string;
+  /** Read access to the brain repo (the dashboard's data): GitHub App trio (preferred, all three or none)… */
+  GITHUB_APP_ID?: string;
+  GITHUB_APP_INSTALLATION_ID?: string;
+  GITHUB_APP_PRIVATE_KEY?: string; // PKCS#8 PEM
+  /** …or the legacy fine-grained PAT, used only when no App var is set. */
+  GITHUB_TOKEN?: string;
   /** Held server-side for the trigger-beat proxy; the browser never sees it. */
   BEAT_TRIGGER_TOKEN: string;
 }

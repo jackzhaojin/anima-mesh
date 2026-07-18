@@ -35,10 +35,16 @@ export interface DashboardData {
 }
 
 export async function gatherDashboard(env: Env): Promise<DashboardData> {
+  const token = await githubToken({
+    GITHUB_APP_ID: env.GITHUB_APP_ID,
+    GITHUB_APP_INSTALLATION_ID: env.GITHUB_APP_INSTALLATION_ID,
+    GITHUB_APP_PRIVATE_KEY: env.GITHUB_APP_PRIVATE_KEY,
+    GITHUB_TOKEN: env.GITHUB_TOKEN,
+  });
   const store = new GitHubInstanceStore({
     repo: env.BRAIN_REPO,
     ref: env.BRAIN_REF,
-    token: await githubToken({ GITHUB_TOKEN: env.GITHUB_TOKEN }),
+    token,
   });
 
   const [healthz, reports, ledger, approvals, commits] = await Promise.all([
@@ -50,7 +56,7 @@ export async function gatherDashboard(env: Env): Promise<DashboardData> {
     store.listApprovals(),
     fetch(`https://api.github.com/repos/${env.BRAIN_REPO}/commits?sha=${env.BRAIN_REF}&per_page=10`, {
       headers: {
-        Authorization: `Bearer ${env.GITHUB_TOKEN}`,
+        Authorization: `Bearer ${token}`,
         Accept: "application/vnd.github+json",
         "User-Agent": "animamesh-web",
       },

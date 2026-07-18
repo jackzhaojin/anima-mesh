@@ -24,7 +24,10 @@ export interface Env {
   GITHUB_DOCS_REF?: string; // branch/tag/SHA; default HEAD (the repo's default branch)
   GITHUB_DOCS_PATH?: string; // only list paths under this repo subpath
   // -- secrets --
-  GITHUB_TOKEN: string;
+  GITHUB_APP_ID?: string; // GitHub App auth (preferred): all three or none
+  GITHUB_APP_INSTALLATION_ID?: string;
+  GITHUB_APP_PRIVATE_KEY?: string; // PKCS#8 PEM (convert GitHub's PKCS#1 download first)
+  GITHUB_TOKEN?: string; // legacy PAT path — used only when no App var is set
   MOONSHOT_API_KEY: string; // cognition for moonshot-api; optional in practice when no effective agent uses it
   DISCORD_BOT_TOKEN?: string;
   DISCORD_DM_USER_ID?: string; // doubles as the direction sender allowlist (v1: the principal only)
@@ -43,6 +46,9 @@ export interface Env {
 /** Flatten the Worker env into the engine's injectable env record. */
 export function envRecord(env: Env): Record<string, string | undefined> {
   return {
+    GITHUB_APP_ID: env.GITHUB_APP_ID,
+    GITHUB_APP_INSTALLATION_ID: env.GITHUB_APP_INSTALLATION_ID,
+    GITHUB_APP_PRIVATE_KEY: env.GITHUB_APP_PRIVATE_KEY,
     GITHUB_TOKEN: env.GITHUB_TOKEN,
     MOONSHOT_API_KEY: env.MOONSHOT_API_KEY,
     MOONSHOT_BASE_URL: env.MOONSHOT_BASE_URL,
