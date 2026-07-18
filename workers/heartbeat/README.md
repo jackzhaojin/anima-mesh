@@ -3,6 +3,12 @@
 One Cloudflare Worker + two Durable Objects run the same mesh the CLI runs,
 against a **GitHub-hosted** brain.
 
+Agents may also opt into read-only prompt sources through `sources:`
+frontmatter. The Worker supports `onedrive` over Microsoft Graph and
+`github-docs` over GitHub REST; source listings are assembled into the prompt,
+and a source failure is represented as missing context rather than aborting a
+run.
+
 **`HeartbeatDO` — the scheduled side.** Its alarm fires daily at the
 instance's configured hour, DST-correct (`alarm-time.ts` — the reason this is
 an alarm, not a UTC-fixed cron trigger). A beat reads the instance as one
@@ -29,6 +35,8 @@ a Gmail inbox for principal email (`DIRECTION_GMAIL_POLL_MINUTES`,
 | `GET /healthz` | last beat summary + next alarm (no auth; counts only) |
 | `POST /beat` | manual trigger, `authorization: Bearer <BEAT_TRIGGER_TOKEN>`; same mutex as the alarm |
 | `POST /interactions` | Discord interactions endpoint (Ed25519-verified; 401 otherwise) |
+| `GET /graph/check` | bearer-gated validation for the configured `onedrive` source |
+| `GET /docs/check` | bearer-gated validation for the configured `github-docs` source |
 | `GET /.well-known/agent-card.json` | the A2A card, live (`streaming: false` — short connections by design) |
 
 ## Deploying
@@ -37,7 +45,8 @@ This package is generic and holds **no instance config** —
 `wrangler.example.jsonc` is a template. An instance deploys by keeping its
 own `wrangler.jsonc` (account id, `BRAIN_REPO`/`BRAIN_REF`/`BEAT_TIMEZONE`/
 `BEAT_HOUR`/`DISCORD_PUBLIC_KEY`/`DIRECTION_DAILY_CAP` vars, both DO bindings
-+ `new_sqlite_classes` migrations) whose `main` points at this entry, then
+plus optional `MSGRAPH_*`/`GITHUB_DOCS_*` source vars, and
+`new_sqlite_classes` migrations) whose `main` points at this entry, then
 `wrangler deploy` + `wrangler secret put` for `GITHUB_TOKEN`, cognition keys
 (`MOONSHOT_API_KEY` and/or `CLAUDE_CODE_OAUTH_TOKEN`), `DISCORD_BOT_TOKEN`,
 `DISCORD_DM_USER_ID`, `BEAT_TRIGGER_TOKEN` (and optionally the

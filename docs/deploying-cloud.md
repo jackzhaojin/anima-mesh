@@ -90,6 +90,20 @@ Any first request arms the alarm (idempotent). To prove the pipeline without
 waiting for the alarm: `POST /beat` with the bearer token, then check
 `/healthz` and the brain's `git log` for the mesh-authored commit.
 
+If agents opt into external read sources, validate those seams independently
+before the first beat. Both checks use the same bearer token as `/beat` because
+their listings contain private instance metadata:
+
+```bash
+curl -H "Authorization: Bearer $BEAT_TRIGGER_TOKEN" https://<worker-host>/graph/check
+curl -H "Authorization: Bearer $BEAT_TRIGGER_TOKEN" https://<worker-host>/docs/check
+```
+
+The first checks the configured OneDrive/SharePoint cabinet; the second checks
+the GitHub-hosted document corpus. A source declared by an agent but missing or
+unreachable at run time becomes an honest prompt section rather than aborting
+the beat.
+
 ## Wiring Discord (inbound directions)
 
 1. In the Discord developer portal: register a `/direct` slash command and

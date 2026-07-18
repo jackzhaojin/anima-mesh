@@ -25,11 +25,11 @@ export interface Env {
   GITHUB_DOCS_PATH?: string; // only list paths under this repo subpath
   // -- secrets --
   GITHUB_TOKEN: string;
-  MOONSHOT_API_KEY: string; // the cloud tier's ONLY cognition key (no Claude key exists on Workers)
+  MOONSHOT_API_KEY: string; // cognition for moonshot-api; optional in practice when no effective agent uses it
   DISCORD_BOT_TOKEN?: string;
   DISCORD_DM_USER_ID?: string; // doubles as the direction sender allowlist (v1: the principal only)
   BEAT_TRIGGER_TOKEN: string;
-  CLAUDE_CODE_OAUTH_TOKEN?: string; // subscription OAuth for the anthropic-api harness (decision 2026-07-11 — supersedes the never-on-Workers posture; plain fetch, no SDK)
+  CLAUDE_CODE_OAUTH_TOKEN?: string; // subscription OAuth for anthropic-api; plain fetch, no SDK
   GMAIL_CLIENT_ID?: string; // persona Gmail OAuth (inbound poll + reply); send scope exists, modify needs re-consent
   GMAIL_CLIENT_SECRET?: string;
   GMAIL_REFRESH_TOKEN?: string;

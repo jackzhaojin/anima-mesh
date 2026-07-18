@@ -47,6 +47,16 @@ subprocess providers (`claude-code`, `claude-agent-sdk`, `opencode`) are
 laptop-tier by architecture. Vendor gateway traps are documented with
 evidence in [learnings/](learnings/README.md).
 
+**External context** crosses a separate, read-only seam. An agent opts in with
+`sources:` in its concept frontmatter; prompt assembly fetches a current listing
+from `onedrive` (Microsoft Graph) or `github-docs` (GitHub REST in Workers, or a
+local working tree on the Node tier) and inlines it before cognition runs.
+Source adapters cannot write. An unavailable source becomes an explicit gap in
+the prompt instead of aborting the run or inviting the model to guess. The
+current prompt surface includes listing metadata, not document bodies.
+Operators can validate the cloud adapters through the bearer-gated
+`GET /graph/check` and `GET /docs/check` routes.
+
 ## How Discord messages flow (both directions)
 
 **Inbound — a direction (flows ① and ② on the diagram):**
@@ -93,8 +103,9 @@ and allowed sender are instance vars; unset = off.
 - **No streaming, no SSE, no WebSockets** — Durable Objects bill idle
   wall-clock; everything is short request/response. The agent card says
   `streaming: false` on purpose.
-- **Git is the only state.** No R2/D1/KV. If it matters, it's a commit; DO
-  storage holds only scheduling state (alarms, locks, budgets, dedup ring).
+- **Git is the only durable knowledge and evidence store.** No R2/D1/KV. If it
+  matters after a run, it's a commit. DO storage is deliberately limited to
+  control state: alarms, locks, the direction queue, budgets, and dedup rings.
 - **Evidence before words.** A reply that isn't backed by a commit is a
   hallucination with a send button.
 - **Safety in code, never prompts** — gates, ladder, ledger, verifiers are

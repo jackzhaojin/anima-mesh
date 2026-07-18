@@ -35,8 +35,9 @@
     // "GITHUB_DOCS_REF": "main",                              // default HEAD (the repo's default branch)
     // "GITHUB_DOCS_PATH": "<subpath>"                         // only list paths under this subpath
   }
-  // Secrets (wrangler secret put): GITHUB_TOKEN, MOONSHOT_API_KEY,
-  // DISCORD_BOT_TOKEN, DISCORD_DM_USER_ID, BEAT_TRIGGER_TOKEN;
+  // Secrets (wrangler secret put): GITHUB_TOKEN, BEAT_TRIGGER_TOKEN;
+  // cognition uses MOONSHOT_API_KEY and/or CLAUDE_CODE_OAUTH_TOKEN;
+  // Discord surfaces use DISCORD_BOT_TOKEN and DISCORD_DM_USER_ID;
   // for inbound email also GMAIL_CLIENT_ID, GMAIL_CLIENT_SECRET,
   // GMAIL_REFRESH_TOKEN (needs gmail.modify scope), AGENT_EMAIL;
   // for the 'onedrive' read source MSGRAPH_CLIENT_ID, MSGRAPH_REFRESH_TOKEN
@@ -45,5 +46,6 @@
   // for the 'github-docs' read source GITHUB_DOCS_TOKEN (fine-grained PAT,
   // Contents READ-ONLY on the docs repo; falls back to GITHUB_TOKEN; public
   // repos need none) — validate with GET /docs/check.
-  // NO ANTHROPIC_API_KEY and NO CLAUDE_CODE_OAUTH_TOKEN — ever.
+  // anthropic-api uses subscription OAuth over plain fetch;
+  // ANTHROPIC_API_KEY is not used by this adapter.
 }

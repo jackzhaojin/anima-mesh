@@ -1,122 +1,113 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 940" font-family="ui-sans-serif, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 980" font-family="ui-sans-serif, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif">
   <defs>
     <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
       <path d="M 0 0 L 10 5 L 0 10 z" fill="#57606a"/>
     </marker>
   </defs>
 
-  <rect x="0" y="0" width="1280" height="940" fill="#ffffff"/>
+  <rect x="0" y="0" width="1280" height="980" fill="#ffffff"/>
 
   <text x="40" y="46" font-size="21" font-weight="700" fill="#1f2328">AnimaMesh — the engine and the instance</text>
-  <text x="40" y="70" font-size="13" fill="#57606a">Two repos, a one-way dependency. The public engine is generic logic; a private brain is one company's knowledge, config, and secrets.</text>
+  <text x="40" y="70" font-size="13" fill="#57606a">Two repos, a one-way dependency. The public engine is generic logic; each private brain owns its knowledge, configuration, deploy workspace, and evidence.</text>
 
   <!-- ==================== ENGINE (left) ==================== -->
-  <rect x="40" y="98" width="512" height="712" rx="14" fill="#faf5ff" stroke="#8250df" stroke-width="1.5"/>
+  <rect x="40" y="98" width="512" height="744" rx="14" fill="#faf5ff" stroke="#8250df" stroke-width="1.5"/>
   <text x="60" y="128" font-size="16" font-weight="700" fill="#6639ba">anima-mesh — the ENGINE  <tspan font-weight="400" font-size="12" fill="#8a6fc0">(public, on GitHub)</tspan></text>
   <text x="60" y="150" font-size="12.5" fill="#5a4a7a">Generic logic that animates any brain. Never names a</text>
   <text x="60" y="167" font-size="12.5" fill="#5a4a7a">company, person, or persona — identity is configuration.</text>
 
-  <!-- src -->
-  <rect x="60" y="184" width="472" height="238" rx="9" fill="#ffffff" stroke="#c4b3e8" stroke-width="1.1"/>
+  <rect x="60" y="184" width="472" height="258" rx="9" fill="#ffffff" stroke="#c4b3e8" stroke-width="1.1"/>
   <text x="76" y="208" font-size="13.5" font-weight="700" fill="#1f2328">src/ — the logic</text>
-  <text x="76" y="230" font-size="12" fill="#3f4660">harness/ — heartbeat + direction cores (the run loop)</text>
-  <text x="76" y="250" font-size="12" fill="#3f4660">providers/ — the model chokepoint (moonshot, anthropic, …)</text>
-  <text x="76" y="270" font-size="12" fill="#3f4660">gates/ + autonomy/ — the L1–L4 ladder, enforced in code</text>
-  <text x="76" y="290" font-size="12" fill="#3f4660">ledger/ + okf/ — append-only audit + the bundle format</text>
-  <text x="76" y="310" font-size="12" fill="#3f4660">instance/ — the storage seam: store-fs · store-github</text>
-  <text x="76" y="330" font-size="12" fill="#3f4660">channels/ + a2a/ — Discord/Gmail/Notion + agent card</text>
-  <text x="76" y="350" font-size="12" fill="#3f4660">init/ + cli.ts — scaffold a brain · run · gate · report</text>
-  <line x1="76" y1="366" x2="516" y2="366" stroke="#e5dcf5"/>
-  <text x="76" y="388" font-size="11.5" fill="#6e5a94" font-style="italic">Safety lives here, in deterministic code — gates, ladder,</text>
-  <text x="76" y="405" font-size="11.5" fill="#6e5a94" font-style="italic">ledger, verifiers. Everything else is model judgment.</text>
+  <text x="76" y="230" font-size="12" fill="#3f4660">harness/ — heartbeat + direction cores; prompt assembly</text>
+  <text x="76" y="250" font-size="12" fill="#3f4660">providers/ — the model chokepoint (fetch + subprocess tiers)</text>
+  <text x="76" y="270" font-size="12" fill="#3f4660">sources/ — opted-in read-only context (Graph · GitHub · local)</text>
+  <text x="76" y="290" font-size="12" fill="#3f4660">gates/ + autonomy/ — the L1–L4 ladder, enforced in code</text>
+  <text x="76" y="310" font-size="12" fill="#3f4660">ledger/ + okf/ — append-only audit + the bundle format</text>
+  <text x="76" y="330" font-size="12" fill="#3f4660">instance/ — the storage seam: store-fs · store-github</text>
+  <text x="76" y="350" font-size="12" fill="#3f4660">channels/ + a2a/ — Discord/Gmail/Notion + agent card</text>
+  <text x="76" y="370" font-size="12" fill="#3f4660">init/ + cli.ts — scaffold · validate · run · gate · deliver</text>
+  <line x1="76" y1="386" x2="516" y2="386" stroke="#e5dcf5"/>
+  <text x="76" y="408" font-size="11.5" fill="#6e5a94" font-style="italic">Safety lives here in deterministic code: gates, ladder, ledger,</text>
+  <text x="76" y="425" font-size="11.5" fill="#6e5a94" font-style="italic">and verifiers. Judgment between wake-up and gate belongs to models.</text>
 
-  <!-- workers -->
-  <rect x="60" y="434" width="472" height="86" rx="9" fill="#ffffff" stroke="#c4b3e8" stroke-width="1.1"/>
-  <text x="76" y="458" font-size="13.5" font-weight="700" fill="#1f2328">workers/ — the cloud tier (deployed per instance)</text>
-  <text x="76" y="480" font-size="12" fill="#3f4660">heartbeat/ — daily beat + inbound directions (2 DOs)</text>
-  <text x="76" y="500" font-size="12" fill="#3f4660">web/ — the Google-OIDC dashboard</text>
+  <rect x="60" y="454" width="472" height="86" rx="9" fill="#ffffff" stroke="#c4b3e8" stroke-width="1.1"/>
+  <text x="76" y="478" font-size="13.5" font-weight="700" fill="#1f2328">workers/ — the cloud tier (deployed per instance)</text>
+  <text x="76" y="500" font-size="12" fill="#3f4660">heartbeat/ — daily beat + inbound directions (2 DOs)</text>
+  <text x="76" y="520" font-size="12" fill="#3f4660">web/ — the Google-OIDC observability dashboard</text>
 
-  <!-- templates + docs -->
-  <rect x="60" y="532" width="472" height="86" rx="9" fill="#ffffff" stroke="#c4b3e8" stroke-width="1.1"/>
-  <text x="76" y="556" font-size="13.5" font-weight="700" fill="#1f2328">templates/ + docs/</text>
-  <text x="76" y="578" font-size="12" fill="#3f4660">templates/agents/ — the roster, with {{PLACEHOLDER}} identity</text>
-  <text x="76" y="598" font-size="12" fill="#3f4660">docs/ — this shelf (architecture, runbooks, learnings)</text>
+  <rect x="60" y="552" width="472" height="86" rx="9" fill="#ffffff" stroke="#c4b3e8" stroke-width="1.1"/>
+  <text x="76" y="576" font-size="13.5" font-weight="700" fill="#1f2328">templates/ + docs/</text>
+  <text x="76" y="598" font-size="12" fill="#3f4660">templates/agents/ — the roster, with {{PLACEHOLDER}} identity</text>
+  <text x="76" y="618" font-size="12" fill="#3f4660">docs/ — architecture, operator runbooks, platform learnings</text>
 
-  <!-- the rule -->
-  <rect x="60" y="630" width="472" height="160" rx="9" fill="#f5effc" stroke="#c4b3e8" stroke-width="1.1"/>
-  <text x="76" y="654" font-size="12.5" font-weight="700" fill="#6639ba">The one hard rule</text>
-  <text x="76" y="676" font-size="12" fill="#5a4a7a">No company name, real email, secret, or persona ever</text>
-  <text x="76" y="694" font-size="12" fill="#5a4a7a">appears in engine code, templates, tests, or docs.</text>
-  <text x="76" y="716" font-size="12" fill="#5a4a7a">A capability built in a brain for expedience is flagged</text>
-  <text x="76" y="734" font-size="12" fill="#5a4a7a">"generalize me", then promoted here DE-IDENTIFIED —</text>
-  <text x="76" y="752" font-size="12" fill="#5a4a7a">placeholders for identity, config for choices.</text>
-  <text x="76" y="774" font-size="11.5" fill="#8250df" font-style="italic">Upgraded deliberately: released as a git tag vX.Y.Z.</text>
+  <rect x="60" y="650" width="472" height="172" rx="9" fill="#f5effc" stroke="#c4b3e8" stroke-width="1.1"/>
+  <text x="76" y="674" font-size="12.5" font-weight="700" fill="#6639ba">The one hard rule</text>
+  <text x="76" y="696" font-size="12" fill="#5a4a7a">No private instance identity, real email, secret, or persona ever</text>
+  <text x="76" y="714" font-size="12" fill="#5a4a7a">appears in engine code, templates, tests, or docs.</text>
+  <text x="76" y="736" font-size="12" fill="#5a4a7a">A generally useful capability is promoted here de-identified:</text>
+  <text x="76" y="754" font-size="12" fill="#5a4a7a">placeholders for identity, configuration for choices, and</text>
+  <text x="76" y="772" font-size="12" fill="#5a4a7a">behavioral tests for every safety property.</text>
+  <text x="76" y="802" font-size="11.5" fill="#8250df" font-style="italic">Upgraded deliberately: released as a git tag vX.Y.Z.</text>
 
   <!-- ==================== INSTANCE (right) ==================== -->
-  <rect x="728" y="98" width="512" height="712" rx="14" fill="#e9f5ee" stroke="#1a7f37" stroke-width="1.5"/>
+  <rect x="728" y="98" width="512" height="744" rx="14" fill="#e9f5ee" stroke="#1a7f37" stroke-width="1.5"/>
   <text x="748" y="128" font-size="16" font-weight="700" fill="#116329">your brain — the INSTANCE  <tspan font-weight="400" font-size="12" fill="#4c8f63">(private, yours)</tspan></text>
-  <text x="748" y="150" font-size="12.5" fill="#2f4a3a">One company's whole back office as plain files. All real</text>
-  <text x="748" y="167" font-size="12.5" fill="#2f4a3a">data. Pins the engine by tag; stays private forever.</text>
+  <text x="748" y="150" font-size="12.5" fill="#2f4a3a">One organization's back office as plain files. All real data.</text>
+  <text x="748" y="167" font-size="12.5" fill="#2f4a3a">Pins the engine by tag; stays private forever.</text>
 
-  <!-- config -->
-  <rect x="748" y="184" width="472" height="66" rx="9" fill="#ffffff" stroke="#a9d6bb" stroke-width="1.1"/>
+  <rect x="748" y="184" width="472" height="96" rx="9" fill="#ffffff" stroke="#a9d6bb" stroke-width="1.1"/>
   <text x="764" y="208" font-size="13" font-weight="700" fill="#1f2328">animamesh.config.json <tspan font-weight="400" font-size="11.5" fill="#4c8f63">— the pairing</tspan></text>
-  <text x="764" y="230" font-size="12" fill="#33513f">engine.ref (pin) · cognition.overrides · direction/delivery</text>
-  <text x="764" y="244" font-size="12" fill="#33513f">· identity/persona · D11 activation gates</text>
+  <text x="764" y="230" font-size="12" fill="#33513f">engine.ref · identity/persona · activation gates · A2A</text>
+  <text x="764" y="248" font-size="12" fill="#33513f">cognition.overrides · delivery channels · direction agent</text>
+  <text x="764" y="266" font-size="11.5" fill="#4c8f63" font-style="italic">channel allowlists, budgets, and polling are Worker env controls</text>
 
-  <!-- bundle -->
-  <rect x="748" y="262" width="472" height="216" rx="9" fill="#ffffff" stroke="#a9d6bb" stroke-width="1.1"/>
-  <text x="764" y="286" font-size="13.5" font-weight="700" fill="#1f2328">bundle/ — the knowledge (one concept per file)</text>
-  <text x="764" y="308" font-size="12" fill="#33513f">constitution.md — immutable hard limits (machine-read)</text>
-  <text x="764" y="328" font-size="12" fill="#33513f">facts/ — stable facts (status: verified / unverified)</text>
-  <text x="764" y="348" font-size="12" fill="#33513f">decisions/ — dated, immutable; supersede, never edit</text>
-  <text x="764" y="368" font-size="12" fill="#33513f">events/ — append-only; corrections are new events</text>
-  <text x="764" y="388" font-size="12" fill="#33513f">agents/*.md — each agent IS a concept (level·model·harness)</text>
-  <text x="764" y="408" font-size="12" fill="#33513f">ops/calendar.md — what agents wake up to check</text>
-  <text x="764" y="428" font-size="12" fill="#33513f">ops/nags.md — reminders that repeat until done</text>
-  <text x="764" y="448" font-size="12" fill="#33513f">index.md · log.md — reserved (log is append-only)</text>
-  <text x="764" y="468" font-size="11.5" fill="#4c8f63" font-style="italic">readable by any human in any editor; hostage to no vendor</text>
+  <rect x="748" y="292" width="472" height="236" rx="9" fill="#ffffff" stroke="#a9d6bb" stroke-width="1.1"/>
+  <text x="764" y="316" font-size="13.5" font-weight="700" fill="#1f2328">bundle/ — the knowledge (one concept per file)</text>
+  <text x="764" y="338" font-size="12" fill="#33513f">constitution.md — immutable hard limits (machine-read)</text>
+  <text x="764" y="358" font-size="12" fill="#33513f">facts/ — stable facts (status: verified / unverified)</text>
+  <text x="764" y="378" font-size="12" fill="#33513f">decisions/ — dated, immutable; supersede, never rewrite</text>
+  <text x="764" y="398" font-size="12" fill="#33513f">events/ — append-only; corrections are new events</text>
+  <text x="764" y="418" font-size="12" fill="#33513f">agents/*.md — level · model · harness · sources opt-in</text>
+  <text x="764" y="438" font-size="12" fill="#33513f">ops/calendar.md — what agents wake up to check</text>
+  <text x="764" y="458" font-size="12" fill="#33513f">ops/nags.md — reminders that repeat until done</text>
+  <text x="764" y="478" font-size="12" fill="#33513f">index.md · log.md — reserved (log is append-only)</text>
+  <text x="764" y="508" font-size="11.5" fill="#4c8f63" font-style="italic">read sources are external context; they never become write channels</text>
 
-  <!-- state + artifacts -->
-  <rect x="748" y="490" width="472" height="128" rx="9" fill="#ffffff" stroke="#a9d6bb" stroke-width="1.1"/>
-  <text x="764" y="514" font-size="13.5" font-weight="700" fill="#1f2328">state + run artifacts (git IS the database)</text>
-  <text x="764" y="536" font-size="12" fill="#33513f">ledger/actions.jsonl — append-only action ledger (audit)</text>
-  <text x="764" y="556" font-size="12" fill="#33513f">approvals/ — the file-based "needs you" gate</text>
-  <text x="764" y="576" font-size="12" fill="#33513f">reports/ · drafts/ — briefs, direction replies, L2 drafts</text>
-  <text x="764" y="598" font-size="12" fill="#33513f">cloud/ — this company's wrangler deploy configs</text>
+  <rect x="748" y="540" width="472" height="118" rx="9" fill="#ffffff" stroke="#a9d6bb" stroke-width="1.1"/>
+  <text x="764" y="564" font-size="13.5" font-weight="700" fill="#1f2328">durable evidence + deploy workspace</text>
+  <text x="764" y="586" font-size="12" fill="#33513f">ledger/actions.jsonl — append-only action ledger</text>
+  <text x="764" y="606" font-size="12" fill="#33513f">approvals/ · reports/ · drafts/ — gates and run artifacts</text>
+  <text x="764" y="626" font-size="12" fill="#33513f">cloud/ — this instance's non-secret wrangler deploy configs</text>
+  <text x="764" y="646" font-size="11.5" fill="#4c8f63" font-style="italic">cloud beats and direction drains land as one commit each</text>
 
-  <!-- secrets -->
-  <rect x="748" y="630" width="472" height="160" rx="9" fill="#eef8f2" stroke="#a9d6bb" stroke-width="1.1"/>
-  <text x="764" y="654" font-size="12.5" font-weight="700" fill="#116329">.env.local — secrets (git-ignored, mode 600)</text>
-  <text x="764" y="676" font-size="12" fill="#33513f">API keys, OAuth tokens, bot tokens — referenced by NAME</text>
-  <text x="764" y="694" font-size="12" fill="#33513f">in config and code, never committed, never echoed.</text>
-  <text x="764" y="716" font-size="12" fill="#33513f">Cloud secrets live on the Worker (wrangler secret put).</text>
-  <line x1="764" y1="732" x2="1204" y2="732" stroke="#d4ebdd"/>
-  <text x="764" y="754" font-size="11.5" fill="#4c8f63" font-style="italic">The engine can read this brain over a local path OR over</text>
-  <text x="764" y="771" font-size="11.5" fill="#4c8f63" font-style="italic">GitHub — same files, either runtime (the storage seam).</text>
+  <rect x="748" y="670" width="472" height="152" rx="9" fill="#eef8f2" stroke="#a9d6bb" stroke-width="1.1"/>
+  <text x="764" y="694" font-size="12.5" font-weight="700" fill="#116329">credentials stay outside git</text>
+  <text x="764" y="716" font-size="12" fill="#33513f">local: .env / .env.local (model, source, channel tokens)</text>
+  <text x="764" y="736" font-size="12" fill="#33513f">cloud: Worker secrets (wrangler secret put)</text>
+  <text x="764" y="756" font-size="12" fill="#33513f">code and tracked config reference names, never secret values</text>
+  <line x1="764" y1="770" x2="1204" y2="770" stroke="#d4ebdd"/>
+  <text x="764" y="792" font-size="11.5" fill="#4c8f63" font-style="italic">The engine reaches the same brain through store-fs locally or</text>
+  <text x="764" y="809" font-size="11.5" fill="#4c8f63" font-style="italic">store-github in the cloud — one contract, two transports.</text>
 
   <!-- ==================== ARROWS BETWEEN ==================== -->
-  <!-- pins by tag: instance -> engine -->
-  <path d="M 726 250 L 554 250" stroke="#57606a" stroke-width="1.4" fill="none" marker-end="url(#ar)"/>
-  <text x="640" y="240" font-size="11.5" fill="#57606a" text-anchor="middle" font-weight="600">depends on</text>
-  <text x="640" y="266" font-size="11" fill="#57606a" text-anchor="middle">pins engine @vX.Y.Z</text>
+  <path d="M 726 248 L 554 248" stroke="#57606a" stroke-width="1.4" fill="none" marker-end="url(#ar)"/>
+  <text x="640" y="238" font-size="11.5" fill="#57606a" text-anchor="middle" font-weight="600">depends on</text>
+  <text x="640" y="264" font-size="11" fill="#57606a" text-anchor="middle">pins engine @vX.Y.Z</text>
 
-  <!-- generalize me: engine <- instance (promotion) -->
-  <path d="M 726 700 L 554 700" stroke="#57606a" stroke-width="1.4" fill="none" stroke-dasharray="5 4" marker-start="url(#ar)"/>
-  <text x="640" y="690" font-size="11.5" fill="#57606a" text-anchor="middle" font-weight="600">"generalize me"</text>
-  <text x="640" y="716" font-size="11" fill="#57606a" text-anchor="middle">promote, de-identified</text>
+  <path d="M 726 742 L 554 742" stroke="#57606a" stroke-width="1.4" fill="none" stroke-dasharray="5 4" marker-start="url(#ar)"/>
+  <text x="640" y="732" font-size="11.5" fill="#57606a" text-anchor="middle" font-weight="600">generalize</text>
+  <text x="640" y="758" font-size="11" fill="#57606a" text-anchor="middle">promote, de-identified</text>
 
-  <!-- one engine many instances -->
-  <text x="640" y="470" font-size="11.5" fill="#8a8f98" text-anchor="middle" font-weight="600">one engine,</text>
-  <text x="640" y="487" font-size="11.5" fill="#8a8f98" text-anchor="middle">many companies</text>
-  <rect x="600" y="500" width="80" height="26" rx="5" fill="#f3fbf6" stroke="#c8e6d3" stroke-width="1"/>
-  <text x="640" y="517" font-size="10.5" fill="#5f9676" text-anchor="middle">brain-acme</text>
-  <rect x="608" y="530" width="80" height="26" rx="5" fill="#f3fbf6" stroke="#c8e6d3" stroke-width="1"/>
-  <text x="648" y="547" font-size="10.5" fill="#5f9676" text-anchor="middle">brain-beta</text>
+  <text x="640" y="476" font-size="11.5" fill="#8a8f98" text-anchor="middle" font-weight="600">one engine,</text>
+  <text x="640" y="493" font-size="11.5" fill="#8a8f98" text-anchor="middle">many isolated brains</text>
+  <rect x="600" y="506" width="80" height="26" rx="5" fill="#f3fbf6" stroke="#c8e6d3" stroke-width="1"/>
+  <text x="640" y="523" font-size="10.5" fill="#5f9676" text-anchor="middle">instance A</text>
+  <rect x="608" y="536" width="80" height="26" rx="5" fill="#f3fbf6" stroke="#c8e6d3" stroke-width="1"/>
+  <text x="648" y="553" font-size="10.5" fill="#5f9676" text-anchor="middle">instance B</text>
 
   <!-- ==================== LEGEND ==================== -->
-  <line x1="40" y1="838" x2="1240" y2="838" stroke="#d0d7de"/>
-  <text x="40" y="862" font-size="12" fill="#414a55"><tspan font-weight="700" fill="#6639ba">The engine</tspan> is a codebase you pin, not a service you share. Nothing about your company lives in it, so it upgrades independently and any AI model can read it.</text>
-  <text x="40" y="884" font-size="12" fill="#414a55"><tspan font-weight="700" fill="#116329">The brain</tspan> is everything about your company as git-tracked markdown + JSON. To start company #2, you make a second brain and point it at the same engine tag.</text>
-  <text x="40" y="906" font-size="12" fill="#414a55"><tspan font-weight="700" fill="#57606a">Both runtimes write here.</tspan> The laptop CLI and the cloud Worker both run the engine over this brain and commit their work — so a local clone must <tspan font-family="ui-monospace, monospace" font-size="11">git pull</tspan> to stay in sync.</text>
+  <line x1="40" y1="872" x2="1240" y2="872" stroke="#d0d7de"/>
+  <text x="40" y="896" font-size="12" fill="#414a55"><tspan font-weight="700" fill="#6639ba">The engine</tspan> is pinned code, not a shared service. Its safety and seams upgrade independently of every private instance.</text>
+  <text x="40" y="918" font-size="12" fill="#414a55"><tspan font-weight="700" fill="#116329">The brain</tspan> owns knowledge and durable evidence; external sources remain read-only inputs selected per agent.</text>
+  <text x="40" y="940" font-size="12" fill="#414a55"><tspan font-weight="700" fill="#57606a">Both runtimes use the storage seam.</tspan> The CLI writes the local clone; the cloud Worker commits through GitHub, so local work starts with <tspan font-family="ui-monospace, monospace" font-size="11">git pull --rebase</tspan>.</text>
 </svg>

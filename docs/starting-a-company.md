@@ -27,6 +27,7 @@ to understand before you start — the sorting checklist is in
 |---|---|
 | `src/harness/` | the run loop — heartbeat and direction cores |
 | `src/providers/` | the model chokepoint (moonshot-api, anthropic-api, …) |
+| `src/sources/` | read-only prompt context (OneDrive/SharePoint, GitHub docs, local working trees) |
 | `src/gates/` + `src/autonomy/` | the L1–L4 ladder, enforced in code |
 | `src/ledger/` + `src/okf/` | append-only audit + the bundle format |
 | `src/instance/` | the storage seam — read a brain from disk *or* GitHub |
@@ -45,16 +46,21 @@ git-tracked plain files:
 
 | Path | What it holds |
 |---|---|
-| `animamesh.config.json` | the pairing: `engine.ref` pin, `cognition.overrides`, `direction`/`delivery`, identity/persona, activation gates |
+| `animamesh.config.json` | the pairing: `engine.ref` pin, `cognition.overrides`, delivery, direction agent, identity/persona, activation gates |
 | `bundle/constitution.md` | immutable hard limits (machine-read by the gates) |
 | `bundle/facts/ decisions/ events/` | stable / dated-immutable / append-only knowledge |
-| `bundle/agents/*.md` | each agent as a concept file (level · model · harness) |
+| `bundle/agents/*.md` | each agent as a concept file (level · model · harness · optional `sources:`) |
 | `bundle/ops/calendar.md` + `ops/nags.md` | what agents wake to check + reminders that repeat |
 | `bundle/index.md` + `log.md` | reserved (log is append-only) |
 | `ledger/actions.jsonl` | the append-only action ledger (audit seam) |
 | `approvals/` `reports/` `drafts/` | the "needs you" gate + run artifacts |
 | `cloud/` | this company's `wrangler.jsonc` deploy configs |
 | `.env.local` | secrets, git-ignored, mode 600 — referenced by name, never committed |
+
+Cloud-only channel controls — sender allowlists, direction budgets, and Gmail
+poll cadence — are Worker vars/secrets, not brain knowledge. Keeping that edge
+policy in the deploy environment lets the Worker reject or defer input before
+any model call.
 
 **Starting company #2** is just a second brain pointed at the same engine
 tag — nothing is shared between companies, and nothing carries over except
@@ -129,6 +135,12 @@ the hard way:
 - Route around vendor trouble with `animamesh.config.json →
   cognition.overrides` (declared harness → actually-executed harness) —
   a config edit, not an agent rewrite, and reversible by deleting the block.
+
+For live document context, add `sources: [onedrive]`,
+`sources: [github-docs]`, or both to only the agents that need it. The harness
+inlines a current read-only listing during prompt assembly. A missing or failed
+source is surfaced as an explicit context gap and does not abort the run. The
+current prompt surface includes listing metadata, not document bodies.
 
 ## 4. Connect the principal
 

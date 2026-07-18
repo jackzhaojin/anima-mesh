@@ -9,7 +9,7 @@ specifics (those live in each instance's own repo — see the boundary doc).
 
 1. [../README.md](../README.md) — what AnimaMesh is and the design rules
 2. [architecture.md](architecture.md) — the whole system on one page, with
-   the cloud diagram and the Discord message flows
+   the cloud diagram, read-source boundary, and principal message flows
 3. [engine-vs-instance.md](engine-vs-instance.md) — the sorting rule for
    where knowledge and code belong (run its checklist whenever unsure)
 4. [starting-a-company.md](starting-a-company.md) — empty directory → a
