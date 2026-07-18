@@ -16,6 +16,8 @@ export interface AgentConcept {
   harness: string;
   heartbeat?: string;
   whitelist: string[];
+  /** Read sources inlined into this agent's prompt context (e.g. "onedrive"). */
+  sources: string[];
   commercial: boolean;
   /** The job description — handed to the provider as the core of the prompt. */
   job: string;
@@ -37,6 +39,7 @@ export function agentFromConcept(concept: Concept): AgentConcept {
     harness,
     heartbeat: typeof fm.heartbeat === "string" ? fm.heartbeat : undefined,
     whitelist: Array.isArray(fm.whitelist) ? fm.whitelist.filter((x): x is string => typeof x === "string") : [],
+    sources: Array.isArray(fm.sources) ? fm.sources.filter((x): x is string => typeof x === "string") : [],
     commercial: fm.commercial === true,
     job: concept.body.trim(),
     relPath: concept.relPath,

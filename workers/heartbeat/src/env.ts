@@ -17,6 +17,9 @@ export interface Env {
   DIRECTION_DAILY_CAP?: string; // max direction runs per local day; default 20 (decision Q4)
   DIRECTION_GMAIL_POLL_MINUTES?: string; // Gmail poll cadence; 0/absent = inbound email off (decision Q3b)
   DIRECTION_GMAIL_ALLOWED_FROM?: string; // only mail from this address becomes a direction (decision Q6)
+  MSGRAPH_TENANT?: string; // Entra tenant id/domain; default "common"
+  MSGRAPH_DRIVE_ID?: string; // a specific drive (SharePoint library); default the consenting user's OneDrive
+  MSGRAPH_CABINET_PATH?: string; // folder under the drive root that IS the cabinet; default the root
   // -- secrets --
   GITHUB_TOKEN: string;
   MOONSHOT_API_KEY: string; // the cloud tier's ONLY cognition key (no Claude key exists on Workers)
@@ -28,6 +31,9 @@ export interface Env {
   GMAIL_CLIENT_SECRET?: string;
   GMAIL_REFRESH_TOKEN?: string;
   AGENT_EMAIL?: string; // the persona's sending identity
+  MSGRAPH_CLIENT_ID?: string; // OneDrive cabinet, READ-ONLY (delegated Files.Read.All — the 'onedrive' source)
+  MSGRAPH_CLIENT_SECRET?: string; // absent for public clients (device-code consent)
+  MSGRAPH_REFRESH_TOKEN?: string;
 }
 
 /** Flatten the Worker env into the engine's injectable env record. */
@@ -43,5 +49,11 @@ export function envRecord(env: Env): Record<string, string | undefined> {
     GMAIL_CLIENT_SECRET: env.GMAIL_CLIENT_SECRET,
     GMAIL_REFRESH_TOKEN: env.GMAIL_REFRESH_TOKEN,
     AGENT_EMAIL: env.AGENT_EMAIL,
+    MSGRAPH_CLIENT_ID: env.MSGRAPH_CLIENT_ID,
+    MSGRAPH_CLIENT_SECRET: env.MSGRAPH_CLIENT_SECRET,
+    MSGRAPH_REFRESH_TOKEN: env.MSGRAPH_REFRESH_TOKEN,
+    MSGRAPH_TENANT: env.MSGRAPH_TENANT,
+    MSGRAPH_DRIVE_ID: env.MSGRAPH_DRIVE_ID,
+    MSGRAPH_CABINET_PATH: env.MSGRAPH_CABINET_PATH,
   };
 }

@@ -3,6 +3,7 @@ import { loadGatedTypes, assertActionAllowed } from "../gates/gatekeeper.js";
 import { resolveProvider, type AgentWorkerProvider, type ApiProviderContext } from "../providers/index.js";
 import type { InstanceStore } from "../instance/store.js";
 import type { InstanceConfig } from "../instance/config-core.js";
+import { sourceSections } from "../sources/registry.js";
 import {
   verifyConformanceBundle,
   verifyExpectedOutputsStore,
@@ -121,8 +122,8 @@ export async function runAgentCore(options: RunCoreOptions): Promise<RunReport> 
 
   await store.appendLedger({ ts: startedAt, runId, agent: agent.name, action: "run-started", type: "report" });
 
-  const prompt = await buildPrompt(agent, store, config, dateStamp);
   const providerCtx = options.providerCtx ?? { env: store.instanceEnv?.() ?? {} };
+  const prompt = await buildPrompt(agent, store, config, dateStamp, providerCtx, progress);
   const cognition = effectiveCognition(agent, config);
   const provider = options.provider ?? resolveProvider(cognition.harness, providerCtx);
   provider.assertConfigured();
@@ -201,6 +202,8 @@ async function buildPrompt(
   store: InstanceStore,
   config: InstanceConfig,
   dateStamp: string,
+  providerCtx?: ApiProviderContext,
+  log?: (note: string) => void,
 ): Promise<string> {
   const sections: string[] = [];
   sections.push(
@@ -217,10 +220,18 @@ async function buildPrompt(
     "- If something needs the principal's decision or approval, say so explicitly in a `## Needs you` section.",
     "- If nothing needs attention, say so plainly — a short honest report beats an inflated one.",
   );
+  // Declared read sources (agent frontmatter opt-in) — live external context
+  // inlined so L1 runs still need no tool access. Failures become honest
+  // sections, never aborted runs.
+  const external =
+    agent.sources.length > 0
+      ? await sourceSections(agent.sources, { env: providerCtx?.env ?? {}, fetchImpl: providerCtx?.fetchImpl, log })
+      : [];
   return [
     sections.join("\n"),
     await bundleContext(store, config),
     await instanceContext(store),
+    ...external,
     "\n## Output\nReturn ONLY the markdown body of your report (no code fences around the whole thing).",
   ].join("\n");
 }

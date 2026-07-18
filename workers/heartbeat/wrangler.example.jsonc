@@ -28,10 +28,16 @@
     // "DIRECTION_DAILY_CAP": "20",                           // direction budget (decision Q4)
     // "DIRECTION_GMAIL_POLL_MINUTES": "20",                  // Gmail poll cadence; 0/absent = inbound email off
     // "DIRECTION_GMAIL_ALLOWED_FROM": "<principal email>"    // only this sender's mail becomes directions
+    // "MSGRAPH_TENANT": "<entra tenant id or domain>",        // 'onedrive' source; default "common"
+    // "MSGRAPH_DRIVE_ID": "<drive id>",                       // a specific drive; default the consenting user's OneDrive
+    // "MSGRAPH_CABINET_PATH": "<folder under the drive root>" // default the drive root
   }
   // Secrets (wrangler secret put): GITHUB_TOKEN, MOONSHOT_API_KEY,
   // DISCORD_BOT_TOKEN, DISCORD_DM_USER_ID, BEAT_TRIGGER_TOKEN;
   // for inbound email also GMAIL_CLIENT_ID, GMAIL_CLIENT_SECRET,
-  // GMAIL_REFRESH_TOKEN (needs gmail.modify scope), AGENT_EMAIL.
+  // GMAIL_REFRESH_TOKEN (needs gmail.modify scope), AGENT_EMAIL;
+  // for the 'onedrive' read source MSGRAPH_CLIENT_ID, MSGRAPH_REFRESH_TOKEN
+  // (+ MSGRAPH_CLIENT_SECRET only for confidential clients) — delegated
+  // Files.Read.All consent, read-only; validate with GET /graph/check.
   // NO ANTHROPIC_API_KEY and NO CLAUDE_CODE_OAUTH_TOKEN — ever.
 }

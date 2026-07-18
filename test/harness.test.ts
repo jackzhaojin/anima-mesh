@@ -80,6 +80,43 @@ describe("runAgent — the one seam, end to end", () => {
     expect(fake.calls[0]!.prompt).toContain("ops/nags.md");
   });
 
+  it("inlines a declared read source's live listing — and its failure is an honest section, not an aborted run", async () => {
+    const sourced = concept(
+      "agent",
+      { name: "keeper", title: "Keeper", level: "L1", model: "m", harness: "fake", sources: ["onedrive"] },
+      "Catalog the filing cabinet.",
+    );
+    const root = await makeInstance({ "bundle/agents/keeper.md": sourced });
+    const fake = new FakeProvider(() => ({ text: "ok" }));
+    const graphEnv = { MSGRAPH_CLIENT_ID: "c", MSGRAPH_REFRESH_TOKEN: "r" };
+    const fetchImpl = (async (url: string | URL | Request) => {
+      const u = String(url);
+      if (u.includes("login.microsoftonline.com")) return Response.json({ access_token: "at" });
+      if (u.includes("/me/drive/root?")) return Response.json({ id: "root-1", folder: {}, parentReference: { driveId: "d1" } });
+      if (u.includes("/items/root-1/children")) {
+        return Response.json({ value: [{ id: "f1", name: "Finance", folder: {} }] });
+      }
+      return Response.json({ value: [] });
+    }) as typeof fetch;
+
+    await runAgent({ instanceRoot: root, agentName: "keeper", provider: fake, providerCtx: { env: graphEnv, fetchImpl } });
+    const prompt = fake.calls[0]!.prompt;
+    expect(prompt).toContain("Filing cabinet (OneDrive via Microsoft Graph, read-only)");
+    expect(prompt).toContain("Finance/");
+
+    // Outage → honest section, run still completes.
+    const down = (async () => new Response("boom", { status: 500 })) as typeof fetch;
+    const fake2 = new FakeProvider(() => ({ text: "ok" }));
+    const report = await runAgent({ instanceRoot: root, agentName: "keeper", provider: fake2, providerCtx: { env: graphEnv, fetchImpl: down } });
+    expect(report.ok).toBe(true);
+    expect(fake2.calls[0]!.prompt).toContain("configured but unreachable");
+
+    // Agents that declare no sources never touch the seam.
+    const fake3 = new FakeProvider(() => ({ text: "ok" }));
+    await runAgent({ instanceRoot: root, agentName: "scout", provider: fake3, providerCtx: { env: graphEnv, fetchImpl: down } });
+    expect(fake3.calls[0]!.prompt).not.toContain("Filing cabinet");
+  });
+
   it("feeds latest spoke reports and pending approvals into the prompt — the hub sees the mesh", async () => {
     const root = await makeInstance({
       "reports/2026-07-04-scout-aaaa.md": "---\ntype: report\n---\n\nYesterday: nothing needed.",

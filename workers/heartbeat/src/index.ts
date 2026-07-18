@@ -1,6 +1,7 @@
 import { GitHubInstanceStore } from "../../../src/instance/store-github.js";
 import { githubToken } from "../../../src/instance/github-auth.js";
 import { buildAgentCardFromBundle } from "../../../src/a2a/card-core.js";
+import { listCabinet, msGraphConfigured } from "../../../src/sources/msgraph.js";
 import { envRecord, type Env } from "./env.js";
 import { HeartbeatDO } from "./heartbeat-do.js";
 import { DirectionDO } from "./direction-do.js";
@@ -9,7 +10,8 @@ import { handleInteraction } from "./interactions.js";
 export { HeartbeatDO, DirectionDO };
 
 /**
- * The heartbeat Worker: three public routes, everything else 404. All A2A
+ * The heartbeat Worker: a handful of routes (two of them bearer-gated),
+ * everything else 404. All A2A
  * surfaces are short-connection by decision (streaming: false) — never add
  * an SSE endpoint here; on Durable Objects idle SSE time is billed wall
  * clock with no hibernation.
@@ -47,6 +49,31 @@ export default {
         return new Response("unauthorized", { status: 401 });
       }
       return stub.fetch("https://do/trigger", { method: "POST" });
+    }
+
+    if (url.pathname === "/graph/check" && req.method === "GET") {
+      // Operator validation for the 'onedrive' source: same bearer gate as
+      // /beat (listing names is instance data — never expose unauthenticated).
+      const auth = req.headers.get("authorization") ?? "";
+      if (auth !== `Bearer ${env.BEAT_TRIGGER_TOKEN}`) {
+        return new Response("unauthorized", { status: 401 });
+      }
+      const ctx = { env: envRecord(env) };
+      if (!msGraphConfigured(ctx)) {
+        return Response.json({ ok: false, error: "msgraph not configured (MSGRAPH_CLIENT_ID/MSGRAPH_REFRESH_TOKEN)" }, { status: 503 });
+      }
+      try {
+        const listing = await listCabinet(ctx, { maxDepth: 1, maxEntries: 50 });
+        return Response.json({
+          ok: true,
+          root: listing.root,
+          count: listing.entries.length,
+          truncated: listing.truncated,
+          entries: listing.entries.map((e) => ({ name: e.name, folder: e.isFolder, modified: e.lastModified?.slice(0, 10) })),
+        });
+      } catch (err) {
+        return Response.json({ ok: false, error: err instanceof Error ? err.message : String(err) }, { status: 502 });
+      }
     }
 
     if (url.pathname === "/.well-known/agent-card.json" && req.method === "GET") {

@@ -142,6 +142,24 @@ default the store to the local directory and register subprocess providers.
   (`streaming: false` — short connections by design; dual-gated commercial
   agents are not advertised). `a2a/card.ts` is the fs wrapper.
 
+## sources/ — external READ context
+
+The inverse of channels: document stores an agent's prompt is assembled
+*from*, read-only by construction (adapters expose listing + content reads,
+nothing else). Agents opt in per-concept via `sources:` frontmatter;
+`run-core` inlines each declared source's section at prompt-assembly time, so
+L1 runs still need no tool access. Failure posture: unconfigured or
+unreachable sources become honest prompt sections ("do not guess at cabinet
+contents"), never aborted runs.
+
+- `sources/msgraph.ts` — the `onedrive` source: Microsoft Graph via OAuth
+  refresh token (secret optional — device-code public clients have none),
+  bounded breadth-first cabinet listing that follows Teams/SharePoint
+  shortcuts (`remoteItem`) into their remote drives, and clipped text-only
+  file reads. Env contract in the module header; delegated read scopes only.
+- `sources/registry.ts` — `sourceSections(names, ctx)`, the harness's one
+  entry point.
+
 ## workers/ — the cloud tier (repo root, own workspaces)
 
 `workers/heartbeat/`: a Cloudflare Worker + two Durable Objects. `HeartbeatDO`

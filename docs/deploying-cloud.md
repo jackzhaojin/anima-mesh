@@ -41,6 +41,7 @@ Copy each from the engine's `workers/*/wrangler.example.jsonc` and fill in:
 | `DISCORD_PUBLIC_KEY` | the Discord app's request-verification key (inbound directions) |
 | `DIRECTION_DAILY_CAP` | direction budget per day (e.g. `20`) |
 | `DIRECTION_GMAIL_POLL_MINUTES` / `DIRECTION_GMAIL_ALLOWED_FROM` | email poll; unset = off |
+| `MSGRAPH_TENANT` / `MSGRAPH_DRIVE_ID` / `MSGRAPH_CABINET_PATH` | where the 'onedrive' read source points; all optional |
 
 Both Durable Objects need bindings + a `new_sqlite_classes` migration —
 the example file shows the shape.
@@ -52,6 +53,7 @@ the example file shows the shape.
 | `DISCORD_BOT_TOKEN` / `DISCORD_DM_USER_ID` | brief + failure DMs; the direction sender gate |
 | `BEAT_TRIGGER_TOKEN` | gates manual `POST /beat` (mint with `openssl rand -hex 32`) |
 | `GMAIL_CLIENT_ID` / `GMAIL_CLIENT_SECRET` / `GMAIL_REFRESH_TOKEN` / `AGENT_EMAIL` | only if the email surfaces are on |
+| `MSGRAPH_CLIENT_ID` / `MSGRAPH_REFRESH_TOKEN` (+ `MSGRAPH_CLIENT_SECRET` for confidential clients) | the 'onedrive' read source (agents opting in via `sources:` frontmatter); delegated read-only consent; validate with bearer-gated `GET /graph/check` |
 
 The web Worker's contract is in
 [workers/web/README.md](../workers/web/README.md) — narrower on purpose.

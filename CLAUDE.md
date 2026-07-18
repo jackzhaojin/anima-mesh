@@ -60,6 +60,11 @@ src/
                 verifiers(-core)
   channels/     delivery registry (registry.ts, Workers-safe: discord/notion/
                 gmail/console, injected env) · index.ts fs wrapper
+  sources/      READ-ONLY external context (agents opt in via `sources:`
+                frontmatter; inlined at prompt assembly; failures become
+                honest sections, never aborted runs) · msgraph.ts = the
+                'onedrive' cabinet source (refresh-token grant, bounded BFS
+                listing, shortcut/remoteItem traversal, text-only reads)
   a2a/          agent card: card-core.ts pure assembly · card.ts fs wrapper
   init/         interview (file/flags/interactive/agentic) · scaffoldBrain
                 (acceptance test: its own output must pass conformance)

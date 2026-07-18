@@ -89,6 +89,26 @@ describe("router", () => {
     expect(body.lastBeat.skipped).toBe(3);
   });
 
+  it("GET /graph/check is bearer-gated like /beat — listing names is instance data", async () => {
+    const bare = await SELF.fetch("https://worker.test/graph/check");
+    expect(bare.status).toBe(401);
+    const wrong = await SELF.fetch("https://worker.test/graph/check", {
+      headers: { authorization: "Bearer wrong-token" },
+    });
+    expect(wrong.status).toBe(401);
+  });
+
+  it("GET /graph/check names the missing config instead of erroring opaquely", async () => {
+    // This test env deliberately has no MSGRAPH_* bindings — the pre-consent state.
+    const res = await SELF.fetch("https://worker.test/graph/check", {
+      headers: { authorization: `Bearer ${env.BEAT_TRIGGER_TOKEN}` },
+    });
+    expect(res.status).toBe(503);
+    const body = (await res.json()) as { ok: boolean; error: string };
+    expect(body.ok).toBe(false);
+    expect(body.error).toContain("MSGRAPH_CLIENT_ID");
+  });
+
   it("serves the public agent card from the remote brain, url rewritten to origin", async () => {
     mockGitHub({ flush: false }); // read-only: one snapshot, no commit
     const res = await SELF.fetch("https://worker.test/.well-known/agent-card.json");
