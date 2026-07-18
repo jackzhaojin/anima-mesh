@@ -124,3 +124,7 @@ references/poc/     read-only PoC examples — NOT engine code, excluded from ts
 `private: true` guards against accidental npm publish (name unconfirmed).
 Release = git tag `vX.Y.Z`; instances pin by tag and upgrade by deliberate ref
 bump.
+
+For every minor or major release, attempt to update [README.md](README.md) to
+explain what changed and remove deprecated or no-longer-applicable material,
+and update [CHANGELOG.md](CHANGELOG.md).
