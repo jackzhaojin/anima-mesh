@@ -90,6 +90,26 @@ export interface RunReport {
   verifierResults: VerifierResult[];
   ok: boolean;
   text: string;
+  /** Normalized provider usage — spend observability for an always-on mesh. */
+  tokens?: TokenCounts;
+}
+
+export interface TokenCounts {
+  input?: number;
+  output?: number;
+}
+
+/**
+ * Providers return vendor-shaped usage (`prompt_tokens`/`completion_tokens`
+ * or `input_tokens`/`output_tokens`); normalize to one shape or nothing.
+ */
+export function normalizeTokens(tokens: unknown): TokenCounts | undefined {
+  if (!tokens || typeof tokens !== "object") return undefined;
+  const t = tokens as Record<string, unknown>;
+  const num = (v: unknown) => (typeof v === "number" && Number.isFinite(v) ? v : undefined);
+  const input = num(t.input_tokens) ?? num(t.prompt_tokens);
+  const output = num(t.output_tokens) ?? num(t.completion_tokens);
+  return input === undefined && output === undefined ? undefined : { input, output };
 }
 
 const DECLARED_ACTIONS = ["run-started", "report-written", "run-completed"];
@@ -172,7 +192,15 @@ export async function runAgentCore(options: RunCoreOptions): Promise<RunReport> 
   });
 
   const finishedAt = clock();
-  await store.appendLedger({ ts: finishedAt, runId, agent: agent.name, action: "run-completed", type: "report" });
+  const tokens = normalizeTokens(result.tokens);
+  await store.appendLedger({
+    ts: finishedAt,
+    runId,
+    agent: agent.name,
+    action: "run-completed",
+    type: "report",
+    ...(tokens ? { detail: { tokens } } : {}),
+  });
 
   const verifierResults: VerifierResult[] = [
     verifyConformanceBundle(await store.loadBundle(), "animamesh"),
@@ -196,6 +224,7 @@ export async function runAgentCore(options: RunCoreOptions): Promise<RunReport> 
     verifierResults,
     ok: allOk(verifierResults),
     text: result.text,
+    tokens,
   };
 }
 

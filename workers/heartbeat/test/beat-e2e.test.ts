@@ -41,6 +41,7 @@ describe("full cloud beat, end to end in workerd", () => {
         failures: unknown[];
         commitSha?: string;
         delivered: boolean;
+        tokens?: { input: number; output: number };
       };
     };
 
@@ -53,6 +54,8 @@ describe("full cloud beat, end to end in workerd", () => {
     expect(body.summary.skipped).toBeGreaterThanOrEqual(1); // librarian (claude-code)
     expect(body.summary.commitSha).toBe(NEW_SHA);
     expect(body.summary.delivered).toBe(true);
+    // Spend visibility: provider usage rolls up into the summary (→ /healthz).
+    expect(body.summary.tokens).toEqual({ input: 100, output: 50 });
 
     // Cognition went to Kimi with the harness-assembled prompt (bundle
     // context, never recall) and the agent's pinned model.
@@ -124,10 +127,13 @@ describe("full cloud beat, end to end in workerd", () => {
     expect(gh.trees).toHaveLength(0);
   });
 
-  it("a failing provider fails that agent, the beat completes and reports it", async () => {
-    // The run-started ledger line still flushes (evidence of the attempt);
-    // an agent-level failure is NOT a beat-level crash, so no failure DM.
+  it("a failing provider fails that agent, the beat completes — and the failure DMs", async () => {
+    // The run-started ledger line still flushes (evidence of the attempt),
+    // and silence-means-success holds for SPOKE failures too: an all-fail
+    // morning must be distinguishable from a quiet "nothing due" one, so
+    // failures > 0 always sends the principal a DM even when no brief exists.
     const gh = mockGitHub();
+    const discord = mockDiscord();
     // Kimi hard-fails (400: not retryable — no backoff stall).
     fetchMock
       .get("https://fake-kimi.test")
@@ -147,8 +153,11 @@ describe("full cloud beat, end to end in workerd", () => {
     expect(body.summary.failures).toHaveLength(1);
     expect(body.summary.failures[0]!.agent).toBe("chief-of-staff");
     expect(body.summary.failures[0]!.error).toMatch(/400/);
-    // Nothing ran → nothing to deliver; the beat still completed cleanly.
+    // Nothing ran → no brief; the DM is the beat's bad-news channel.
     expect(body.summary.delivered).toBe(false);
+    expect(discord.messages).toHaveLength(1);
+    expect(discord.messages[0]!.content).toContain("1/1 due agent(s) failed");
+    expect(discord.messages[0]!.content).toContain("chief-of-staff");
     // The attempt is still evidence: run-started flushed to the ledger.
     expect(gh.trees).toHaveLength(1);
     expect(gh.trees[0]!.tree.map((t) => t.path)).toEqual(["ledger/actions.jsonl"]);

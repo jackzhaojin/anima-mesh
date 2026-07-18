@@ -20,6 +20,8 @@ export interface BeatSummary {
   commitSha?: string;
   delivered: boolean;
   deliveryDetail?: string;
+  /** Summed provider usage across the beat's runs — spend visibility on /healthz. */
+  tokens?: { input: number; output: number };
 }
 
 export async function runCloudBeat(env: Env, log: (note: string) => void = console.log): Promise<BeatSummary> {
@@ -66,6 +68,27 @@ export async function runCloudBeat(env: Env, log: (note: string) => void = conso
       deliveryDetail = "nothing ran (all skipped or already done today) — no delivery";
     }
 
+    // Silence must mean success — for SPOKE failures too, not just a dead
+    // beat. Without this, a morning where every due agent fails delivers
+    // nothing and reads exactly like a quiet "nothing due" day.
+    if (result.failures.length > 0) {
+      const lines = result.failures.map((f) => `${f.agent}: ${f.error.slice(0, 200)}`).join("\n");
+      await attemptFailureDm(
+        record,
+        `⚠️ cloud beat ${date}: ${result.failures.length}/${result.due.length} due agent(s) failed\n${lines}`.slice(0, 1500),
+        log,
+      );
+    }
+
+    let tokens: BeatSummary["tokens"];
+    for (const run of result.runs) {
+      if (!run.tokens) continue;
+      tokens ??= { input: 0, output: 0 };
+      tokens.input += run.tokens.input ?? 0;
+      tokens.output += run.tokens.output ?? 0;
+    }
+    if (tokens) log(`beat tokens: ${tokens.input} in / ${tokens.output} out across ${result.runs.length} run(s)`);
+
     return {
       date,
       due: result.due.length,
@@ -75,6 +98,7 @@ export async function runCloudBeat(env: Env, log: (note: string) => void = conso
       commitSha,
       delivered,
       deliveryDetail,
+      tokens,
     };
   } catch (err) {
     // Silence must mean success: a beat-level failure still attempts a DM.

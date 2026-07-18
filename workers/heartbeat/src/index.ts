@@ -11,6 +11,20 @@ import { handleInteraction } from "./interactions.js";
 export { HeartbeatDO, DirectionDO };
 
 /**
+ * Constant-time bearer check (`crypto.subtle.timingSafeEqual`, a Workers
+ * API): a plain `!==` short-circuits at the first differing byte — a timing
+ * side-channel. Length mismatch returns early, which leaks only length.
+ */
+function bearerOk(header: string | null, expected: string | undefined): boolean {
+  if (!expected) return false;
+  const enc = new TextEncoder();
+  const a = enc.encode(header ?? "");
+  const b = enc.encode(`Bearer ${expected}`);
+  if (a.byteLength !== b.byteLength) return false;
+  return crypto.subtle.timingSafeEqual(a, b);
+}
+
+/**
  * The heartbeat Worker: a handful of routes (two of them bearer-gated),
  * everything else 404. All A2A
  * surfaces are short-connection by decision (streaming: false) — never add
@@ -45,8 +59,7 @@ export default {
     }
 
     if (url.pathname === "/beat" && req.method === "POST") {
-      const auth = req.headers.get("authorization") ?? "";
-      if (auth !== `Bearer ${env.BEAT_TRIGGER_TOKEN}`) {
+      if (!bearerOk(req.headers.get("authorization"), env.BEAT_TRIGGER_TOKEN)) {
         return new Response("unauthorized", { status: 401 });
       }
       return stub.fetch("https://do/trigger", { method: "POST" });
@@ -55,8 +68,7 @@ export default {
     if (url.pathname === "/graph/check" && req.method === "GET") {
       // Operator validation for the 'onedrive' source: same bearer gate as
       // /beat (listing names is instance data — never expose unauthenticated).
-      const auth = req.headers.get("authorization") ?? "";
-      if (auth !== `Bearer ${env.BEAT_TRIGGER_TOKEN}`) {
+      if (!bearerOk(req.headers.get("authorization"), env.BEAT_TRIGGER_TOKEN)) {
         return new Response("unauthorized", { status: 401 });
       }
       const ctx = { env: envRecord(env) };
@@ -80,8 +92,7 @@ export default {
     if (url.pathname === "/docs/check" && req.method === "GET") {
       // Operator validation for the 'github-docs' source: same bearer gate as
       // /beat (listing paths is instance data — never expose unauthenticated).
-      const auth = req.headers.get("authorization") ?? "";
-      if (auth !== `Bearer ${env.BEAT_TRIGGER_TOKEN}`) {
+      if (!bearerOk(req.headers.get("authorization"), env.BEAT_TRIGGER_TOKEN)) {
         return new Response("unauthorized", { status: 401 });
       }
       const ctx = { env: envRecord(env) };

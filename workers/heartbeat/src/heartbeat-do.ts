@@ -52,6 +52,7 @@ export class HeartbeatDO extends DurableObject<Env> {
             failureCount: lastBeat.error ? 1 : (lastBeat.summary?.failures.length ?? 0),
             delivered: lastBeat.summary?.delivered ?? false,
             commitSha: lastBeat.summary?.commitSha,
+            tokens: lastBeat.summary?.tokens,
           }
         : null;
       return Response.json({
