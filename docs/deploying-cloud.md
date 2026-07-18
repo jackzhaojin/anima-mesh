@@ -9,8 +9,11 @@ the instance repo (see [engine-vs-instance.md](engine-vs-instance.md)).*
 
 - Cloudflare account on **Workers Paid** (Durable Objects require it) and
   `wrangler` (needs Node 22+).
-- The brain pushed to a **private GitHub repo**, plus a fine-grained PAT
-  (or GitHub App) scoped to that one repo, Contents read/write.
+- The brain pushed to a **private GitHub repo**, plus write auth scoped to
+  that one repo, Contents read/write. Prefer a **GitHub App** (create under
+  the owning org, install on the brain repo only, generate a private key —
+  no expiry cliff, short-lived minted tokens); a fine-grained PAT works but
+  expires and dies quietly.
 - A cognition credential that works over pure fetch from Workers — and
   **probe the endpoint from a real Worker first**
   ([learnings/2026-07-11](learnings/2026-07-11-workers-egress-waf.md):
@@ -49,7 +52,8 @@ the example file shows the shape.
 
 | Heartbeat secrets (`wrangler secret put`) | Purpose |
 |---|---|
-| `GITHUB_TOKEN` | read + commit the brain |
+| `GITHUB_APP_ID` / `GITHUB_APP_INSTALLATION_ID` / `GITHUB_APP_PRIVATE_KEY` | read + commit the brain via GitHub App installation tokens (preferred — all three or none). The key must be **PKCS#8**: convert GitHub's download once with `openssl pkcs8 -topk8 -nocrypt -in downloaded.pem -out app.pem`, then **pipe it** (`wrangler secret put GITHUB_APP_PRIVATE_KEY < app.pem`) — interactive paste mangles newlines |
+| `GITHUB_TOKEN` | legacy alternative: fine-grained PAT, used only when no App var is set. A partial App trio fails loudly rather than falling back |
 | `MOONSHOT_API_KEY` and/or `CLAUDE_CODE_OAUTH_TOKEN` | cognition (whatever the agents' effective harnesses need) |
 | `DISCORD_BOT_TOKEN` / `DISCORD_DM_USER_ID` | brief + failure DMs; the direction sender gate |
 | `BEAT_TRIGGER_TOKEN` | gates manual `POST /beat` (mint with `openssl rand -hex 32`) |
@@ -104,6 +108,29 @@ the GitHub-hosted document corpus. A source declared by an agent but missing or
 unreachable at run time becomes an honest prompt section rather than aborting
 the beat.
 
+## Deploys from CI (recommended once the Worker shape settles)
+
+Manual `wrangler deploy` couples production to one laptop's OAuth login. The
+CI shape that removes it — the pipeline lives in the **instance** repo (the
+deploy is an instance act; account ids and firm-naming vars stay private):
+
+- **Trigger:** push to the default branch touching the deploy workspace
+  (`cloud/**`) + `workflow_dispatch` for engine-ref-bump redeploys.
+- **Steps:** checkout the brain; read the pinned engine ref from
+  `animamesh.config.json → engine.ref`; checkout the engine at that ref as a
+  **sibling directory** (the instance `wrangler.jsonc` `main` already points
+  at the engine checkout by relative path — a sibling checkout satisfies it
+  by construction); Node 22 + pnpm; run the engine's `pnpm verify` (never
+  deploy an engine state that fails its own gate); `wrangler-action` per
+  Worker.
+- **CI credentials:** a Cloudflare API token scoped to **Workers Scripts:
+  Edit + Account Settings: Read** on the one account, stored as an Actions
+  secret with the account id. Nothing else — CI never holds runtime secrets;
+  Worker secrets persist across deploys and are set only via
+  `wrangler secret put`. A leaked CI token can redeploy code but cannot read
+  or alter a credential.
+- Engine upgrades become auditable deploys: bump `engine.ref`, push, done.
+
 ## Wiring Discord (inbound directions)
 
 1. In the Discord developer portal: register a `/direct` slash command and
@@ -131,7 +158,9 @@ the beat.
   (tracked as an engine issue).
 - **Watch token expiries** (PATs especially) — the mesh dies quietly at the
   GitHub seam when they lapse; put the expiry date in the instance's nag
-  file.
+  file. GitHub App keys don't expire (rotate on your schedule: add a second
+  key, swap the secret, delete the old key — zero downtime), which is the
+  main reason the App path is preferred.
 - `/healthz` is deliberately counts-only (failure strings can carry repo
   coordinates); full detail lives in the token-gated `/beat` response,
   `wrangler tail`, and the git history.

@@ -59,8 +59,10 @@ assertions verifiers build on.
     **exactly one commit per `flush()`** via the git data API —
     `force: false`, one re-snapshot retry on a moved ref, then a loud
     failure. Committer identity `animamesh-cloud` so `git log` attributes
-    the writer. `github-auth.ts` isolates token minting (PAT today; a
-    GitHub App swap touches only that file).
+    the writer. `github-auth.ts` isolates token minting: GitHub App
+    installation tokens (RS256 JWT via WebCrypto, cached ~55 min, loud fail
+    on partial config) with a PAT path when no App var is set — the swap
+    landed in v0.8 and touched only that file, as designed.
 
 ## providers/ — the chokepoint
 

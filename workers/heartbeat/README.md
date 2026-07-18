@@ -47,7 +47,9 @@ own `wrangler.jsonc` (account id, `BRAIN_REPO`/`BRAIN_REF`/`BEAT_TIMEZONE`/
 `BEAT_HOUR`/`DISCORD_PUBLIC_KEY`/`DIRECTION_DAILY_CAP` vars, both DO bindings
 plus optional `MSGRAPH_*`/`GITHUB_DOCS_*` source vars, and
 `new_sqlite_classes` migrations) whose `main` points at this entry, then
-`wrangler deploy` + `wrangler secret put` for `GITHUB_TOKEN`, cognition keys
+`wrangler deploy` + `wrangler secret put` for the GitHub App trio
+`GITHUB_APP_ID`/`GITHUB_APP_INSTALLATION_ID`/`GITHUB_APP_PRIVATE_KEY`
+(or legacy `GITHUB_TOKEN`), cognition keys
 (`MOONSHOT_API_KEY` and/or `CLAUDE_CODE_OAUTH_TOKEN`), `DISCORD_BOT_TOKEN`,
 `DISCORD_DM_USER_ID`, `BEAT_TRIGGER_TOKEN` (and optionally the
 `MOONSHOT_BASE_URL` var for endpoint-scoped keys, `GMAIL_*` for the email

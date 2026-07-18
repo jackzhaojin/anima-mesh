@@ -3,7 +3,7 @@
 AnimaMesh is pre-1.0, so this history is organized by **minor release line**:
 the capability boundary operators actually adopt. Patch tags are deliberately
 rolled into the value and maturity of their minor rather than narrated one by
-one. The latest tag is **v0.7.3**.
+one. The latest tag is **v0.8.0**.
 
 ## Upgrade procedure
 
@@ -28,10 +28,58 @@ The ledger remains append-only; never "migrate" it by editing old entries.
 
 ## [Unreleased]
 
-- Documentation now defines cloud execution as the primary operating mode and
-  summarizes release value at minor-line granularity.
-- Upgrade impact: documentation only; no engine, instance, Worker, or data
-  migration.
+## [v0.8.x] — durable GitHub auth and honest failure signals
+
+**Latest tag: v0.8.0 · 2026-07-18**
+
+### Value
+
+v0.8 removes the two quietest ways the cloud tier could die or lie.
+
+**GitHub App installation tokens** replace the PAT as the brain-repo auth
+(`github-auth.ts` — the long-designed one-file swap). The engine signs a
+short-lived RS256 JWT with WebCrypto, exchanges it for a ~1-hour
+installation token, and caches it until near expiry. No credential with
+repo write ever crosses the network long-lived, and there is no expiry
+cliff: App keys rotate on the operator's schedule, zero-downtime. The PAT
+path remains supported when no App var is set; a **partial** App config
+fails loudly instead of falling back (a silent fallback would mask App
+breakage until the PAT died). PKCS#1 keys — the format GitHub actually
+downloads — are detected and rejected with the exact `openssl pkcs8`
+conversion command in the error.
+
+**Silence means success, now for spoke failures too.** Previously a beat
+where *every* due agent failed delivered no brief and no DM —
+indistinguishable from a quiet "nothing due" morning. Any beat with
+failures now sends the principal a failure DM naming the agents, whether or
+not a brief exists.
+
+Also in the line:
+
+- **Spend visibility**: provider usage normalizes into each run report and
+  the `run-completed` ledger entry, and beats sum it into the summary —
+  `/healthz` now shows tokens per beat for a mesh running on subscription
+  quota.
+- Bearer-gated Worker routes compare tokens in constant time
+  (`crypto.subtle.timingSafeEqual`) instead of `!==`.
+- `docs/deploying-cloud.md` gains the generic CI deploy shape (pipeline in
+  the instance repo, engine `pnpm verify` before any deploy, a
+  Workers-Scripts-only API token, sibling engine checkout).
+- Cloud execution documented as the primary operating mode (docs-only
+  changes previously in Unreleased).
+
+### Upgrade from v0.7
+
+- Pin to v0.8.0 and redeploy both Workers. No bundle, ledger, Durable
+  Object, or dashboard migration; the ledger's new optional
+  `detail.tokens` field on `run-completed` entries is additive.
+- To adopt App auth: create a GitHub App (Contents read/write, installed on
+  the brain repo only), convert its key to PKCS#8, and set
+  `GITHUB_APP_ID` / `GITHUB_APP_INSTALLATION_ID` / `GITHUB_APP_PRIVATE_KEY`
+  on both Workers (pipe the PEM: `wrangler secret put GITHUB_APP_PRIVATE_KEY
+  < app.pem`). Prove a beat, then delete the `GITHUB_TOKEN` secret so a
+  broken App path can never hide behind the fallback.
+- Staying on a PAT requires no change.
 
 ## [v0.7.x] — external document context that works in production
 

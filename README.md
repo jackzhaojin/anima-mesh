@@ -189,12 +189,13 @@ conformance and complete a full agent run against the fake provider.
 
 ## Status
 
-v0.7.3 — pre-release. Package name on npm to be confirmed; pinned consumers
+v0.8.0 — pre-release. Package name on npm to be confirmed; pinned consumers
 should reference the repo by tag. The cloud tier introduced in v0.3 is now the
 primary execution path; the CLI remains the bootstrap, operator, and
-subprocess-harness path. v0.7 adds the `github-docs` read source for GitHub-hosted
-or local working-tree document corpora and hardens cloud cognition against
-GitHub edge behavior and adaptive-thinking output exhaustion. See
+subprocess-harness path. v0.8 replaces PAT auth with GitHub App installation
+tokens (no expiry cliff, short-lived credentials), closes the all-agents-fail
+silent-beat hole with a guaranteed failure DM, and surfaces per-beat token
+spend on `/healthz`. See
 [CHANGELOG.md](CHANGELOG.md) for the value and upgrade boundary of each minor
 line, and [docs/learnings/](docs/learnings/README.md) for evidence-backed
 platform lessons.
