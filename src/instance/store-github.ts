@@ -156,9 +156,13 @@ export class GitHubInstanceStore implements InstanceStore {
     const { files } = await this.load();
     const prefix = `${config.bundle}/`;
     const concepts: Concept[] = [];
-    const paths = [...files.keys()].filter((p) => p.startsWith(prefix) && p.endsWith(".md")).sort();
+    // Read-your-writes: buffered concept edits (writeFile) overlay the
+    // snapshot — verifiers reload the bundle after the harness writes.
+    const paths = [...new Set([...files.keys(), ...this.pendingWrites.keys()])]
+      .filter((p) => p.startsWith(prefix) && p.endsWith(".md"))
+      .sort();
     for (const p of paths) {
-      const raw = files.get(p)!;
+      const raw = this.pendingWrites.get(p) ?? files.get(p)!;
       const relPath = p.slice(prefix.length);
       try {
         const parsed = parseConcept(raw);
@@ -231,6 +235,10 @@ export class GitHubInstanceStore implements InstanceStore {
     const lines = this.pendingAppends.get(config.ledger) ?? [];
     lines.push(JSON.stringify(entry) + "\n");
     this.pendingAppends.set(config.ledger, lines);
+  }
+
+  async writeFile(relPath: string, content: string): Promise<void> {
+    this.pendingWrites.set(relPath, content);
   }
 
   async listApprovals(status?: ApprovalStatus): Promise<ApprovalRecord[]> {

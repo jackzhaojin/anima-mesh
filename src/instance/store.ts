@@ -44,6 +44,14 @@ export interface InstanceStore {
   listApprovals(status?: ApprovalStatus): Promise<ApprovalRecord[]>;
   getApproval(id: string): Promise<ApprovalRecord | undefined>;
 
+  /**
+   * Instance-root-relative full-file write (mirror of readOptional) — the
+   * harness's path for concept edits it is gated to make (e.g. the schedule
+   * surface). Read-your-writes applies: loadBundle/readOptional must see the
+   * new content before flush.
+   */
+  writeFile(relPath: string, content: string): Promise<void>;
+
   /** Instance-local env (.env/.env.local) when the store has one. */
   instanceEnv?(): Record<string, string>;
 

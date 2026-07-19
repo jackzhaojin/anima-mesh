@@ -105,6 +105,7 @@ export async function scaffoldBrain(targetDir: string, answers: InitAnswers): Pr
       `| [facts/organization.md](facts/organization.md) | The organization's stable facts |\n` +
       `| [ops/calendar.md](ops/calendar.md) | Compliance calendar |\n` +
       `| [ops/watch-list.md](ops/watch-list.md) | Research / competitive watch |\n` +
+      `| [ops/schedule.md](ops/schedule.md) | Schedule overrides and one-shot wakes |\n` +
       `${agentLinks}\n`,
   );
 
@@ -156,6 +157,21 @@ export async function scaffoldBrain(targetDir: string, answers: InitAnswers): Pr
     "bundle/ops/watch-list.md",
     `---\ntype: watchlist\ntitle: "Research / competitive watch-list"\nstatus: active\ndate: ${date}\n---\n\n` +
       `# Watch-list\n\nSubjects the research/watch agent digests so signals surface without scanning.\n\n- _add your first watch subject_\n`,
+  );
+
+  put(
+    "bundle/ops/schedule.md",
+    `---\ntype: schedule\ntitle: "Schedule — overrides and one-shot wakes"\nwake: []\npause: []\ncadence: {}\n---\n\n` +
+      `# Schedule — overrides and one-shot wakes\n\n` +
+      `The due decision reads the frontmatter above at every beat:\n\n` +
+      `- \`wake:\` — run these agents at the next beat regardless of cadence;\n` +
+      `  consumed in the beat's own commit once the run is attempted.\n` +
+      `- \`pause:\` — skip these agents until removed. Pause beats wake.\n` +
+      `- \`cadence:\` — per-agent override of the concept's \`heartbeat:\` value\n` +
+      `  (daily | weekly | monthly | quarterly).\n\n` +
+      `Edit by hand and commit, or let a whitelisted agent request wakes with a\n` +
+      `\`schedule-request\` block in its report. Next-fire time is derived from\n` +
+      `cadence and the ledger — it is never stored here.\n`,
   );
 
   put(

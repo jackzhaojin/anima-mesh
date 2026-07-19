@@ -19,7 +19,9 @@ template.
 ## Back office (active-eligible)
 
 - **chief-of-staff** — the hub: single daily brief, judgment-based routing,
-  holds no state. Deploy once a second agent makes coordination real.
+  holds no state. Deploy once a second agent makes coordination real. Once
+  promoted with `schedule-update` whitelisted, it can wake other agents for
+  the next beat via a `schedule-request` block (gated in code, ledgered).
 - **compliance-ops** — owns the calendar; 60/14/1-day horizons; triages
   official-looking mail by the instance's rules of engagement.
 - **bookkeeper** — continuous close; highest-trust spoke; never holds banking

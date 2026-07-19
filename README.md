@@ -219,13 +219,14 @@ conformance and complete a full agent run against the fake provider.
 
 ## Status
 
-v0.8.0 — pre-release. Package name on npm to be confirmed; pinned consumers
+v0.9.0 — pre-release. Package name on npm to be confirmed; pinned consumers
 should reference the repo by tag. The cloud tier introduced in v0.3 is now the
 primary execution path; the CLI remains the bootstrap, operator, and
-subprocess-harness path. v0.8 replaces PAT auth with GitHub App installation
-tokens (no expiry cliff, short-lived credentials), closes the all-agents-fail
-silent-beat hole with a guaranteed failure DM, and surfaces per-beat token
-spend on `/healthz`. See
+subprocess-harness path. v0.9 adds the schedule surface (`ops/schedule.md`:
+one-shot wakes, pauses, cadence overrides — next-fire stays derived) and the
+gated `schedule-request` path, so a whitelisted hub can review the spokes'
+work and wake the right agent for the next beat; v0.8 replaced PAT auth with
+GitHub App installation tokens and guaranteed the failure DM. See
 [CHANGELOG.md](CHANGELOG.md) for the value and upgrade boundary of each minor
 line, and [docs/learnings/](docs/learnings/README.md) for evidence-backed
 platform lessons.

@@ -1,5 +1,6 @@
-import { findAgent, assertActivatable, effectiveCognition, type AgentConcept } from "../agents/concept.js";
-import { loadGatedTypes, assertActionAllowed } from "../gates/gatekeeper.js";
+import { findAgent, agentsFromBundle, assertActivatable, effectiveCognition, type AgentConcept } from "../agents/concept.js";
+import { loadGatedTypes, assertActionAllowed, GateViolation } from "../gates/gatekeeper.js";
+import { parseScheduleRequest, mutateSchedule } from "./schedule.js";
 import { resolveProvider, type AgentWorkerProvider, type ApiProviderContext } from "../providers/index.js";
 import type { InstanceStore } from "../instance/store.js";
 import type { InstanceConfig } from "../instance/config-core.js";
@@ -202,6 +203,53 @@ export async function runAgentCore(options: RunCoreOptions): Promise<RunReport> 
     ...(tokens ? { detail: { tokens } } : {}),
   });
 
+  // A `schedule-request` block in the output is model judgment ASKING for a
+  // schedule edit; whether it applies is decided here, in code, by the same
+  // gate that governs every reversible action (level + whitelist). Model
+  // proposes, deterministic code disposes. A denied request is ledgered and
+  // stays visible in the report — never silently dropped, never a throw.
+  const requestedWake = parseScheduleRequest(result.text);
+  if (requestedWake && requestedWake.length > 0) {
+    const roster = new Set(agentsFromBundle(bundle).map((a) => a.name));
+    // Self-wakes are dropped: an agent that wakes itself daily is a loop.
+    const valid = requestedWake.filter((n) => roster.has(n) && n !== agent.name);
+    const dropped = requestedWake.filter((n) => !roster.has(n) || n === agent.name);
+    try {
+      assertActionAllowed({
+        agent: agent.name,
+        level: agent.level,
+        category: "reversible",
+        actionType: "schedule-update",
+        gatedTypes,
+        approvals: { get: (id) => approvalRecords.get(id) },
+        whitelist: agent.whitelist,
+      });
+      if (valid.length > 0) {
+        await mutateSchedule(store, config, (s) => ({ ...s, wake: [...new Set([...s.wake, ...valid])] }));
+        await store.appendLedger({
+          ts: clock(),
+          runId,
+          agent: agent.name,
+          action: "schedule-updated",
+          type: "schedule-update",
+          detail: { wake: valid, ...(dropped.length > 0 ? { dropped } : {}) },
+        });
+        progress(`run ${runId.slice(0, 8)}: schedule-update applied — wake [${valid.join(", ")}]`);
+      }
+    } catch (err) {
+      if (!(err instanceof GateViolation)) throw err;
+      await store.appendLedger({
+        ts: clock(),
+        runId,
+        agent: agent.name,
+        action: "schedule-request-denied",
+        type: "schedule-update",
+        detail: { requested: requestedWake, reason: err.message },
+      });
+      progress(`run ${runId.slice(0, 8)}: schedule-request denied — ${err.message}`);
+    }
+  }
+
   const verifierResults: VerifierResult[] = [
     verifyConformanceBundle(await store.loadBundle(), "animamesh"),
     await verifyExpectedOutputsStore(store, [reportName]),
@@ -257,6 +305,19 @@ async function buildPrompt(
     "- If something needs the principal's decision or approval, say so explicitly in a `## Needs you` section.",
     "- If nothing needs attention, say so plainly — a short honest report beats an inflated one.",
   );
+  // Only agents whose whitelist actually permits schedule-update are told
+  // about it — offering a capability the gate would deny invites noise.
+  if (agent.whitelist.includes("schedule-update")) {
+    sections.push(
+      "- You may schedule other agents to run at the NEXT heartbeat when follow-up work should not wait",
+      "  for their own cadence. End your report with exactly this fenced block (agent names only):",
+      "  ```schedule-request",
+      "  wake: [agent-name, other-agent]",
+      "  ```",
+      "  The harness applies it through your whitelist gate and records it in the ledger. Woken agents",
+      "  see the latest reports when they run — write the ask into your report so they know why.",
+    );
+  }
   // Declared read sources (agent frontmatter opt-in) — live external context
   // inlined so L1 runs still need no tool access. Failures become honest
   // sections, never aborted runs.

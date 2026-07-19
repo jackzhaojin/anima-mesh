@@ -77,7 +77,7 @@
   <!-- 5: due decision (self) -->
   <circle cx="52" cy="374" r="9" fill="#0a5bd3"/><text x="52" y="378" font-size="11" fill="#ffffff" text-anchor="middle" font-weight="700">5</text>
   <text x="68" y="371" font-size="12" font-weight="600" fill="#1f2328">the due decision — scan every agents/*.md</text>
-  <text x="68" y="387" font-size="11" fill="#57606a" font-style="italic">cadence vs. last completed run · cloud-capable harness only · commercial gates</text>
+  <text x="68" y="387" font-size="11" fill="#57606a" font-style="italic">cadence + ops/schedule.md wakes/pauses vs. the ledger · cloud-capable harness · commercial gates</text>
 
   <!-- 6: sources -->
   <path d="M 183 456 L 651 456" stroke="#57606a" stroke-width="1.3" fill="none" marker-end="url(#hs-ar)"/>
@@ -133,7 +133,7 @@
   <!-- ==================== LEGEND ==================== -->
   <line x1="40" y1="972" x2="1240" y2="972" stroke="#d0d7de"/>
   <text x="40" y="996" font-size="12" fill="#414a55"><tspan font-weight="700" fill="#0a5bd3">Why one alarm fits serverless:</tspan> model calls are I/O wait, not Worker CPU — the invocation may spend the whole beat waiting on fetch while CPU time stays in milliseconds.</text>
-  <text x="40" y="1018" font-size="12" fill="#414a55"><tspan font-weight="700" fill="#7d4e00">Many rhythms, one clock:</tspan> each agent declares heartbeat: daily | weekly | monthly | quarterly; the daily beat evaluates them all — cadence is frontmatter data, not extra timers.</text>
+  <text x="40" y="1018" font-size="12" fill="#414a55"><tspan font-weight="700" fill="#7d4e00">Many rhythms, one clock:</tspan> each agent declares heartbeat: daily | weekly | monthly | quarterly; ops/schedule.md adds pauses, overrides, one-shot wakes — all data, no extra timers.</text>
   <text x="40" y="1040" font-size="12" fill="#414a55"><tspan font-weight="700" fill="#116329">Due when:</tspan> daily = a fresh calendar day since the last completed run; weekly ≥ 144 h · monthly ≥ 648 h · quarterly ≥ 2040 h — measured against the ledger, so state survives any restart.</text>
   <text x="40" y="1062" font-size="12" fill="#414a55"><tspan font-weight="700" fill="#57606a">State boundary:</tspan> everything durable is in the one commit; the Durable Object keeps only the alarm, the lock, and lastBeat.</text>
 </svg>

@@ -2,13 +2,17 @@ import { agentsFromBundle, assertActivatable, effectiveCognition, type AgentConc
 import { CLOUD_HARNESSES, type ApiProviderContext } from "../providers/index.js";
 import type { InstanceStore } from "../instance/store.js";
 import { runAgentCore, dateStampFor, type RunReport } from "./run-core.js";
+import { scheduleFromBundle, effectiveCadence, mutateSchedule } from "./schedule.js";
 import type { SourceFs } from "../sources/types.js";
 
 /**
  * The heartbeat trigger — one of D5's four deterministic jobs. Decides which
- * agents are due from their concept's `heartbeat:` cadence and the ledger's
- * last run-completed timestamps, then runs them: spokes first, the
- * chief-of-staff hub last so its brief sees today's fresh reports.
+ * agents are due from their concept's `heartbeat:` cadence (as overridden by
+ * the optional `ops/schedule.md` surface — pauses, cadence overrides, and
+ * one-shot wakes) and the ledger's last run-completed timestamps, then runs
+ * them: spokes first, the chief-of-staff hub last so its brief sees today's
+ * fresh reports. Scheduling stays deterministic: code reads files; the only
+ * model influence on WHO runs is a schedule edit that passed its gate.
  *
  * Thresholds are slightly under the nominal period so a "daily at 9am-ish"
  * cron drifting by minutes never skips a day.
@@ -85,6 +89,7 @@ export async function heartbeatCore(options: HeartbeatCoreOptions): Promise<Hear
   const now = options.now ?? new Date();
   const progress = options.onProgress ?? (() => {});
 
+  const schedule = scheduleFromBundle(bundle);
   const due: Array<{ agent: AgentConcept; reason: string }> = [];
   const skipped: HeartbeatDecision[] = [];
 
@@ -99,16 +104,32 @@ export async function heartbeatCore(options: HeartbeatCoreOptions): Promise<Hear
     }
     const cognition = effectiveCognition(agent, config);
     if (options.cloudTier && !CLOUD_HARNESSES.has(cognition.harness)) {
+      // A pending wake for a laptop-tier agent is deliberately KEPT — it
+      // belongs to whichever tier can honor it, not to this beat.
       skipped.push({ agent: agent.name, reason: `laptop-tier harness (${cognition.harness}) — not run in cloud` });
       continue;
     }
-    if (!agent.heartbeat) {
+    if (schedule.pause.includes(agent.name)) {
+      // Pause beats wake: an explicit stop outranks an explicit go, and a
+      // contradictory wake stays visible in the file instead of vanishing.
+      skipped.push({ agent: agent.name, reason: "paused (ops/schedule.md)" });
+      continue;
+    }
+    if (schedule.wake.includes(agent.name)) {
+      // One-shot wake: due regardless of cadence — even agents with no
+      // heartbeat at all can be woken on demand. Consumed after the attempt.
+      due.push({ agent, reason: "wake requested (ops/schedule.md)" });
+      continue;
+    }
+    const cadence = effectiveCadence(agent, schedule);
+    const overridden = agent.name in schedule.cadence ? " (cadence override)" : "";
+    if (!cadence) {
       skipped.push({ agent: agent.name, reason: "no heartbeat declared (manual runs only)" });
       continue;
     }
-    const hours = PERIOD_HOURS[agent.heartbeat];
+    const hours = PERIOD_HOURS[cadence];
     if (hours === undefined) {
-      skipped.push({ agent: agent.name, reason: `unknown cadence '${agent.heartbeat}'` });
+      skipped.push({ agent: agent.name, reason: `unknown cadence '${cadence}'${overridden}` });
       continue;
     }
     const lastCompleted = ledgerEntries
@@ -118,24 +139,24 @@ export async function heartbeatCore(options: HeartbeatCoreOptions): Promise<Hear
 
     if (lastCompleted === 0) {
       due.push({ agent, reason: "never run" });
-    } else if (agent.heartbeat === "daily") {
+    } else if (cadence === "daily") {
       // Daily means "not yet today" (local calendar), not "20h elapsed" —
       // a late-night manual run must never eat the next morning's brief.
       // (Lesson from the first scheduled morning: 1am debug runs silenced
       // the 8am beat and the principal's daily DM.)
       if (localDay(lastCompleted, options.timeZone) < localDay(now.getTime(), options.timeZone)) {
-        due.push({ agent, reason: "daily: not yet run today" });
+        due.push({ agent, reason: `daily: not yet run today${overridden}` });
       } else {
-        skipped.push({ agent: agent.name, reason: "daily: already ran today" });
+        skipped.push({ agent: agent.name, reason: `daily: already ran today${overridden}` });
       }
     } else {
       const elapsedHours = (now.getTime() - lastCompleted) / 3_600_000;
       if (elapsedHours >= hours) {
-        due.push({ agent, reason: `${agent.heartbeat}: ${Math.floor(elapsedHours)}h since last run` });
+        due.push({ agent, reason: `${cadence}: ${Math.floor(elapsedHours)}h since last run${overridden}` });
       } else {
         skipped.push({
           agent: agent.name,
-          reason: `${agent.heartbeat}: ran ${Math.floor(elapsedHours)}h ago (< ${hours}h)`,
+          reason: `${cadence}: ran ${Math.floor(elapsedHours)}h ago (< ${hours}h)${overridden}`,
         });
       }
     }
@@ -177,6 +198,28 @@ export async function heartbeatCore(options: HeartbeatCoreOptions): Promise<Hear
       const message = err instanceof Error ? err.message : String(err);
       failures.push({ agent: agent.name, error: message });
       progress(`heartbeat: ✗ ${agent.name} failed — ${message.slice(0, 200)} (continuing)`);
+    }
+  }
+
+  // One-shot wakes are consumed on ATTEMPT, not on success: a sticky wake
+  // retrying a broken agent would beat-spam the vendor forever. The failure
+  // DM tells the principal, who can re-wake deliberately. Wakes the tier or
+  // gates could not honor were never attempted and stay on file.
+  const attempted = new Set(due.map((d) => d.agent.name));
+  const consumed = schedule.wake.filter((n) => attempted.has(n));
+  if (consumed.length > 0) {
+    await mutateSchedule(store, config, (s) => ({ ...s, wake: s.wake.filter((n) => !attempted.has(n)) }));
+    await store.appendLedger({
+      ts: now.toISOString(),
+      runId: crypto.randomUUID(),
+      agent: "heartbeat",
+      action: "wake-consumed",
+      type: "schedule",
+      detail: { agents: consumed },
+    });
+    progress(`heartbeat: wake consumed for ${consumed.join(", ")}`);
+    if ((options.flushPolicy ?? "per-run") === "per-run") {
+      await store.flush(`beat: wake consumed (${consumed.join(", ")})`);
     }
   }
 

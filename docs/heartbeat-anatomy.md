@@ -54,6 +54,47 @@ The payoff of cadence-as-data: an instance can retune its whole rhythm by
 editing frontmatter, and a brain restored from backup knows exactly what is
 due because the ledger came with it.
 
+### The schedule surface — pauses, overrides, and one-shot wakes
+
+Frontmatter cadence is the *standing* rhythm; `ops/schedule.md` is the
+*mutable* control surface layered over it, read by the same due decision:
+
+- **`wake:`** — run these agents at the next beat regardless of cadence
+  (even agents with no `heartbeat:` at all). A wake is **consumed on
+  attempt** — removed from the file in the beat's own commit, so request
+  and fulfillment sit adjacent in git history and nothing double-fires. A
+  wake the beat *couldn't* honor (laptop-tier harness in a cloud beat,
+  closed commercial gates) is deliberately kept: it belongs to whichever
+  tier and permission state can run it, and a sticky wake for a *failing*
+  agent is deliberately **not** kept — the failure DM tells the principal,
+  who re-wakes on purpose rather than letting a retry loop spam a vendor.
+- **`pause:`** — skip these agents until removed. Pause beats wake: an
+  explicit stop outranks an explicit go, and the contradiction stays
+  visible in the file instead of resolving silently.
+- **`cadence:`** — per-agent override of the declared `heartbeat:`
+  (declared-vs-effective, the same pattern as `cognition.overrides`).
+
+Next-fire time is never stored here — it stays derived from cadence plus
+the ledger, so there is no second source of truth to drift.
+
+This is also the **manual trigger**: edit `wake:`, commit, then either wait
+for the alarm or `POST /beat`. And it is how a *hub reviews work and
+schedules the follow-through*: an agent whose whitelist includes
+`schedule-update` may end its report with a fenced block —
+
+~~~
+```schedule-request
+wake: [agent-name]
+```
+~~~
+
+— which the harness applies **through the same gate as every reversible
+action** (ladder level + whitelist, checked in code), ledgered as
+`schedule-updated`, or ledgered as `schedule-request-denied` and left
+visible in the report when the gate says no. Model judgment proposes;
+deterministic code disposes. Self-wakes are dropped (an agent that wakes
+itself daily is a loop), and unknown names never enter the file.
+
 ## Spokes first, hub last — coordination without a control channel
 
 A natural guess is that the chief-of-staff "triggers" the other agents. It
@@ -140,6 +181,7 @@ a `.direction-` infix (so brief delivery is blind to them). Full flow in
 | Alarm math, re-arm, mutex | `workers/heartbeat/src/alarm-time.ts`, `heartbeat-do.ts` |
 | Beat stages (store → run → flush → deliver) | `workers/heartbeat/src/beat.ts` |
 | Due decision, ordering, failure isolation | `src/harness/heartbeat-core.ts` |
+| Schedule surface (wakes, pauses, overrides) | `src/harness/schedule.ts` |
 | One agent run (prompt → provider → verifiers) | `src/harness/run-core.ts` |
 | Tarball read / single-commit write | `src/instance/store-github.ts` |
 | GitHub App tokens | `src/instance/github-auth.ts` |

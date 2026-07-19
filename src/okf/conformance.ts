@@ -134,6 +134,49 @@ export function checkConformance(
         err("animamesh/agent-level", "agent concept must declare level L1|L2|L3|L4", c.relPath);
       }
     }
+
+    // A4 — the schedule surface, when present, is machine-readable: the due
+    // decision consumes this file in code, so shape errors here are silent
+    // scheduling bugs. Names are cross-checked against the roster (warning:
+    // a renamed agent leaves a stale wake behind).
+    const agentNames = new Set(
+      conceptsByType(bundle, "agent").map((c) =>
+        typeof c.frontmatter.name === "string" && c.frontmatter.name.trim()
+          ? c.frontmatter.name
+          : c.relPath.replace(/^.*\//, "").replace(/\.md$/, ""),
+      ),
+    );
+    const scheduleCadences = new Set(["daily", "weekly", "monthly", "quarterly"]);
+    for (const c of conceptsByType(bundle, "schedule")) {
+      for (const field of ["wake", "pause"] as const) {
+        const value = c.frontmatter[field];
+        if (value === undefined) continue;
+        if (!Array.isArray(value) || !value.every((x) => typeof x === "string")) {
+          err("animamesh/schedule-shape", `\`${field}\` must be an array of agent names`, c.relPath);
+          continue;
+        }
+        for (const name of value) {
+          if (!agentNames.has(name)) warn("animamesh/schedule-unknown-agent", `\`${field}\` names unknown agent '${name}'`, c.relPath);
+        }
+      }
+      const cadence = c.frontmatter.cadence;
+      if (cadence !== undefined) {
+        if (typeof cadence !== "object" || cadence === null || Array.isArray(cadence)) {
+          err("animamesh/schedule-shape", "`cadence` must be a map of agent name → cadence", c.relPath);
+        } else {
+          for (const [name, value] of Object.entries(cadence as Record<string, unknown>)) {
+            if (typeof value !== "string" || !scheduleCadences.has(value)) {
+              err(
+                "animamesh/schedule-cadence",
+                `cadence for '${name}' must be one of ${[...scheduleCadences].join("|")}, got ${JSON.stringify(value)}`,
+                c.relPath,
+              );
+            }
+            if (!agentNames.has(name)) warn("animamesh/schedule-unknown-agent", `\`cadence\` names unknown agent '${name}'`, c.relPath);
+          }
+        }
+      }
+    }
   }
 
   return {

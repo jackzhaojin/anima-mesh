@@ -3,7 +3,7 @@
 AnimaMesh is pre-1.0, so this history is organized by **minor release line**:
 the capability boundary operators actually adopt. Patch tags are deliberately
 rolled into the value and maturity of their minor rather than narrated one by
-one. The latest tag is **v0.8.0**.
+one. The latest tag is **v0.9.0**.
 
 ## Upgrade procedure
 
@@ -23,11 +23,60 @@ Upgrade one private instance at a time:
    authenticated `POST /beat`, and confirm the mesh-authored commit and brief
    delivery before considering the upgrade complete.
 
-No release through v0.7 requires an existing bundle or ledger to be rewritten.
+No release through v0.9 requires an existing bundle or ledger to be rewritten.
 The ledger remains append-only; never "migrate" it by editing old entries.
 
 ## [Unreleased]
 
+(nothing yet)
+
+## [v0.9.x] — the schedule surface: the hub can schedule the follow-through
+
+**Latest tag: v0.9.0 · 2026-07-19**
+
+### Value
+
+v0.9 gives the mesh a mutable scheduling surface without giving up the
+deterministic scheduler. `bundle/ops/schedule.md` (`type: schedule`) layers
+three knobs over frontmatter cadence, read by the due decision every beat:
+
+- **`wake:`** — one-shot "run at the next beat", cadence regardless — even
+  for agents with no `heartbeat:` at all. Consumed **on attempt**, in the
+  beat's own commit, so request and fulfillment sit adjacent in git history
+  and nothing double-fires. Wakes the beat *couldn't* honor (laptop-tier
+  harness in a cloud beat, closed commercial gates) stay on file for the
+  tier or permission state that can.
+- **`pause:`** — skip until removed. Pause beats wake; the contradiction
+  stays visible instead of resolving silently.
+- **`cadence:`** — per-agent override of the declared `heartbeat:`
+  (declared-vs-effective, the `cognition.overrides` pattern).
+
+Next-fire time remains **derived** (cadence vs. the ledger) — the file
+holds intent, never projections, so there is no second source of truth.
+
+On top of the surface, the **gated `schedule-request` path** closes the
+review→follow-through loop: any agent may end a report with a
+```schedule-request``` fenced block naming agents to wake; the harness
+applies it only through the standard reversible-action gate (ladder level +
+`schedule-update` on the agent's whitelist), ledgers `schedule-updated` or
+`schedule-request-denied`, drops self-wakes and unknown names, and never
+fails the run over a denied ask. A chief-of-staff promoted to L3 with that
+one whitelist entry can now review the spokes' work and wake the right
+agent for tomorrow — model proposes, deterministic code disposes. The
+`wake:`-then-`POST /beat` recipe doubles as the operator's manual per-agent
+trigger.
+
+Also in the line:
+
+- `InstanceStore.writeFile` — the storage seam's concept-edit path (fs +
+  GitHub stores; buffered writes overlay `loadBundle` for read-your-writes).
+- Conformance A4: schedule shape errors are conformance errors (the due
+  decision consumes this file in code); unknown agent names warn.
+- `init` scaffolds `ops/schedule.md`; prompt assembly teaches the
+  capability only to agents whose whitelist permits it.
+- Docs: `heartbeat-anatomy.md` (beat walkthrough + sequence diagram),
+  `a-typical-brain.md` (de-identified instance tour + roster diagram), and
+  the `brain-setup` skill for standing up a new company brain.
 - Docs: the **CRM domain shelf** (`docs/okf-crm-domain.md`) — the first
   front-office OKF domain: `crm-org` / `crm-person` / `crm-engagement` /
   append-only `crm-interaction` concepts, relationship-first stages,
@@ -39,6 +88,19 @@ The ledger remains append-only; never "migrate" it by editing old entries.
   types, conformance profiles, the machine-checked knowledge graph) and
   the domain-shelf extension model; `starting-a-company.md` gained the
   re-aiming (direction pivot) playbook.
+
+### Upgrade from v0.8
+
+- Pin to v0.9.0 and redeploy both Workers. No bundle, ledger, Durable
+  Object, or dashboard migration. The schedule surface is optional — a
+  brain without `ops/schedule.md` behaves exactly as before; add the file
+  (copy the scaffold's) to start using wakes/pauses/overrides.
+- To let a hub schedule follow-ups autonomously: promote it to L3 with
+  `whitelist: ["schedule-update"]` in its concept file (a deliberate,
+  git-recorded trust decision). Until then, its requests are ledgered as
+  denied and surface in the report for the principal to apply by hand.
+- New ledger actions (`wake-consumed`, `schedule-updated`,
+  `schedule-request-denied`) are additive; nothing existing changes shape.
 
 ## [v0.8.x] — durable GitHub auth and honest failure signals
 

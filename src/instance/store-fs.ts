@@ -73,6 +73,12 @@ export class FsInstanceStore implements InstanceStore {
     this.ledger.append(entry);
   }
 
+  async writeFile(relPath: string, content: string): Promise<void> {
+    const abs = path.join(this.root, relPath);
+    mkdirSync(path.dirname(abs), { recursive: true });
+    writeFileSync(abs, content, "utf8");
+  }
+
   async listApprovals(status?: ApprovalStatus): Promise<ApprovalRecord[]> {
     return this.approvals.list(status);
   }
