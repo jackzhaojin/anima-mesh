@@ -30,7 +30,12 @@ export async function wipeHeartbeatDo(): Promise<void> {
 async function wipeDo(makeStub: () => DurableObjectStub): Promise<void> {
   for (let attempt = 0; ; attempt++) {
     try {
-      await runInDurableObject(makeStub(), async (_i, state) => {
+      await runInDurableObject(makeStub(), async (instance, state) => {
+        // The instance survives across tests: clear the in-memory in-flight
+        // marker alongside storage (HeartbeatDO only).
+        if ("beatInFlight" in instance) {
+          (instance as { beatInFlight: unknown }).beatInFlight = null;
+        }
         await state.storage.deleteAll();
         await state.storage.deleteAlarm();
       });
@@ -40,6 +45,20 @@ async function wipeDo(makeStub: () => DurableObjectStub): Promise<void> {
       throw err;
     }
   }
+}
+
+/**
+ * POST /beat detaches the beat from the request (issue #1): the response is
+ * a run marker. Tests that assert on the outcome await the in-flight beat
+ * inside the DO and read the recorded lastBeat.
+ */
+export async function settledLastBeat<T = unknown>(): Promise<T | undefined> {
+  const e = env as Env;
+  const stub = e.HEARTBEAT_DO.get(e.HEARTBEAT_DO.idFromName("main"));
+  return runInDurableObject(stub, async (instance, state) => {
+    await (instance as unknown as { beatInFlight: Promise<unknown> | null }).beatInFlight;
+    return state.storage.get<T>("lastBeat");
+  });
 }
 
 // ---- Discord interaction signing (TEST-ONLY keypair) ------------------------

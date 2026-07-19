@@ -23,9 +23,12 @@ Three properties make the alarm trustworthy:
 - **It re-arms in `finally`.** Success, failure, or crash, the next beat is
   scheduled before the invocation ends — a crashed beat cannot silence
   tomorrow.
-- **A mutex guards the run.** A `beat-running` lock (stolen if older than 30
-  minutes) keeps a manual `POST /beat` from double-running alongside the
-  alarm.
+- **A mutex guards the run.** A `beat-running` lock keeps a manual
+  `POST /beat` from double-running alongside the alarm. The manual beat is
+  detached from the request (202 + run marker; `/healthz` reports
+  completion), so a deploy or disconnect mid-beat can't strand the lock: a
+  lock whose isolate died is journaled as an interrupted beat and reclaimed
+  by the next request.
 
 ## The due decision — many rhythms, one clock
 

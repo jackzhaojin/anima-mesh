@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { SELF, env, fetchMock, runInDurableObject } from "cloudflare:test";
-import { mockGitHub, mockKimi, mockDiscord, brainFiles, BASE_SHA, NEW_SHA, wipeHeartbeatDo } from "./fixtures.js";
+import { mockGitHub, mockKimi, mockDiscord, brainFiles, BASE_SHA, NEW_SHA, wipeHeartbeatDo, settledLastBeat } from "./fixtures.js";
 
 /**
  * THE end-to-end proof, entirely local: a Bearer-authorized beat through the
@@ -32,7 +32,11 @@ describe("full cloud beat, end to end in workerd", () => {
       headers: { authorization: `Bearer ${env.BEAT_TRIGGER_TOKEN}` },
     });
     expect(res.status).toBe(202);
-    const body = (await res.json()) as {
+    // The response is a run marker (the beat is detached from the request —
+    // issue #1); the outcome is the recorded lastBeat.
+    const marker = (await res.json()) as { started?: string };
+    expect(marker.started).toBeDefined();
+    const body = (await settledLastBeat())! as {
       kind: string;
       summary: {
         due: number;
@@ -120,7 +124,7 @@ describe("full cloud beat, end to end in workerd", () => {
       headers: { authorization: `Bearer ${env.BEAT_TRIGGER_TOKEN}` },
     });
     expect(res.status).toBe(202);
-    const body = (await res.json()) as { summary: { due: number; ran: number; commitSha?: string } };
+    const body = (await settledLastBeat())! as { summary: { due: number; ran: number; commitSha?: string } };
     expect(body.summary.due).toBe(0);
     expect(body.summary.ran).toBe(0);
     expect(body.summary.commitSha).toBeUndefined(); // nothing dirty → no commit
@@ -145,7 +149,7 @@ describe("full cloud beat, end to end in workerd", () => {
       headers: { authorization: `Bearer ${env.BEAT_TRIGGER_TOKEN}` },
     });
     expect(res.status).toBe(202);
-    const body = (await res.json()) as {
+    const body = (await settledLastBeat())! as {
       summary: { due: number; ran: number; failures: Array<{ agent: string; error: string }>; delivered: boolean };
     };
     expect(body.summary.due).toBe(1);

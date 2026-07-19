@@ -80,9 +80,10 @@ describe("HeartbeatDO alarm", () => {
 });
 
 describe("HeartbeatDO mutex", () => {
-  it("a fresh lock makes a manual trigger skip instead of double-running", async () => {
-    await runInDurableObject(stub(), async (_i, state) => {
-      await state.storage.put("beat-running", Date.now());
+  it("a beat in flight in this isolate makes a manual trigger skip instead of double-running", async () => {
+    await runInDurableObject(stub(), async (instance, state) => {
+      await state.storage.put("beat-running", { startedAt: Date.now(), kind: "alarm" });
+      (instance as unknown as { beatInFlight: Promise<unknown> }).beatInFlight = new Promise(() => {});
     });
     const res = await SELF.fetch("https://worker.test/beat", {
       method: "POST",
@@ -93,20 +94,49 @@ describe("HeartbeatDO mutex", () => {
     expect(body.skipped).toMatch(/already running/);
   });
 
-  it("a stale lock (>30 min) is stolen and the beat proceeds; the lock clears after", async () => {
+  it("a stranded lock (isolate died mid-beat) is reclaimed immediately and the beat proceeds", async () => {
     mockGitHub();
     mockKimi();
     mockDiscord();
+    // Two minutes old — the pre-v0.9.2 staleness rule would have skipped
+    // this for another 28 minutes. No in-flight beat in this isolate, so
+    // the lock is definitionally stranded.
     await runInDurableObject(stub(), async (_i, state) => {
-      await state.storage.put("beat-running", Date.now() - 31 * 60 * 1000);
+      await state.storage.put("beat-running", { startedAt: Date.now() - 2 * 60 * 1000, kind: "manual" });
     });
     const res = await SELF.fetch("https://worker.test/beat", {
       method: "POST",
       headers: { authorization: `Bearer ${env.BEAT_TRIGGER_TOKEN}` },
     });
     expect(res.status).toBe(202);
-    const body = (await res.json()) as { summary?: { ran: number } };
-    expect(body.summary?.ran).toBe(1);
+    // The trigger response is a run marker, not the outcome (issue #1):
+    // the beat runs detached from the request.
+    const body = (await res.json()) as { started?: string; skipped?: string };
+    expect(body.started).toBeDefined();
+    expect(body.skipped).toBeUndefined();
+
+    // Completion lands in lastBeat, not the response.
+    await runInDurableObject(stub(), async (instance) => {
+      await (instance as unknown as { beatInFlight: Promise<unknown> | null }).beatInFlight;
+    });
+    const last = await runInDurableObject(stub(), (_i, state) =>
+      state.storage.get<{ summary?: { ran: number } }>("lastBeat"),
+    );
+    expect(last?.summary?.ran).toBe(1);
+
+    const lock = await runInDurableObject(stub(), (_i, state) => state.storage.get("beat-running"));
+    expect(lock).toBeUndefined();
+  });
+
+  it("/healthz reconciles a stranded lock into an honest failed lastBeat (legacy number lock)", async () => {
+    await runInDurableObject(stub(), async (_i, state) => {
+      await state.storage.put("beat-running", Date.now() - 2 * 60 * 1000);
+    });
+    const res = await SELF.fetch("https://worker.test/healthz");
+    const body = (await res.json()) as { lastBeat: { kind: string; ok: boolean; failureCount: number } | null };
+    expect(body.lastBeat).not.toBeNull();
+    expect(body.lastBeat!.ok).toBe(false);
+    expect(body.lastBeat!.failureCount).toBe(1);
 
     const lock = await runInDurableObject(stub(), (_i, state) => state.storage.get("beat-running"));
     expect(lock).toBeUndefined();

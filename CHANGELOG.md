@@ -3,7 +3,7 @@
 AnimaMesh is pre-1.0, so this history is organized by **minor release line**:
 the capability boundary operators actually adopt. Patch tags are deliberately
 rolled into the value and maturity of their minor rather than narrated one by
-one. The latest tag is **v0.9.1**.
+one. The latest tag is **v0.9.2**.
 
 ## Upgrade procedure
 
@@ -32,7 +32,7 @@ The ledger remains append-only; never "migrate" it by editing old entries.
 
 ## [v0.9.x] — the schedule surface: the hub can schedule the follow-through
 
-**Latest tag: v0.9.1 · 2026-07-19**
+**Latest tag: v0.9.2 · 2026-07-19**
 
 ### Value
 
@@ -105,6 +105,15 @@ Also in the line:
   beat** — the hub, running last, re-waking a spoke that already ran after
   reading its report — now survives consumption; renewals are recognized
   from the beat's own `schedule-updated` ledger entries.
+- v0.9.2 (issue #1, observed live 2026-07-12): a deploy or client
+  disconnect mid-`POST /beat` could no longer strand the beat lock for the
+  30-minute staleness window while `/healthz` served a stale lastBeat.
+  The manual beat is now **detached from the request** — `POST /beat`
+  returns `202 {started}` immediately and `/healthz` reports completion —
+  and a lock whose isolate died is journaled as an honest failed lastBeat
+  and reclaimed by the very next request (`/healthz` or trigger). The
+  alarm path is unchanged. Operator-visible contract change: the trigger
+  response is a run marker, not the beat summary.
 
 ## [v0.8.x] — durable GitHub auth and honest failure signals
 

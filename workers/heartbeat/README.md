@@ -33,7 +33,7 @@ a Gmail inbox for principal email (`DIRECTION_GMAIL_POLL_MINUTES`,
 | Route | Behavior |
 |---|---|
 | `GET /healthz` | last beat summary + next alarm (no auth; counts only) |
-| `POST /beat` | manual trigger, `authorization: Bearer <BEAT_TRIGGER_TOKEN>`; same mutex as the alarm |
+| `POST /beat` | manual trigger, `authorization: Bearer <BEAT_TRIGGER_TOKEN>`; same mutex as the alarm. Detached: returns `202 {started}` immediately; completion (or failure) lands in `/healthz` |
 | `POST /interactions` | Discord interactions endpoint (Ed25519-verified; 401 otherwise) |
 | `GET /graph/check` | bearer-gated validation for the configured `onedrive` source |
 | `GET /docs/check` | bearer-gated validation for the configured `github-docs` source |
