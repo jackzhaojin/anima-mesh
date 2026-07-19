@@ -1,0 +1,164 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 1010" font-family="ui-sans-serif, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif">
+  <defs>
+    <marker id="ba-ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#57606a"/>
+    </marker>
+  </defs>
+
+  <rect x="0" y="0" width="1280" height="1010" fill="#ffffff"/>
+
+  <text x="40" y="46" font-size="21" font-weight="700" fill="#1f2328">Anatomy of a brain — one organization as plain files</text>
+  <text x="40" y="70" font-size="13" fill="#57606a">A mature instance after months of operation (drawn from production, de-identified). Markdown + JSONL in one private repo; agents write it, git history audits it.</text>
+
+  <!-- ==================== LEFT: THE KNOWLEDGE ==================== -->
+  <rect x="40" y="98" width="430" height="790" rx="14" fill="#e9f5ee" stroke="#1a7f37" stroke-width="1.5"/>
+  <text x="60" y="128" font-size="16" font-weight="700" fill="#116329">bundle/ — the knowledge</text>
+  <text x="60" y="150" font-size="12.5" fill="#2f4a3a">One concept per file, YAML frontmatter with type: required.</text>
+  <text x="60" y="167" font-size="12.5" fill="#2f4a3a">Conventions do the governing — no database, no admin UI.</text>
+
+  <rect x="60" y="184" width="390" height="76" rx="8" fill="#ffebe9" stroke="#cf222e" stroke-width="1.2"/>
+  <text x="76" y="208" font-size="13" font-weight="700" fill="#a40e26">constitution.md — immutable: true</text>
+  <text x="76" y="228" font-size="12" fill="#6e2830">5 gated actions ALWAYS end at the human: money,</text>
+  <text x="76" y="245" font-size="12" fill="#6e2830">filings, publishing, credentials, access expansion</text>
+
+  <rect x="60" y="272" width="390" height="64" rx="8" fill="#ffffff" stroke="#a9d6bb" stroke-width="1.1"/>
+  <text x="76" y="294" font-size="13" font-weight="700" fill="#1f2328">facts/ <tspan font-weight="400" fill="#57606a" font-size="11.5">— stable facts</tspan></text>
+  <text x="76" y="313" font-size="12" fill="#33513f">status: verified | unverified — an unverified fact</text>
+  <text x="76" y="329" font-size="12" fill="#33513f">is a lead, never something to file with</text>
+
+  <rect x="60" y="348" width="390" height="60" rx="8" fill="#ffffff" stroke="#a9d6bb" stroke-width="1.1"/>
+  <text x="76" y="370" font-size="13" font-weight="700" fill="#1f2328">decisions/ <tspan font-weight="400" fill="#57606a" font-size="11.5">— dated, immutable once made</tspan></text>
+  <text x="76" y="390" font-size="12" fill="#33513f">a course change is a NEW decision superseding the old</text>
+
+  <rect x="60" y="420" width="390" height="46" rx="8" fill="#ffffff" stroke="#a9d6bb" stroke-width="1.1"/>
+  <text x="76" y="442" font-size="13" font-weight="700" fill="#1f2328">events/ <tspan font-weight="400" fill="#57606a" font-size="11.5">— append-only; corrections are new events</tspan></text>
+
+  <rect x="60" y="478" width="390" height="64" rx="8" fill="#ffffff" stroke="#a9d6bb" stroke-width="1.1"/>
+  <text x="76" y="500" font-size="13" font-weight="700" fill="#1f2328">ops/ <tspan font-weight="400" fill="#57606a" font-size="11.5">— calendar · watch-list · nags</tspan></text>
+  <text x="76" y="519" font-size="12" fill="#33513f">what agents wake up to check; a nag repeats in</text>
+  <text x="76" y="535" font-size="12" fill="#33513f">every brief, with its age, until done</text>
+
+  <rect x="60" y="554" width="390" height="76" rx="8" fill="#fff8e7" stroke="#bf8700" stroke-width="1.2"/>
+  <text x="76" y="576" font-size="13" font-weight="700" fill="#7d4e00">cabinet/ <tspan font-weight="400" fill="#846500" font-size="11.5">— document memory</tspan></text>
+  <text x="76" y="595" font-size="12" fill="#594514">the librarian's output: one concept per source document;</text>
+  <text x="76" y="611" font-size="12" fill="#594514">originals never leave the filing cabinet (read-only source)</text>
+
+  <rect x="60" y="642" width="390" height="92" rx="8" fill="#ffffff" stroke="#a9d6bb" stroke-width="1.1"/>
+  <text x="76" y="664" font-size="13" font-weight="700" fill="#1f2328">crm/ <tspan font-weight="400" fill="#57606a" font-size="11.5">— the repo IS the CRM</tspan></text>
+  <text x="76" y="683" font-size="12" fill="#33513f">orgs · people · engagements · interactions — typed</text>
+  <text x="76" y="699" font-size="12" fill="#33513f">frontmatter, a stage ladder, compliance screens as data;</text>
+  <text x="76" y="715" font-size="12" fill="#33513f">records link by plain markdown; views are grep</text>
+
+  <rect x="60" y="746" width="390" height="46" rx="8" fill="#ffffff" stroke="#a9d6bb" stroke-width="1.1"/>
+  <text x="76" y="768" font-size="13" font-weight="700" fill="#1f2328">index.md · log.md <tspan font-weight="400" fill="#57606a" font-size="11.5">— the TOC + append-only changelog</tspan></text>
+
+  <text x="76" y="822" font-size="11.5" fill="#4c8f63" font-style="italic">Adopted after a SaaS vendor deleted years of data:</text>
+  <text x="76" y="839" font-size="11.5" fill="#4c8f63" font-style="italic">plain files, git history, zero lock-in — readable in any</text>
+  <text x="76" y="856" font-size="11.5" fill="#4c8f63" font-style="italic">editor, diffable in any PR, portable to any future engine.</text>
+
+  <!-- ==================== MIDDLE: THE ROSTER ==================== -->
+  <rect x="490" y="98" width="380" height="560" rx="14" fill="#edf5ff" stroke="#54aeff" stroke-width="1.5"/>
+  <text x="510" y="128" font-size="16" font-weight="700" fill="#0a5bd3">bundle/agents/ — the roster</text>
+  <text x="510" y="150" font-size="12.5" fill="#33445c">Nine markdown files. Each one is an agent: its duties in</text>
+  <text x="510" y="167" font-size="12.5" fill="#33445c">prose, its wiring in frontmatter. Edit a file, change the mesh.</text>
+
+  <rect x="510" y="184" width="340" height="74" rx="8" fill="#ffffff" stroke="#54aeff" stroke-width="1.4"/>
+  <text x="526" y="207" font-size="13" font-weight="700" fill="#0a5bd3">chief-of-staff — the hub</text>
+  <rect x="782" y="194" width="56" height="20" rx="10" fill="#ddf4ff"/>
+  <text x="810" y="208" font-size="10.5" fill="#0a5bd3" text-anchor="middle" font-weight="600">daily</text>
+  <text x="526" y="227" font-size="12" fill="#33445c">reads every spoke report → ONE brief;</text>
+  <text x="526" y="244" font-size="12" fill="#33445c">routes by judgment; holds no state</text>
+
+  <rect x="510" y="270" width="340" height="44" rx="8" fill="#ffffff" stroke="#a3c7e8" stroke-width="1.1"/>
+  <text x="526" y="288" font-size="12.5" font-weight="700" fill="#1f2328">compliance-ops</text>
+  <text x="526" y="305" font-size="11.5" fill="#57606a">owns the calendar; 60/14/1-day horizons</text>
+  <rect x="782" y="282" width="56" height="20" rx="10" fill="#ddf4ff"/>
+  <text x="810" y="296" font-size="10.5" fill="#0a5bd3" text-anchor="middle" font-weight="600">daily</text>
+
+  <rect x="510" y="324" width="340" height="44" rx="8" fill="#ffffff" stroke="#a3c7e8" stroke-width="1.1"/>
+  <text x="526" y="342" font-size="12.5" font-weight="700" fill="#1f2328">librarian</text>
+  <text x="526" y="359" font-size="11.5" fill="#57606a">documents → concepts; flags contradictions</text>
+  <rect x="782" y="336" width="56" height="20" rx="10" fill="#ddf4ff"/>
+  <text x="810" y="350" font-size="10.5" fill="#0a5bd3" text-anchor="middle" font-weight="600">weekly</text>
+
+  <rect x="510" y="378" width="340" height="44" rx="8" fill="#ffffff" stroke="#a3c7e8" stroke-width="1.1"/>
+  <text x="526" y="396" font-size="12.5" font-weight="700" fill="#1f2328">research-watch</text>
+  <text x="526" y="413" font-size="11.5" fill="#57606a">watch-list digests; signal vs. churn</text>
+  <rect x="782" y="390" width="56" height="20" rx="10" fill="#ddf4ff"/>
+  <text x="810" y="404" font-size="10.5" fill="#0a5bd3" text-anchor="middle" font-weight="600">weekly</text>
+
+  <rect x="510" y="432" width="340" height="44" rx="8" fill="#ffffff" stroke="#a3c7e8" stroke-width="1.1"/>
+  <text x="526" y="450" font-size="12.5" font-weight="700" fill="#1f2328">bookkeeper</text>
+  <text x="526" y="467" font-size="11.5" fill="#57606a">continuous close from provided exports</text>
+  <rect x="776" y="444" width="62" height="20" rx="10" fill="#ddf4ff"/>
+  <text x="807" y="458" font-size="10.5" fill="#0a5bd3" text-anchor="middle" font-weight="600">monthly</text>
+
+  <rect x="510" y="486" width="340" height="44" rx="8" fill="#ffffff" stroke="#a3c7e8" stroke-width="1.1"/>
+  <text x="526" y="504" font-size="12.5" font-weight="700" fill="#1f2328">governance</text>
+  <text x="526" y="521" font-size="11.5" fill="#57606a">minutes · snapshots · resolutions</text>
+  <rect x="768" y="498" width="70" height="20" rx="10" fill="#ddf4ff"/>
+  <text x="803" y="512" font-size="10.5" fill="#0a5bd3" text-anchor="middle" font-weight="600">quarterly</text>
+
+  <rect x="510" y="542" width="340" height="72" rx="8" fill="none" stroke="#8c959f" stroke-width="1.2" stroke-dasharray="6 4"/>
+  <text x="526" y="563" font-size="12.5" font-weight="700" fill="#57606a">sales-qualification · lead-identification ·</text>
+  <text x="526" y="580" font-size="12.5" font-weight="700" fill="#57606a">inbound-triage <tspan font-weight="400" font-size="11.5" font-style="italic">— designed capable, dormant:</tspan></text>
+  <text x="526" y="600" font-size="11.5" fill="#57606a" font-style="italic">the engine refuses to run them until activation gates open</text>
+
+  <text x="680" y="642" font-size="10.5" fill="#33445c" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, monospace">level · model · harness · heartbeat · sources</text>
+
+  <rect x="490" y="680" width="380" height="110" rx="10" fill="#f6f8fa" stroke="#57606a" stroke-width="1.3"/>
+  <text x="510" y="706" font-size="14" font-weight="700" fill="#1f2328">animamesh.config.json <tspan font-weight="400" font-size="11.5" fill="#57606a">— the pairing</tspan></text>
+  <text x="510" y="728" font-size="12" fill="#414a55">engine.ref pin (vX.Y.Z) · identity: principal + persona</text>
+  <text x="510" y="748" font-size="12" fill="#414a55">activation gates — all false ⇒ commercial agents stay dormant</text>
+  <text x="510" y="768" font-size="12" fill="#414a55">cognition.overrides — reroute any harness with a config edit</text>
+
+  <rect x="490" y="802" width="380" height="66" rx="10" fill="none" stroke="#8c959f" stroke-width="1.3" stroke-dasharray="6 4"/>
+  <text x="510" y="828" font-size="13" font-weight="700" fill="#57606a">.env.local — secrets stay OUTSIDE git</text>
+  <text x="510" y="850" font-size="12" fill="#57606a">model · channel · source tokens; referenced by name only</text>
+
+  <!-- ==================== RIGHT: EVIDENCE + DEPLOY ==================== -->
+  <rect x="890" y="98" width="350" height="280" rx="14" fill="#f6f8fa" stroke="#57606a" stroke-width="1.5"/>
+  <text x="910" y="128" font-size="16" font-weight="700" fill="#1f2328">the evidence surfaces</text>
+
+  <rect x="910" y="146" width="310" height="56" rx="8" fill="#ffffff" stroke="#d0d7de" stroke-width="1.1"/>
+  <text x="926" y="168" font-size="12.5" font-weight="700" fill="#1f2328">ledger/actions.jsonl <tspan font-weight="400" font-size="11.5" fill="#57606a">— append-only</tspan></text>
+  <text x="926" y="188" font-size="11.5" fill="#57606a">an unlogged action is a verifier failure</text>
+
+  <rect x="910" y="212" width="310" height="56" rx="8" fill="#ffffff" stroke="#d0d7de" stroke-width="1.1"/>
+  <text x="926" y="234" font-size="12.5" font-weight="700" fill="#1f2328">approvals/ <tspan font-weight="400" font-size="11.5" fill="#57606a">— the human gate</tspan></text>
+  <text x="926" y="254" font-size="11.5" fill="#57606a">one JSON record per consequential action</text>
+
+  <rect x="910" y="278" width="310" height="56" rx="8" fill="#ffffff" stroke="#d0d7de" stroke-width="1.1"/>
+  <text x="926" y="300" font-size="12.5" font-weight="700" fill="#1f2328">reports/ · drafts/ <tspan font-weight="400" font-size="11.5" fill="#57606a">— run artifacts</tspan></text>
+  <text x="926" y="320" font-size="11.5" fill="#57606a">daily briefs land here; L2 drafts wait here</text>
+
+  <text x="910" y="362" font-size="11.5" fill="#57606a" font-style="italic">three audit seams: the repo diff, the gate, the ledger</text>
+
+  <rect x="890" y="402" width="350" height="196" rx="14" fill="#fff8f0" stroke="#f6821f" stroke-width="1.5"/>
+  <text x="910" y="432" font-size="16" font-weight="700" fill="#9a5b13">cloud/ — deploy workspace</text>
+  <text x="910" y="456" font-size="12" fill="#594a35">wrangler.jsonc — heartbeat Worker (two DOs)</text>
+  <text x="910" y="476" font-size="12" fill="#594a35">web/wrangler.jsonc — the dashboard Worker</text>
+  <text x="910" y="496" font-size="12" fill="#594a35">.github/workflows/ — CI deploys on push, after</text>
+  <text x="920" y="513" font-size="12" fill="#594a35">the engine's own verify gate passes</text>
+  <text x="910" y="541" font-size="11.5" fill="#9a5b13" font-style="italic">the engine ships templates; filling them in —</text>
+  <text x="910" y="558" font-size="11.5" fill="#9a5b13" font-style="italic">account ids, hostnames, vars — is an instance act</text>
+
+  <rect x="890" y="622" width="350" height="152" rx="14" fill="#ffffff" stroke="#8c959f" stroke-width="1.3"/>
+  <text x="910" y="650" font-size="15" font-weight="700" fill="#1f2328">two writers, one history</text>
+  <text x="910" y="674" font-size="12" fill="#414a55">laptop CLI — commits over a clone (pull --rebase first)</text>
+  <text x="910" y="694" font-size="12" fill="#414a55">cloud Worker — one commit per beat/drain via a</text>
+  <text x="920" y="711" font-size="12" fill="#414a55">GitHub App, authored by the mesh, never forced</text>
+  <text x="910" y="739" font-size="11.5" fill="#57606a" font-family="ui-monospace, SFMono-Regular, Menlo, monospace">git log --author=&lt;mesh&gt;  # what ran while</text>
+  <text x="910" y="756" font-size="11.5" fill="#57606a" font-family="ui-monospace, SFMono-Regular, Menlo, monospace">                          # you were away</text>
+
+  <rect x="890" y="798" width="350" height="90" rx="14" fill="#faf5ff" stroke="#8250df" stroke-width="1.5"/>
+  <text x="910" y="826" font-size="14" font-weight="700" fill="#6639ba">no code lives here</text>
+  <text x="910" y="848" font-size="12" fill="#4a3f63">all logic is in the public engine, pinned by tag;</text>
+  <text x="910" y="866" font-size="12" fill="#4a3f63">this repo is knowledge + config — the company itself</text>
+
+  <!-- ==================== LEGEND ==================== -->
+  <line x1="40" y1="916" x2="1240" y2="916" stroke="#d0d7de"/>
+  <text x="40" y="940" font-size="12" fill="#414a55"><tspan font-weight="700" fill="#116329">Left to right:</tspan> what the mesh knows → who does the work → what the work leaves behind. Every arrow in the system eventually lands as a file in one of these columns.</text>
+  <text x="40" y="962" font-size="12" fill="#414a55"><tspan font-weight="700" fill="#0a5bd3">The roster is data, not deployment:</tspan> adding an agent is copying a template and filling placeholders; promoting one is a frontmatter edit with git history.</text>
+  <text x="40" y="984" font-size="12" fill="#414a55"><tspan font-weight="700" fill="#6639ba">Drawn from a real production instance, de-identified.</tspan> A brain repo is private forever; the public engine never names the companies it animates.</text>
+</svg>

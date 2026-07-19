@@ -98,6 +98,13 @@ hard limits), `facts/`, `decisions/`, `events/`, `ops/calendar.md`,
 `agents/*.md`. Make it a **private** git repo immediately — the brain will
 hold real corporate facts. Never let it live inside a cloud-synced folder.
 
+Working in an AI session over this repo? The
+[brain-setup skill](../.claude/skills/brain-setup/SKILL.md) runs this whole
+step conversationally — a quick three-question path, or a guided
+questionnaire that recommends a roster from the nine archetypes. For what a
+grown instance looks like afterwards, see
+[a-typical-brain.md](a-typical-brain.md).
+
 House rules that keep the bundle trustworthy as it grows:
 
 - One concept per file; corrections to events are new events; superseded

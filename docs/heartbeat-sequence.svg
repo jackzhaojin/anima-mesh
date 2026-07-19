@@ -1,0 +1,139 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 1100" font-family="ui-sans-serif, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif">
+  <defs>
+    <marker id="hs-ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#57606a"/>
+    </marker>
+    <marker id="hs-ar-d" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#8c959f"/>
+    </marker>
+  </defs>
+
+  <rect x="0" y="0" width="1280" height="1100" fill="#ffffff"/>
+
+  <text x="40" y="46" font-size="21" font-weight="700" fill="#1f2328">Anatomy of a beat — one alarm, the whole company</text>
+  <text x="40" y="70" font-size="13" fill="#57606a">Every step of the daily heartbeat, in order, on serverless Cloudflare. Nothing runs between beats; nothing is lost between beats.</text>
+
+  <!-- ==================== LIFELINE HEADERS ==================== -->
+  <rect x="60" y="96" width="230" height="56" rx="9" fill="#edf5ff" stroke="#54aeff" stroke-width="1.4"/>
+  <text x="175" y="119" font-size="13.5" font-weight="700" fill="#0a5bd3" text-anchor="middle">HeartbeatDO</text>
+  <text x="175" y="138" font-size="11" fill="#33445c" text-anchor="middle">one Durable Object, one alarm</text>
+
+  <rect x="340" y="96" width="200" height="56" rx="9" fill="#f6f8fa" stroke="#57606a" stroke-width="1.4"/>
+  <text x="440" y="119" font-size="13.5" font-weight="700" fill="#1f2328" text-anchor="middle">the brain</text>
+  <text x="440" y="138" font-size="11" fill="#414a55" text-anchor="middle">private GitHub repo</text>
+
+  <rect x="570" y="96" width="170" height="56" rx="9" fill="#fff8e7" stroke="#bf8700" stroke-width="1.4"/>
+  <text x="655" y="119" font-size="13.5" font-weight="700" fill="#7d4e00" text-anchor="middle">read sources</text>
+  <text x="655" y="138" font-size="11" fill="#594514" text-anchor="middle">Graph · GitHub docs</text>
+
+  <rect x="770" y="96" width="170" height="56" rx="9" fill="#faf5ff" stroke="#8250df" stroke-width="1.4"/>
+  <text x="855" y="119" font-size="13.5" font-weight="700" fill="#6639ba" text-anchor="middle">model vendors</text>
+  <text x="855" y="138" font-size="11" fill="#4a3f63" text-anchor="middle">pure fetch, no SDKs</text>
+
+  <rect x="1000" y="96" width="200" height="56" rx="9" fill="#eef1fe" stroke="#5865f2" stroke-width="1.4"/>
+  <text x="1100" y="119" font-size="13.5" font-weight="700" fill="#3b45b0" text-anchor="middle">the principal</text>
+  <text x="1100" y="138" font-size="11" fill="#3f4660" text-anchor="middle">Discord DM</text>
+
+  <!-- ==================== LIFELINES ==================== -->
+  <line x1="175" y1="152" x2="175" y2="948" stroke="#d0d7de" stroke-dasharray="4 4"/>
+  <line x1="440" y1="152" x2="440" y2="948" stroke="#d0d7de" stroke-dasharray="4 4"/>
+  <line x1="655" y1="152" x2="655" y2="948" stroke="#d0d7de" stroke-dasharray="4 4"/>
+  <line x1="855" y1="152" x2="855" y2="948" stroke="#d0d7de" stroke-dasharray="4 4"/>
+  <line x1="1100" y1="152" x2="1100" y2="948" stroke="#d0d7de" stroke-dasharray="4 4"/>
+
+  <!-- loop + hub frames (behind arrows) -->
+  <rect x="196" y="404" width="726" height="212" rx="8" fill="#fbfdff" stroke="#54aeff" stroke-width="1.1" stroke-dasharray="6 4"/>
+  <text x="212" y="426" font-size="11.5" font-weight="700" fill="#0a5bd3" letter-spacing="0.5">LOOP — FOR EACH DUE SPOKE, SEQUENTIALLY (alphabetical; no parallelism, by design)</text>
+
+  <rect x="196" y="632" width="726" height="92" rx="8" fill="#edf5ff" stroke="#54aeff" stroke-width="1.2"/>
+  <text x="212" y="654" font-size="11.5" font-weight="700" fill="#0a5bd3" letter-spacing="0.5">THE HUB RUNS LAST — chief-of-staff</text>
+
+  <!-- activation bar -->
+  <rect x="167" y="168" width="16" height="768" rx="3" fill="#cfeaff"/>
+
+  <!-- ==================== STEPS ==================== -->
+  <!-- 1: alarm fires (self) -->
+  <circle cx="52" cy="184" r="9" fill="#0a5bd3"/><text x="52" y="188" font-size="11" fill="#ffffff" text-anchor="middle" font-weight="700">1</text>
+  <text x="68" y="181" font-size="12" font-weight="600" fill="#1f2328">08:00 local — the alarm fires</text>
+  <text x="68" y="197" font-size="11" fill="#57606a" font-style="italic">DST-correct: recomputed each beat, not a UTC cron</text>
+
+  <!-- 2: lock (self) -->
+  <circle cx="52" cy="228" r="9" fill="#0a5bd3"/><text x="52" y="232" font-size="11" fill="#ffffff" text-anchor="middle" font-weight="700">2</text>
+  <text x="68" y="225" font-size="12" font-weight="600" fill="#1f2328">take the beat lock</text>
+  <text x="68" y="241" font-size="11" fill="#57606a" font-style="italic">stale locks stolen after 30 min</text>
+
+  <!-- 3: mint token -->
+  <path d="M 183 268 L 436 268" stroke="#57606a" stroke-width="1.3" fill="none" marker-end="url(#hs-ar)"/>
+  <circle cx="205" cy="268" r="9" fill="#0a5bd3"/><text x="205" y="272" font-size="11" fill="#ffffff" text-anchor="middle" font-weight="700">3</text>
+  <text x="224" y="261" font-size="11.5" fill="#414a55">mint GitHub App token (signed JWT → ~1 h token, cached)</text>
+
+  <!-- 4: tarball -->
+  <path d="M 183 308 L 436 308" stroke="#57606a" stroke-width="1.3" fill="none" marker-end="url(#hs-ar)"/>
+  <circle cx="205" cy="308" r="9" fill="#0a5bd3"/><text x="205" y="312" font-size="11" fill="#ffffff" text-anchor="middle" font-weight="700">4</text>
+  <text x="224" y="301" font-size="11.5" fill="#414a55">read the whole brain — ONE tarball @ baseSha</text>
+  <path d="M 436 336 L 187 336" stroke="#8c959f" stroke-width="1.2" fill="none" stroke-dasharray="5 4" marker-end="url(#hs-ar-d)"/>
+  <text x="224" y="329" font-size="11" fill="#8c959f" font-style="italic">bundle in memory: agents/ · facts/ · ops/ · ledger · reports</text>
+
+  <!-- 5: due decision (self) -->
+  <circle cx="52" cy="374" r="9" fill="#0a5bd3"/><text x="52" y="378" font-size="11" fill="#ffffff" text-anchor="middle" font-weight="700">5</text>
+  <text x="68" y="371" font-size="12" font-weight="600" fill="#1f2328">the due decision — scan every agents/*.md</text>
+  <text x="68" y="387" font-size="11" fill="#57606a" font-style="italic">cadence vs. last completed run · cloud-capable harness only · commercial gates</text>
+
+  <!-- 6: sources -->
+  <path d="M 183 456 L 651 456" stroke="#57606a" stroke-width="1.3" fill="none" marker-end="url(#hs-ar)"/>
+  <circle cx="205" cy="456" r="9" fill="#0a5bd3"/><text x="205" y="460" font-size="11" fill="#ffffff" text-anchor="middle" font-weight="700">6</text>
+  <text x="224" y="449" font-size="11.5" fill="#414a55">fetch live listings for this agent's sources: opt-ins</text>
+  <path d="M 651 480 L 187 480" stroke="#8c959f" stroke-width="1.2" fill="none" stroke-dasharray="5 4" marker-end="url(#hs-ar-d)"/>
+  <text x="224" y="473" font-size="11" fill="#8c959f" font-style="italic">a listing — or an honest gap in the prompt; never an aborted run</text>
+
+  <!-- 7: model call -->
+  <path d="M 183 516 L 851 516" stroke="#57606a" stroke-width="1.3" fill="none" marker-end="url(#hs-ar)"/>
+  <circle cx="205" cy="516" r="9" fill="#0a5bd3"/><text x="205" y="520" font-size="11" fill="#ffffff" text-anchor="middle" font-weight="700">7</text>
+  <text x="224" y="509" font-size="11.5" fill="#414a55">one fetch: prompt = agent's job + bundle excerpts + freshest reports + approvals + source listings</text>
+  <path d="M 851 544 L 187 544" stroke="#8c959f" stroke-width="1.2" fill="none" stroke-dasharray="5 4" marker-end="url(#hs-ar-d)"/>
+  <text x="224" y="537" font-size="11" fill="#8c959f" font-style="italic">report text + token usage &#160;·&#160; ≤10 min per run; 429/5xx backoff 2 s → 8 s</text>
+
+  <!-- 8: buffer (self) -->
+  <circle cx="212" cy="580" r="9" fill="#0a5bd3"/><text x="212" y="584" font-size="11" fill="#ffffff" text-anchor="middle" font-weight="700">8</text>
+  <text x="230" y="577" font-size="11.5" font-weight="600" fill="#1f2328">buffer in memory: the report + 3 ledger lines — no commit yet</text>
+  <text x="230" y="596" font-size="11" fill="#57606a" font-style="italic">a throw lands in failures[] and the loop continues — a failed spoke never kills the beat</text>
+
+  <!-- 9: hub -->
+  <path d="M 183 686 L 851 686" stroke="#57606a" stroke-width="1.3" fill="none" marker-end="url(#hs-ar)"/>
+  <circle cx="205" cy="686" r="9" fill="#0a5bd3"/><text x="205" y="690" font-size="11" fill="#ffffff" text-anchor="middle" font-weight="700">9</text>
+  <text x="224" y="676" font-size="11.5" fill="#414a55">same run shape — but its prompt now holds the spokes' fresh reports,</text>
+  <text x="224" y="710" font-size="11.5" fill="#414a55">so its output is the ONE daily brief the principal reads</text>
+
+  <!-- 10: flush -->
+  <path d="M 183 758 L 436 758" stroke="#57606a" stroke-width="1.3" fill="none" marker-end="url(#hs-ar)"/>
+  <circle cx="205" cy="758" r="9" fill="#0a5bd3"/><text x="205" y="762" font-size="11" fill="#ffffff" text-anchor="middle" font-weight="700">10</text>
+  <text x="224" y="748" font-size="11.5" font-weight="600" fill="#1f2328">flush: ONE commit — "beat(cloud): {date} — N run(s), M failure(s)"</text>
+  <text x="224" y="775" font-size="11" fill="#57606a" font-style="italic">never forced; a moved ref → re-snapshot, retry once, else fail loudly</text>
+
+  <!-- 11: deliver -->
+  <path d="M 183 812 L 1096 812" stroke="#57606a" stroke-width="1.3" fill="none" marker-end="url(#hs-ar)"/>
+  <circle cx="205" cy="812" r="9" fill="#0a5bd3"/><text x="205" y="816" font-size="11" fill="#ffffff" text-anchor="middle" font-weight="700">11</text>
+  <text x="224" y="805" font-size="11.5" fill="#414a55">deliver the hub's brief as a bot DM — only AFTER the commit lands (evidence before words)</text>
+
+  <!-- 12: failure DM -->
+  <path d="M 183 850 L 1096 850" stroke="#8c959f" stroke-width="1.2" fill="none" stroke-dasharray="5 4" marker-end="url(#hs-ar-d)"/>
+  <circle cx="205" cy="850" r="9" fill="#0a5bd3"/><text x="205" y="854" font-size="11" fill="#ffffff" text-anchor="middle" font-weight="700">12</text>
+  <text x="224" y="843" font-size="11.5" fill="#8c959f" font-style="italic">failure DM — only if failures[] is non-empty; silence must mean success</text>
+
+  <!-- 13: lastBeat (self) -->
+  <circle cx="52" cy="888" r="9" fill="#0a5bd3"/><text x="52" y="892" font-size="11" fill="#ffffff" text-anchor="middle" font-weight="700">13</text>
+  <text x="68" y="885" font-size="12" font-weight="600" fill="#1f2328">persist lastBeat → /healthz</text>
+  <text x="68" y="901" font-size="11" fill="#57606a" font-style="italic">counts only, no secrets</text>
+
+  <!-- 14: re-arm (self) -->
+  <circle cx="52" cy="928" r="9" fill="#0a5bd3"/><text x="52" y="932" font-size="11" fill="#ffffff" text-anchor="middle" font-weight="700">14</text>
+  <text x="68" y="925" font-size="12" font-weight="600" fill="#1f2328">finally: re-arm tomorrow's alarm</text>
+  <text x="68" y="941" font-size="11" fill="#57606a" font-style="italic">a crashed beat cannot silence tomorrow</text>
+
+  <!-- ==================== LEGEND ==================== -->
+  <line x1="40" y1="972" x2="1240" y2="972" stroke="#d0d7de"/>
+  <text x="40" y="996" font-size="12" fill="#414a55"><tspan font-weight="700" fill="#0a5bd3">Why one alarm fits serverless:</tspan> model calls are I/O wait, not Worker CPU — the invocation may spend the whole beat waiting on fetch while CPU time stays in milliseconds.</text>
+  <text x="40" y="1018" font-size="12" fill="#414a55"><tspan font-weight="700" fill="#7d4e00">Many rhythms, one clock:</tspan> each agent declares heartbeat: daily | weekly | monthly | quarterly; the daily beat evaluates them all — cadence is frontmatter data, not extra timers.</text>
+  <text x="40" y="1040" font-size="12" fill="#414a55"><tspan font-weight="700" fill="#116329">Due when:</tspan> daily = a fresh calendar day since the last completed run; weekly ≥ 144 h · monthly ≥ 648 h · quarterly ≥ 2040 h — measured against the ledger, so state survives any restart.</text>
+  <text x="40" y="1062" font-size="12" fill="#414a55"><tspan font-weight="700" fill="#57606a">State boundary:</tspan> everything durable is in the one commit; the Durable Object keeps only the alarm, the lock, and lastBeat.</text>
+</svg>

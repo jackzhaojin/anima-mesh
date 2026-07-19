@@ -28,7 +28,9 @@ moved ref and otherwise fails loudly.
   = read brain → run every due agent whose *effective* harness is
   fetch-capable (`CLOUD_HARNESSES`) → verify at the seams → one commit →
   deliver the hub's brief → failure DM if anything broke. The alarm re-arms
-  in `finally`; a crashed beat can't silence tomorrow.
+  in `finally`; a crashed beat can't silence tomorrow. The step-by-step
+  walkthrough, with the sequence diagram, is
+  [heartbeat-anatomy.md](heartbeat-anatomy.md).
 - `DirectionDO` — the inbound queue. Holds the per-day budget counter, the
   processed-message dedup ring for polled channels, and an immediate alarm
   that drains the queue agentically.
