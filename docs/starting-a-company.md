@@ -169,7 +169,37 @@ issue directions → sign what needs signing.** Observability is git first
 must mean success, so verify the silence occasionally (check `/healthz`
 after the beat hour).
 
-## 7. Evolve
+## 7. Re-aim the company (direction pivots)
+
+Companies change what they are — a consulting shop becomes a product firm,
+a research lab picks a commercial model. The bundle is built for this:
+**a pivot is one dated decision plus its ripples**, not a rewrite. The
+flow, in order:
+
+1. **Decision first.** One new dated file in `bundle/decisions/` stating
+   the new direction, what it refines or supersedes (link the old
+   decision), and — just as important — what is *explicitly not yet
+   decided*. Recording open questions honestly keeps agents from treating
+   an aspiration as a fact.
+2. **Ripple to facts.** Update the strategic-posture line(s) in `facts/`
+   to point at the decision. Never rewrite history in facts that were
+   verified against source documents — only the posture, with a pointer.
+3. **Ripple to ops.** Re-aim `ops/watch-list.md` at the new focus areas;
+   open `ops/nags.md` entries for the human-owned follow-through the pivot
+   creates (the business plan, the pitch, the website — documents always
+   lag identity).
+4. **Ripple to agents.** Re-focus the agent concept files whose duties the
+   pivot changes (a research agent's subjects, a chief of staff's framing).
+   Frontmatter and duties are editable; the git history is the promotion
+   record.
+5. **Log and validate.** One append-only `log.md` entry telling the story,
+   then `pnpm cli validate` must stay PASS before committing.
+
+Because both runtimes read the same repo, the entire mesh operates under
+the new identity from the next heartbeat — no redeploy, no config change.
+That is the payoff of keeping identity in the bundle instead of in code.
+
+## 8. Evolve
 
 - Capabilities built inside the brain for expedience get flagged
   **"generalize me"** and later promoted into the engine, de-identified —
