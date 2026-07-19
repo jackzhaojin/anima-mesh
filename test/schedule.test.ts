@@ -7,6 +7,7 @@ import { runAgent } from "../src/harness/run.js";
 import { FsInstanceStore } from "../src/instance/store-fs.js";
 import { parseScheduleRequest } from "../src/harness/schedule.js";
 import { FakeProvider } from "../src/providers/fake.js";
+import { registerProvider } from "../src/providers/index.js";
 import { Ledger } from "../src/ledger/ledger.js";
 import { loadBundle } from "../src/okf/bundle.js";
 import { checkConformance } from "../src/okf/conformance.js";
@@ -189,6 +190,40 @@ describe("the schedule-request gate — model proposes, code disposes", () => {
     expect(report.ok).toBe(true);
     const entries = new Ledger(path.join(root, "ledger/actions.jsonl")).entriesForRun("run-nolist");
     expect(entries.some((e) => e.action === "schedule-request-denied")).toBe(true);
+  });
+});
+
+describe("wake consumption respects request time", () => {
+  it("a wake the hub adds mid-beat for an already-ran spoke survives to the next beat", async () => {
+    // Pre-beat: spoke is woken. During the beat the hub (runs last, having
+    // read the spoke's fresh report) re-wakes it for tomorrow. Consumption
+    // must clear only the PRE-BEAT wake, not the hub's new request.
+    registerProvider(
+      new FakeProvider(() => ({ text: "## Brief\n\nRetry tomorrow.\n\n```schedule-request\nwake: [spoke]\n```\n" })),
+      "fake-hub",
+    );
+    const root = await makeInstance({
+      "bundle/agents/spoke.md": agentFile("spoke"),
+      "bundle/agents/chief-of-staff.md": agentFile("chief-of-staff", {
+        level: "L3",
+        whitelist: ["schedule-update"],
+        harness: "fake-hub",
+        heartbeat: "daily",
+      }),
+      "bundle/ops/schedule.md": concept("schedule", { wake: ["spoke"] }, "# Schedule\n"),
+    });
+    const result = await heartbeatCore({ store: new FsInstanceStore(root) });
+
+    expect(result.runs.map((r) => r.agent)).toEqual(["spoke", "chief-of-staff"]); // hub last
+    expect(result.ok).toBe(true);
+
+    const after = await readSchedule(root);
+    expect(after).toContain("- spoke"); // the mid-beat re-wake survived consumption
+
+    const entries = new Ledger(path.join(root, "ledger/actions.jsonl")).read();
+    // Nothing was consumable: the only attempted wake was renewed mid-beat.
+    expect(entries.find((e) => e.action === "wake-consumed")).toBeUndefined();
+    expect(entries.some((e) => e.action === "schedule-updated")).toBe(true);
   });
 });
 

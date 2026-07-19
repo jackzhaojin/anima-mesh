@@ -3,7 +3,7 @@
 AnimaMesh is pre-1.0, so this history is organized by **minor release line**:
 the capability boundary operators actually adopt. Patch tags are deliberately
 rolled into the value and maturity of their minor rather than narrated one by
-one. The latest tag is **v0.9.0**.
+one. The latest tag is **v0.9.1**.
 
 ## Upgrade procedure
 
@@ -32,7 +32,7 @@ The ledger remains append-only; never "migrate" it by editing old entries.
 
 ## [v0.9.x] — the schedule surface: the hub can schedule the follow-through
 
-**Latest tag: v0.9.0 · 2026-07-19**
+**Latest tag: v0.9.1 · 2026-07-19**
 
 ### Value
 
@@ -101,6 +101,10 @@ Also in the line:
   denied and surface in the report for the principal to apply by hand.
 - New ledger actions (`wake-consumed`, `schedule-updated`,
   `schedule-request-denied`) are additive; nothing existing changes shape.
+- v0.9.1 (found in the first live beat): a wake **renewed during the
+  beat** — the hub, running last, re-waking a spoke that already ran after
+  reading its report — now survives consumption; renewals are recognized
+  from the beat's own `schedule-updated` ledger entries.
 
 ## [v0.8.x] — durable GitHub auth and honest failure signals
 

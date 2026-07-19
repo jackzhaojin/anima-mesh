@@ -205,10 +205,24 @@ export async function heartbeatCore(options: HeartbeatCoreOptions): Promise<Hear
   // retrying a broken agent would beat-spam the vendor forever. The failure
   // DM tells the principal, who can re-wake deliberately. Wakes the tier or
   // gates could not honor were never attempted and stay on file.
+  // A wake RENEWED during the beat survives: the hub runs last and may
+  // re-wake a spoke that already ran, having just read its report — that is
+  // a request about the NEXT beat. The ledger's schedule-updated entries
+  // appended during this beat are the record of such renewals.
+  const renewed = new Set(
+    (await store.readLedger())
+      .slice(ledgerEntries.length)
+      .filter((e) => e.action === "schedule-updated")
+      .flatMap((e) => {
+        const wake = (e.detail as { wake?: unknown } | undefined)?.wake;
+        return Array.isArray(wake) ? wake.filter((x): x is string => typeof x === "string") : [];
+      }),
+  );
   const attempted = new Set(due.map((d) => d.agent.name));
-  const consumed = schedule.wake.filter((n) => attempted.has(n));
+  const consumable = (n: string) => attempted.has(n) && !renewed.has(n);
+  const consumed = schedule.wake.filter(consumable);
   if (consumed.length > 0) {
-    await mutateSchedule(store, config, (s) => ({ ...s, wake: s.wake.filter((n) => !attempted.has(n)) }));
+    await mutateSchedule(store, config, (s) => ({ ...s, wake: s.wake.filter((n) => !consumable(n)) }));
     await store.appendLedger({
       ts: now.toISOString(),
       runId: crypto.randomUUID(),
