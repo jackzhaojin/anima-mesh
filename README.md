@@ -10,7 +10,11 @@ its own heartbeat, reads the company's knowledge, does the preparable work, and
 reports back: *"here's what I found, here's the draft, approve or edit."*
 
 The initiative inverts: **you stop driving the company's operations and start
-reviewing them.**
+reviewing them.** And because all company state is one **OKF knowledge
+bundle** — typed markdown concepts under one validator — the mesh grows past
+back office by adding *concept types*, not software: the first front-office
+domain shelf is a [CRM](docs/okf-crm-domain.md) that lives in the bundle
+itself.
 
 ## Where it runs
 
@@ -41,12 +45,16 @@ secrets from this public engine.
   the research watcher never sees bank data. Spokes keep working when the hub
   is down. There is no monolith coordinator, no shared work queue, no phase
   loop — coordination happens through judgment over shared state.
-- **The shared state is a brain repo** — a git-backed bundle of markdown
-  concepts ([OKF](https://github.com/google/okf)-style: one concept per file,
-  `type` in the frontmatter, reserved `index.md` and `log.md`). Facts,
-  decisions, events, the compliance calendar, the constitution, and every
-  agent's own definition live there as plain markdown: readable by any human in
-  any editor, consumable by any agent on any runtime, hostage to no vendor.
+- **The shared state is a brain repo** — a git-backed
+  [OKF](https://github.com/google/okf)-style **knowledge bundle**: one
+  **concept** per file, a declared `type` in YAML frontmatter, reserved
+  `index.md` and `log.md`, and relative links forming a **machine-checked
+  knowledge graph** (the conformance pass verifies every link resolves).
+  Facts, decisions, events, the compliance calendar, the constitution, and
+  every agent's own definition are concepts; so are front-office records —
+  a CRM contact is a `crm-person` concept, not a row in someone else's SaaS.
+  Plain markdown: readable by any human in any editor, consumable by any
+  agent on any runtime, hostage to no vendor.
 
 The engine is strictly **data-source-agnostic**: it never references any
 particular organization. Your company's knowledge is your private brain repo;
@@ -64,11 +72,32 @@ your-brain/                      ← private instance (yours, never public)
     facts/ decisions/ events/    ← stable / dated-immutable / append-only
     ops/calendar.md              ← what agents wake up to check
     agents/*.md                  ← each agent IS a concept file
+    crm/                         ← optional domain shelf: typed CRM concepts
+                                    (orgs, people, engagements, interactions)
   ledger/actions.jsonl           ← append-only action ledger (audit seam)
   approvals/                     ← file-based needs-you gate (approval seam)
   reports/ drafts/               ← run artifacts
   cloud/                         ← this instance's Worker deploy config
 ```
+
+## OKF is the data model — domains extend by type, not by code
+
+Everything an instance knows is a **concept**; every concept declares a
+**type**; the **conformance pass** (`pnpm cli validate`, profiles `okf` and
+`animamesh`) enforces the shape — reserved files present, frontmatter
+parseable, `type` declared, agent concepts carrying their chokepoint fields,
+and the relative-link **knowledge graph resolving**. The checker is
+deliberately type-agnostic beyond that: a new operational domain is a folder
+of new concept types under the same validator, and every agent can read it
+the moment it exists — no schema migration, no plugin, no vendor API.
+
+**The first domain shelf is CRM** ([docs/okf-crm-domain.md](docs/okf-crm-domain.md)):
+`crm-org`, `crm-person`, `crm-engagement`, and append-only `crm-interaction`
+concepts, with relationship-first lifecycle stages and — the part no SaaS CRM
+offers — **compliance screens encoded in the records themselves**, so agents
+enforce an instance's legal boundaries as data rules rather than remembered
+policy. It was promoted from a live instance, de-identified; the pattern
+generalizes to any relationship-shaped domain (vendors, candidates, press).
 
 ## Design rules the code enforces
 
@@ -170,6 +199,7 @@ separately credentialed dashboard Worker, and one evidence commit per run.
 | [docs/deploying-cloud.md](docs/deploying-cloud.md) | Generic Cloudflare runbook: two Workers, secrets contract, Discord wiring |
 | [CHANGELOG.md](CHANGELOG.md) | Each minor release line: its value, maturity, and operator upgrade steps |
 | [docs/engine-vs-instance.md](docs/engine-vs-instance.md) | The sorting rule: what belongs in this public engine vs a private brain |
+| [docs/okf-crm-domain.md](docs/okf-crm-domain.md) | The CRM domain shelf: typed concepts, lifecycle stages, compliance screens as data |
 | [docs/learnings/](docs/learnings/README.md) | Hard-won platform knowledge (vendor gateways, Workers egress, …) with evidence |
 | [CLAUDE.md](CLAUDE.md) | Working agreements for AI coding sessions in this repo |
 | [src/README.md](src/README.md) | Module-by-module architecture map |

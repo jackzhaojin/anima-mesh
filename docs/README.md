@@ -17,7 +17,9 @@ specifics (those live in each instance's own repo — see the boundary doc).
    (what's in the engine vs. what's in your brain)
 5. [deploying-cloud.md](deploying-cloud.md) — the generic Cloudflare
    runbook (two Workers, secrets contract, Discord wiring, multi-company)
-6. [learnings/](learnings/README.md) — hard-won platform knowledge with
+6. [okf-crm-domain.md](okf-crm-domain.md) — the first front-office domain
+   shelf: CRM as typed concepts, with compliance screens encoded in data
+7. [learnings/](learnings/README.md) — hard-won platform knowledge with
    evidence; **check here first when a vendor edge misbehaves**
 
 Working on the code itself? [../CLAUDE.md](../CLAUDE.md) has the working

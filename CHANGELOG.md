@@ -28,6 +28,18 @@ The ledger remains append-only; never "migrate" it by editing old entries.
 
 ## [Unreleased]
 
+- Docs: the **CRM domain shelf** (`docs/okf-crm-domain.md`) — the first
+  front-office OKF domain: `crm-org` / `crm-person` / `crm-engagement` /
+  append-only `crm-interaction` concepts, relationship-first stages,
+  views-are-grep, and compliance screens encoded in record frontmatter.
+  Promoted from a live instance, de-identified. No engine code was
+  required: conformance is type-agnostic by design, and the R4 link rule
+  already machine-checks the relationship graph.
+- Docs: README rewritten to foreground the OKF vocabulary (concepts,
+  types, conformance profiles, the machine-checked knowledge graph) and
+  the domain-shelf extension model; `starting-a-company.md` gained the
+  re-aiming (direction pivot) playbook.
+
 ## [v0.8.x] — durable GitHub auth and honest failure signals
 
 **Latest tag: v0.8.0 · 2026-07-18**
