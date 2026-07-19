@@ -102,7 +102,7 @@
   <path d="M 183 686 L 851 686" stroke="#57606a" stroke-width="1.3" fill="none" marker-end="url(#hs-ar)"/>
   <circle cx="205" cy="686" r="9" fill="#0a5bd3"/><text x="205" y="690" font-size="11" fill="#ffffff" text-anchor="middle" font-weight="700">9</text>
   <text x="224" y="676" font-size="11.5" fill="#414a55">same run shape — but its prompt now holds the spokes' fresh reports,</text>
-  <text x="224" y="710" font-size="11.5" fill="#414a55">so its output is the ONE daily brief the principal reads</text>
+  <text x="224" y="710" font-size="11.5" fill="#414a55">so its output is the ONE brief — and may end with a gated schedule-request that wakes agents at the NEXT beat</text>
 
   <!-- 10: flush -->
   <path d="M 183 758 L 436 758" stroke="#57606a" stroke-width="1.3" fill="none" marker-end="url(#hs-ar)"/>
@@ -119,6 +119,13 @@
   <path d="M 183 850 L 1096 850" stroke="#8c959f" stroke-width="1.2" fill="none" stroke-dasharray="5 4" marker-end="url(#hs-ar-d)"/>
   <circle cx="205" cy="850" r="9" fill="#0a5bd3"/><text x="205" y="854" font-size="11" fill="#ffffff" text-anchor="middle" font-weight="700">12</text>
   <text x="224" y="843" font-size="11.5" fill="#8c959f" font-style="italic">failure DM — only if failures[] is non-empty; silence must mean success</text>
+
+  <!-- retrigger loop: the hub's schedule-request feeds the NEXT beat's due decision -->
+  <path d="M 198 704 C 96 696, 60 560, 57 408" stroke="#0a5bd3" stroke-width="1.2" fill="none" stroke-dasharray="5 4" marker-end="url(#hs-ar-d)"/>
+  <text x="76" y="540" font-size="11" fill="#0a5bd3" font-style="italic">wake applied</text>
+  <text x="76" y="556" font-size="11" fill="#0a5bd3" font-style="italic">(gated, ledgered)</text>
+  <text x="76" y="572" font-size="11" fill="#0a5bd3" font-style="italic">→ NEXT beat's</text>
+  <text x="76" y="588" font-size="11" fill="#0a5bd3" font-style="italic">due decision</text>
 
   <!-- 13: lastBeat (self) -->
   <circle cx="52" cy="888" r="9" fill="#0a5bd3"/><text x="52" y="892" font-size="11" fill="#ffffff" text-anchor="middle" font-weight="700">13</text>

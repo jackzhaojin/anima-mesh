@@ -34,9 +34,9 @@
   <text x="76" y="442" font-size="13" font-weight="700" fill="#1f2328">events/ <tspan font-weight="400" fill="#57606a" font-size="11.5">— append-only; corrections are new events</tspan></text>
 
   <rect x="60" y="478" width="390" height="64" rx="8" fill="#ffffff" stroke="#a9d6bb" stroke-width="1.1"/>
-  <text x="76" y="500" font-size="13" font-weight="700" fill="#1f2328">ops/ <tspan font-weight="400" fill="#57606a" font-size="11.5">— calendar · watch-list · nags</tspan></text>
-  <text x="76" y="519" font-size="12" fill="#33513f">what agents wake up to check; a nag repeats in</text>
-  <text x="76" y="535" font-size="12" fill="#33513f">every brief, with its age, until done</text>
+  <text x="76" y="500" font-size="13" font-weight="700" fill="#1f2328">ops/ <tspan font-weight="400" fill="#57606a" font-size="11.5">— calendar · watch-list · nags · schedule</tspan></text>
+  <text x="76" y="519" font-size="12" fill="#33513f">what agents wake up to check; nags repeat until done;</text>
+  <text x="76" y="535" font-size="12" fill="#33513f">schedule holds one-shot wakes, pauses, cadence overrides</text>
 
   <rect x="60" y="554" width="390" height="76" rx="8" fill="#fff8e7" stroke="#bf8700" stroke-width="1.2"/>
   <text x="76" y="576" font-size="13" font-weight="700" fill="#7d4e00">cabinet/ <tspan font-weight="400" fill="#846500" font-size="11.5">— document memory</tspan></text>
@@ -67,7 +67,7 @@
   <rect x="782" y="194" width="56" height="20" rx="10" fill="#ddf4ff"/>
   <text x="810" y="208" font-size="10.5" fill="#0a5bd3" text-anchor="middle" font-weight="600">daily</text>
   <text x="526" y="227" font-size="12" fill="#33445c">reads every spoke report → ONE brief;</text>
-  <text x="526" y="244" font-size="12" fill="#33445c">routes by judgment; holds no state</text>
+  <text x="526" y="244" font-size="12" fill="#33445c">wakes spokes via gated schedule-requests</text>
 
   <rect x="510" y="270" width="340" height="44" rx="8" fill="#ffffff" stroke="#a3c7e8" stroke-width="1.1"/>
   <text x="526" y="288" font-size="12.5" font-weight="700" fill="#1f2328">compliance-ops</text>

@@ -68,6 +68,11 @@ Frontmatter cadence is the *standing* rhythm; `ops/schedule.md` is the
   tier and permission state can run it, and a sticky wake for a *failing*
   agent is deliberately **not** kept — the failure DM tells the principal,
   who re-wakes on purpose rather than letting a retry loop spam a vendor.
+  One more nuance, found in the first live beat: a wake **renewed
+  mid-beat** — the hub runs last and may re-wake a spoke that already ran,
+  having just read its report — is a request about the *next* beat and
+  survives consumption (renewals are recognized from the beat's own
+  `schedule-updated` ledger entries).
 - **`pause:`** — skip these agents until removed. Pause beats wake: an
   explicit stop outranks an explicit go, and the contradiction stays
   visible in the file instead of resolving silently.

@@ -77,7 +77,13 @@ What the principal actually experiences, on a day the laptop stays closed:
    does the brief arrive as a Discord DM — evidence before words.
 3. **Over coffee** — the brief leads with the nags (the principal opted
    into being bugged), then: what happened, what needs a decision today
-   with the specific approve/edit ask, what the spokes do next.
+   with the specific approve/edit ask, what the spokes do next. When a
+   spoke's work needs follow-through faster than its own cadence, the brief
+   ends with a `schedule-request` that wakes that agent for the next beat —
+   applied through the hub's whitelist gate, ledgered, and visible in the
+   same commit. (In this instance's first hour with the capability, the hub
+   woke the bookkeeper because a filing-decision deadline outpaced its
+   monthly rhythm — exactly the judgment the mechanism exists for.)
 4. **Any time** — the principal answers with `/direct …` in the same DM.
    Seconds later a direction drain runs agentically, commits its evidence
    (`direction: 1 processed`), and replies.
