@@ -1,6 +1,7 @@
 import { findAgent, agentsFromBundle, assertActivatable, effectiveCognition, type AgentConcept } from "../agents/concept.js";
 import { loadGatedTypes, assertActionAllowed, GateViolation } from "../gates/gatekeeper.js";
 import { parseScheduleRequest, mutateSchedule } from "./schedule.js";
+import { applyDraftRequests, draftCapabilityLines } from "./drafts.js";
 import { resolveProvider, type AgentWorkerProvider, type ApiProviderContext } from "../providers/index.js";
 import type { InstanceStore } from "../instance/store.js";
 import type { InstanceConfig } from "../instance/config-core.js";
@@ -250,6 +251,20 @@ export async function runAgentCore(options: RunCoreOptions): Promise<RunReport> 
     }
   }
 
+  // `draft-request` blocks: the same propose/dispose contract, generalized to
+  // artifacts under the drafts dir (see drafts.ts for the jail + caps).
+  await applyDraftRequests({
+    store,
+    config,
+    agent,
+    runId,
+    gatedTypes,
+    approvals: approvalRecords,
+    clock,
+    text: result.text,
+    progress,
+  });
+
   const verifierResults: VerifierResult[] = [
     verifyConformanceBundle(await store.loadBundle(), "animamesh"),
     await verifyExpectedOutputsStore(store, [reportName]),
@@ -317,6 +332,9 @@ async function buildPrompt(
       "  The harness applies it through your whitelist gate and records it in the ledger. Woken agents",
       "  see the latest reports when they run — write the ask into your report so they know why.",
     );
+  }
+  if (agent.whitelist.includes("draft-write")) {
+    sections.push(...draftCapabilityLines(config.drafts));
   }
   // Declared read sources (agent frontmatter opt-in) — live external context
   // inlined so L1 runs still need no tool access. Failures become honest

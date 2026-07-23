@@ -115,7 +115,12 @@ generalizes to any relationship-shaped domain (vendors, candidates, press).
   whitelisted reversible actions → L4 external actions, each behind a human
   gate, permanently. Every agent starts at L1 and earns promotion; the level is
   recorded in the agent's own concept file, so trust is an operational dial
-  with a paper trail.
+  with a paper trail. Two L3 write paths ship today, both propose/dispose
+  (a fenced block in the run's output, applied only through the gate,
+  always ledgered): `schedule-update` (wake an agent for the next beat)
+  and `draft-write` (create/update artifacts under `drafts/` — session
+  prep, outlines, quiz sheets — path-jailed, from beat AND direction runs,
+  so the principal can reshape prep material by replying in chat).
 - **The model chokepoint.** Each agent concept declares its `model` and
   `harness`; swapping vendors is a config edit, never a rebuild. Shipped
   harnesses: `moonshot-api` and `anthropic-api` (pure fetch — the two a cloud
@@ -219,14 +224,17 @@ conformance and complete a full agent run against the fake provider.
 
 ## Status
 
-v0.9.0 — pre-release. Package name on npm to be confirmed; pinned consumers
+v0.10.0 — pre-release. Package name on npm to be confirmed; pinned consumers
 should reference the repo by tag. The cloud tier introduced in v0.3 is now the
 primary execution path; the CLI remains the bootstrap, operator, and
-subprocess-harness path. v0.9 adds the schedule surface (`ops/schedule.md`:
-one-shot wakes, pauses, cadence overrides — next-fire stays derived) and the
-gated `schedule-request` path, so a whitelisted hub can review the spokes'
-work and wake the right agent for the next beat; v0.8 replaced PAT auth with
-GitHub App installation tokens and guaranteed the failure DM. See
+subprocess-harness path. v0.10 adds the draft surface (gated `draft-request`
+blocks: a whitelisted agent maintains artifacts under `drafts/` from beat and
+direction runs — prep packs the principal reshapes by replying in chat); v0.9
+added the schedule surface (`ops/schedule.md`: one-shot wakes, pauses, cadence
+overrides — next-fire stays derived) and the gated `schedule-request` path, so
+a whitelisted hub can review the spokes' work and wake the right agent for the
+next beat; v0.8 replaced PAT auth with GitHub App installation tokens and
+guaranteed the failure DM. See
 [CHANGELOG.md](CHANGELOG.md) for the value and upgrade boundary of each minor
 line, and [docs/learnings/](docs/learnings/README.md) for evidence-backed
 platform lessons.

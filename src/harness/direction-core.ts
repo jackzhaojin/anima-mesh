@@ -8,6 +8,7 @@ import {
   instanceContext,
   levelMeaning,
 } from "./run-core.js";
+import { applyDraftRequests, stripDraftRequests, draftCapabilityLines } from "./drafts.js";
 import {
   verifyConformanceBundle,
   verifyExpectedOutputsStore,
@@ -136,7 +137,23 @@ export async function runDirectionCore(options: DirectionRunOptions): Promise<Di
     model: cognition.model,
     onProgress: progress,
   });
-  const reply = result.text.trim().slice(0, REPLY_LIMIT);
+
+  // Draft-request blocks apply here too — this is what makes "DM the persona,
+  // the prep artifact updates in the repo" a one-message loop. Blocks are
+  // stripped from the chat reply (the ledger and the file are the evidence);
+  // the report lists what was written.
+  const draftsWritten = await applyDraftRequests({
+    store,
+    config,
+    agent,
+    runId,
+    gatedTypes,
+    approvals: approvalRecords,
+    clock,
+    text: result.text,
+    progress,
+  });
+  const reply = stripDraftRequests(result.text).trim().slice(0, REPLY_LIMIT);
 
   // The artifact is the evidence: the inbound message AND the disposition,
   // written by the harness (L1 contract), named so brief delivery skips it.
@@ -162,6 +179,7 @@ export async function runDirectionCore(options: DirectionRunOptions): Promise<Di
     "",
     reply,
     "",
+    ...(draftsWritten.length > 0 ? ["## Drafts written this run", "", ...draftsWritten.map((p) => `- ${p}`), ""] : []),
   ].join("\n");
   await store.writeReport(reportName, reportContent);
   await store.appendLedger({
@@ -232,6 +250,14 @@ async function buildDirectionPrompt(
     "- Decide the disposition yourself: answer, recommend, flag for a scheduled run, or say honestly",
     "  that nothing needs doing. Never invent work.",
     "- Reply in under 300 words — this goes back over chat/email, not into a filing.",
+    ...(agent.whitelist.includes("draft-write")
+      ? [
+          "- Exception to \"no actions\": your whitelist permits draft artifacts. When the direction asks",
+          "  for prep material to be created or changed, DO it in this run via draft-request (below),",
+          "  and confirm in your reply with the file's path. Blocks are stripped from the chat reply.",
+          ...draftCapabilityLines(config.drafts),
+        ]
+      : []),
   ].join("\n");
 
   const directionSection = [

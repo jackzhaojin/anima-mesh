@@ -3,7 +3,7 @@
 AnimaMesh is pre-1.0, so this history is organized by **minor release line**:
 the capability boundary operators actually adopt. Patch tags are deliberately
 rolled into the value and maturity of their minor rather than narrated one by
-one. The latest tag is **v0.9.2**.
+one. The latest tag is **v0.10.0**.
 
 ## Upgrade procedure
 
@@ -28,11 +28,68 @@ The ledger remains append-only; never "migrate" it by editing old entries.
 
 ## [Unreleased]
 
+## [v0.10.x] — the draft surface: agents prepare the principal's work
+
+**Latest tag: v0.10.0 · 2026-07-23**
+
+### Value
+
+v0.10 generalizes v0.9's propose/dispose contract from schedule edits to
+**artifacts**. A whitelisted agent may end any run — a scheduled beat OR a
+direction (inbound chat/email) run — with fenced blocks:
+
+    ```draft-request
+    path: nag-prep/07-example.md
+    ---
+    <complete new file content — full replace, idempotent>
+    ```
+
+The harness parses each block, gates it through the standard
+reversible-action check (ladder level + `draft-write` on the agent's
+whitelist), **path-jails** it to the instance's drafts dir (no absolute
+paths, no `..`, `.md` only, ≤48 KB per file, ≤4 files per run), writes it
+via the storage seam so it rides the run's own flush/commit on both tiers,
+and ledgers `draft-written` or `draft-request-denied`. A promised write
+lands in the same run or its denial is ledgered — no
+acknowledged-but-unapplied state can exist (the lesson that motivated the
+feature).
+
+What this unlocks operationally: a persona agent can maintain **prep
+packs** — session-starter prompts, outlines, quiz sheets — for the
+principal's open obligations, updated every beat, and the principal can
+reshape them over chat: a Discord DM ("more prep on item 7, outline only")
+becomes a direction run that regenerates the artifact and commits it,
+with the fenced block stripped from the chat reply and the written paths
+listed in the evidence report (`## Drafts written this run`).
+
+Mechanics:
+
+- New `src/harness/drafts.ts`: parser, jail, caps, gate-then-apply, prompt
+  capability lines. Applied from both `run-core` and `direction-core`.
+- Prompt advertisement is whitelist-gated (the v0.9 rule): agents whose
+  gate would deny `draft-write` are never told the syntax.
+- Direction runs gain their first gated write path; the direction prompt
+  carves the exception explicitly ("do it in this run, confirm with the
+  path").
+- No store changes: `InstanceStore.writeFile` (v0.9) already carries it on
+  fs and GitHub stores.
+- No constitution changes: `draft-write` is reversible-tier; the
+  always-human-gated floor is untouched. Drafts are non-bundle artifacts —
+  reversible via git, never validated as concepts, never delivered
+  externally.
+
+### Upgrade notes
+
+- Grant the capability per agent by adding `draft-write` to `whitelist:`
+  in the agent concept (L3+). No config or bundle migration required.
+- The drafts dir remains `animamesh.config.json → drafts` (default
+  `drafts/`).
+
 (nothing yet)
 
 ## [v0.9.x] — the schedule surface: the hub can schedule the follow-through
 
-**Latest tag: v0.9.2 · 2026-07-19**
+**Latest tag: v0.9.3 · 2026-07-23**
 
 ### Value
 
@@ -84,6 +141,9 @@ Also in the line:
   Promoted from a live instance, de-identified. No engine code was
   required: conformance is type-agnostic by design, and the R4 link rule
   already machine-checks the relationship graph.
+- v0.9.3: Discord delivery chunks long reports into sequential messages
+  (paragraph-boundary splits, 8-message runaway cap) instead of
+  truncating at 1900 chars — webhook and bot-DM modes both.
 - Docs: README rewritten to foreground the OKF vocabulary (concepts,
   types, conformance profiles, the machine-checked knowledge graph) and
   the domain-shelf extension model; `starting-a-company.md` gained the
