@@ -16,6 +16,13 @@ are **firm-agnostic by contract**: identity arrives only through placeholders.
 Rendering must leave no `{{` behind — the regression suite checks every
 template.
 
+Beyond the bundle, `init` also compiles the hub's **local interactive
+surfaces** (`.claude/agents/` + `.opencode/agents/` — see
+[docs/local-agents.md](../docs/local-agents.md)) from the scaffolded
+concept, so a new instance can talk to its persona in a coding terminal on
+day one. Templates deliberately ship WITHOUT the `defect-report` whitelist
+entry — it's an L3-trust grant made by the principal later, not a default.
+
 ## Back office (active-eligible)
 
 - **chief-of-staff** — the hub: single daily brief, judgment-based routing,

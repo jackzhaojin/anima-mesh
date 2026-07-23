@@ -2,6 +2,8 @@ import { findAgent, agentsFromBundle, assertActivatable, effectiveCognition, typ
 import { loadGatedTypes, assertActionAllowed, GateViolation } from "../gates/gatekeeper.js";
 import { parseScheduleRequest, mutateSchedule } from "./schedule.js";
 import { applyDraftRequests, draftCapabilityLines } from "./drafts.js";
+import { applyDefectReports } from "./defects.js";
+import { defectCapabilityLines, engineRepoSlug } from "../defects/report-core.js";
 import { resolveProvider, type AgentWorkerProvider, type ApiProviderContext } from "../providers/index.js";
 import type { InstanceStore } from "../instance/store.js";
 import type { InstanceConfig } from "../instance/config-core.js";
@@ -265,6 +267,22 @@ export async function runAgentCore(options: RunCoreOptions): Promise<RunReport> 
     progress,
   });
 
+  // `defect-report` blocks: engine-feedback issues on the public engine repo
+  // (see defects/report-core.ts for the leak guard + dedup).
+  await applyDefectReports({
+    store,
+    config,
+    agent,
+    runId,
+    gatedTypes,
+    approvals: approvalRecords,
+    clock,
+    text: result.text,
+    progress,
+    env: providerCtx.env ?? {},
+    fetchImpl: providerCtx.fetchImpl,
+  });
+
   const verifierResults: VerifierResult[] = [
     verifyConformanceBundle(await store.loadBundle(), "animamesh"),
     await verifyExpectedOutputsStore(store, [reportName]),
@@ -335,6 +353,10 @@ async function buildPrompt(
   }
   if (agent.whitelist.includes("draft-write")) {
     sections.push(...draftCapabilityLines(config.drafts));
+  }
+  const engineRepo = engineRepoSlug(config);
+  if (agent.whitelist.includes("defect-report") && engineRepo) {
+    sections.push(...defectCapabilityLines(engineRepo));
   }
   // Declared read sources (agent frontmatter opt-in) — live external context
   // inlined so L1 runs still need no tool access. Failures become honest

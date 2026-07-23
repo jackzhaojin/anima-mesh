@@ -105,6 +105,11 @@ Walk the user through, in order (each exists for a reason — say the reason):
    ```
    Every agent starts at L1 (report-only) — promotion up the autonomy ladder
    is a frontmatter edit with git history, earned later, never shipped.
+   Init also compiled the hub into local interactive surfaces
+   (`.claude/agents/` + `.opencode/agents/`) — tell the user they can talk
+   to their persona directly with `claude --agent <persona-first-name>` or
+   a Tab-switch in opencode, from the brain repo, and regenerate any time
+   with `pnpm cli export-local` ([docs/local-agents.md](../../../docs/local-agents.md)).
 4. **Seed the bundle.** The scaffold leaves deliberate placeholders: the
    compliance calendar's first hard deadline, the watch-list's first subject,
    and `facts/organization.md` marked `status: unverified` until checked

@@ -41,6 +41,7 @@ export interface Env {
   MSGRAPH_CLIENT_SECRET?: string; // absent for public clients (device-code consent)
   MSGRAPH_REFRESH_TOKEN?: string;
   GITHUB_DOCS_TOKEN?: string; // fine-grained PAT, Contents READ-ONLY on the docs repo; falls back to GITHUB_TOKEN
+  GITHUB_DEFECTS_TOKEN?: string; // fine-grained PAT, Issues R/W on the ENGINE repo — defect-report filings
 }
 
 /** Flatten the Worker env into the engine's injectable env record. */
@@ -69,5 +70,6 @@ export function envRecord(env: Env): Record<string, string | undefined> {
     GITHUB_DOCS_REF: env.GITHUB_DOCS_REF,
     GITHUB_DOCS_PATH: env.GITHUB_DOCS_PATH,
     GITHUB_DOCS_TOKEN: env.GITHUB_DOCS_TOKEN,
+    GITHUB_DEFECTS_TOKEN: env.GITHUB_DEFECTS_TOKEN,
   };
 }

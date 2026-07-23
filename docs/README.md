@@ -26,8 +26,11 @@ specifics (those live in each instance's own repo — see the boundary doc).
    runbook (two Workers, secrets contract, Discord wiring, multi-company)
 8. [okf-crm-domain.md](okf-crm-domain.md) — the first front-office domain
    shelf: CRM as typed concepts, with compliance screens encoded in data
-9. [learnings/](learnings/README.md) — hard-won platform knowledge with
-   evidence; **check here first when a vendor edge misbehaves**
+9. [local-agents.md](local-agents.md) — the third tier: compile any agent
+   concept into Claude Code + opencode interactive surfaces
+   (`export-local`), and the `defect-report` loop back into this repo
+10. [learnings/](learnings/README.md) — hard-won platform knowledge with
+    evidence; **check here first when a vendor edge misbehaves**
 
 Working on the code itself? [../CLAUDE.md](../CLAUDE.md) has the working
 agreements and invariants; [../src/README.md](../src/README.md) the module

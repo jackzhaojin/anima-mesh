@@ -4,6 +4,8 @@ import { loadBundle } from "../okf/bundle.js";
 import { checkConformance, type ConformanceReport } from "../okf/conformance.js";
 import { CONFIG_FILENAME, type InstanceConfig } from "../instance/config.js";
 import { fillTemplate, loadAgentTemplate } from "./templates.js";
+import { agentsFromBundle } from "../agents/concept.js";
+import { composeLocalAgents, selectLocalAgents } from "../local/agents-core.js";
 
 /**
  * The init's contract (and its acceptance test): run against an empty
@@ -195,6 +197,21 @@ export async function scaffoldBrain(targetDir: string, answers: InitAnswers): Pr
   // ── operational surfaces ─────────────────────────────────────────────────
   for (const dir of ["ledger", "approvals", "reports", "drafts"]) {
     put(`${dir}/.gitkeep`, "");
+  }
+
+  // ── local interactive surfaces: new instances get them out of the box ───
+  // The hub's persona compiles into Claude Code + opencode agent artifacts
+  // (same concept file all tiers run on — see local/agents-core.ts).
+  const scaffoldBundle = await loadBundle(path.join(root, "bundle"));
+  try {
+    const selection = selectLocalAgents(agentsFromBundle(scaffoldBundle), config);
+    for (const agentConcept of selection.agents) {
+      for (const artifact of composeLocalAgents(agentConcept, config)) {
+        put(artifact.relPath, artifact.content);
+      }
+    }
+  } catch {
+    /* roster without a hub (e.g. compliance-ops only) — local surfaces are opt-in via export-local */
   }
 
   // ── the acceptance test IS the scaffold's last step ─────────────────────

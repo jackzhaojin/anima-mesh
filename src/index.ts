@@ -93,6 +93,30 @@ export { heartbeat, PERIOD_HOURS, type HeartbeatOptions, type HeartbeatResult } 
 export { buildAgentCard, type AgentCard, type AgentCardSkill } from "./a2a/card.js";
 export { loadInstanceEnv, getEnv } from "./instance/env.js";
 
+export {
+  composeLocalAgents,
+  composeInteractiveBody,
+  selectLocalAgents,
+  localAgentSlug,
+  localHubName,
+  opencodeModelFor,
+  type LocalAgentArtifact,
+  type LocalAgentSelection,
+} from "./local/agents-core.js";
+export { exportLocalAgents, type ExportLocalResult } from "./local/agents.js";
+export {
+  parseDefectReports,
+  stripDefectReports,
+  defectCapabilityLines,
+  identityLeakGuard,
+  engineRepoSlug,
+  createDefectIssue,
+  MAX_DEFECTS_PER_RUN,
+  type DefectReport,
+  type DefectIssueResult,
+} from "./defects/report-core.js";
+export { applyDefectReports, type ApplyDefectsOptions } from "./harness/defects.js";
+
 export { scaffoldBrain, type InitAnswers, type ScaffoldResult } from "./init/scaffold.js";
 export { loadAnswersFile, normalizeAnswers, interactiveInterview, agenticEnrich } from "./init/interview.js";
 export { listAgentTemplates, loadAgentTemplate, fillTemplate, templatesDir } from "./init/templates.js";

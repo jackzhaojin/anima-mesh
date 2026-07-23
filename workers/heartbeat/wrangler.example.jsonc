@@ -52,6 +52,9 @@
   // for the 'github-docs' read source GITHUB_DOCS_TOKEN (fine-grained PAT,
   // Contents READ-ONLY on the docs repo; falls back to GITHUB_TOKEN; public
   // repos need none) — validate with GET /docs/check.
+  // for `defect-report` filings GITHUB_DEFECTS_TOKEN (fine-grained PAT,
+  // Issues R/W on the ENGINE repo — config.engine.repo); without it the
+  // harness ledgers an honest denial and files nothing.
   // anthropic-api uses subscription OAuth over plain fetch;
   // ANTHROPIC_API_KEY is not used by this adapter.
 }

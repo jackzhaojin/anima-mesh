@@ -9,6 +9,8 @@ import {
   levelMeaning,
 } from "./run-core.js";
 import { applyDraftRequests, stripDraftRequests, draftCapabilityLines } from "./drafts.js";
+import { applyDefectReports } from "./defects.js";
+import { defectCapabilityLines, engineRepoSlug, stripDefectReports } from "../defects/report-core.js";
 import {
   verifyConformanceBundle,
   verifyExpectedOutputsStore,
@@ -153,7 +155,20 @@ export async function runDirectionCore(options: DirectionRunOptions): Promise<Di
     text: result.text,
     progress,
   });
-  const reply = stripDraftRequests(result.text).trim().slice(0, REPLY_LIMIT);
+  const defectsFiled = await applyDefectReports({
+    store,
+    config,
+    agent,
+    runId,
+    gatedTypes,
+    approvals: approvalRecords,
+    clock,
+    text: result.text,
+    progress,
+    env: providerCtx.env ?? {},
+    fetchImpl: providerCtx.fetchImpl,
+  });
+  const reply = stripDefectReports(stripDraftRequests(result.text)).trim().slice(0, REPLY_LIMIT);
 
   // The artifact is the evidence: the inbound message AND the disposition,
   // written by the harness (L1 contract), named so brief delivery skips it.
@@ -180,6 +195,7 @@ export async function runDirectionCore(options: DirectionRunOptions): Promise<Di
     reply,
     "",
     ...(draftsWritten.length > 0 ? ["## Drafts written this run", "", ...draftsWritten.map((p) => `- ${p}`), ""] : []),
+    ...(defectsFiled.length > 0 ? ["## Engine defects filed this run", "", ...defectsFiled.map((u) => `- ${u}`), ""] : []),
   ].join("\n");
   await store.writeReport(reportName, reportContent);
   await store.appendLedger({
@@ -257,6 +273,9 @@ async function buildDirectionPrompt(
           "  and confirm in your reply with the file's path. Blocks are stripped from the chat reply.",
           ...draftCapabilityLines(config.drafts),
         ]
+      : []),
+    ...(agent.whitelist.includes("defect-report") && engineRepoSlug(config)
+      ? defectCapabilityLines(engineRepoSlug(config)!)
       : []),
   ].join("\n");
 

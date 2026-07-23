@@ -30,6 +30,62 @@ The ledger remains append-only; never "migrate" it by editing old entries.
 
 (nothing yet)
 
+## [v0.11.x] — the third tier: local interactive surfaces + engine defect telemetry
+
+**Latest tag: v0.11.0 · 2026-07-24**
+
+### Value
+
+The persona has always BEEN the concept file — v0.11 makes that pay off on
+a third tier. `anima-mesh export-local` compiles any bundle agent + the
+instance's identity into interactive agent artifacts for local coding
+terminals, so the principal can *talk to* the mesh with the exact
+personality the scheduled tiers run:
+
+- `.claude/agents/<slug>.md` — Claude Code: `@agent-<slug>`, or the whole
+  session via `claude --agent <slug>`.
+- `.opencode/agents/<slug>.md` — opencode: hub = `primary` (Tab-switch),
+  spokes = `subagent`; headless via `opencode run --agent <slug>`.
+
+Both artifacts share one composed body: the concept's job verbatim plus
+interactive session rules (read the live bundle first, open with a
+stand-up, bundle read-only — work products under the drafts dir, gates and
+ladder unchanged, no secret echoes). Tuning the persona = editing the
+concept file and re-exporting; the artifacts carry a generated-file marker.
+`init` runs the export automatically when the roster has a hub, so new
+instances start with local surfaces in place.
+
+And the mesh gains its first feedback loop INTO the engine:
+`defect-report` fenced blocks (whitelist-gated, same propose/dispose spine
+as drafts) file de-identified GitHub issues on `config.engine.repo` —
+identity-leak guard (principal/persona names and emails DENY on the public
+repo, never rewritten), title-dedup against open `defect` issues, 2/run
+cap, `defect-reported`/`defect-report-denied` ledgered. Interactive
+artifacts instruct the equivalent `gh issue create` path.
+
+### Mechanics
+
+- New `src/local/agents-core.ts` (+ Node `agents.ts`): compose, persona
+  slug (hub exports under the persona's first name), opencode
+  `provider/model` mapping, D11 dual-gate on export selection. New config
+  block `localAgents { agents?, opencodeModel?, claudeModel? }`.
+- New `src/defects/report-core.ts` (Workers-safe: fetch + UA header — the
+  2026-07-18 Workers 403 learning) + `src/harness/defects.ts`, wired into
+  beat AND direction runs; blocks stripped from chat replies; direction
+  evidence lists `## Engine defects filed this run`.
+- Credential order: `GITHUB_DEFECTS_TOKEN` (fine-grained PAT, Issues R/W
+  on the engine repo — new optional Worker secret, see
+  `wrangler.example.jsonc`) → the instance's `githubToken` → an honest
+  ledgered denial naming the fix.
+- CLI: `export-local [--instance dir] [--agents a,b | --all]`.
+- Docs: `docs/local-agents.md`; templates ship WITHOUT `defect-report`
+  (an L3-trust grant, not a default).
+
+### Upgrade
+
+Nothing rewrites. Optional per instance: run `export-local`, whitelist
+`defect-report` on a trusted L3 agent, set `GITHUB_DEFECTS_TOKEN`.
+
 ## [v0.10.x] — the draft surface: agents prepare the principal's work
 
 **Latest tag: v0.10.1 · 2026-07-23**
@@ -419,7 +475,11 @@ initial local cognition options.
 - Scaffold with `pnpm cli init`, validate the result, and continue through the
   later minor upgrade notes before choosing a production tag.
 
-[Unreleased]: https://github.com/jackzhaojin/anima-mesh/compare/v0.7.3...HEAD
+[Unreleased]: https://github.com/jackzhaojin/anima-mesh/compare/v0.11.0...HEAD
+[v0.11.x]: https://github.com/jackzhaojin/anima-mesh/tree/v0.11.0
+[v0.10.x]: https://github.com/jackzhaojin/anima-mesh/tree/v0.10.1
+[v0.9.x]: https://github.com/jackzhaojin/anima-mesh/tree/v0.9.3
+[v0.8.x]: https://github.com/jackzhaojin/anima-mesh/tree/v0.8.0
 [v0.7.x]: https://github.com/jackzhaojin/anima-mesh/tree/v0.7.3
 [v0.6.x]: https://github.com/jackzhaojin/anima-mesh/tree/v0.6.0
 [v0.5.x]: https://github.com/jackzhaojin/anima-mesh/tree/v0.5.5

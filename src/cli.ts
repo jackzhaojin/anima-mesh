@@ -21,6 +21,7 @@ import { agentsFromBundle } from "./agents/concept.js";
 import { deliverLatestReport } from "./channels/index.js";
 import { heartbeat } from "./harness/heartbeat.js";
 import { buildAgentCard } from "./a2a/card.js";
+import { exportLocalAgents } from "./local/agents.js";
 import { writeFileSync } from "node:fs";
 
 /**
@@ -48,6 +49,8 @@ export async function main(argv: string[], io: { log: (s: string) => void; error
         return await cmdHeartbeat(rest, io);
       case "card":
         return await cmdCard(rest, io);
+      case "export-local":
+        return await cmdExportLocal(rest, io);
       case "templates":
         io.log(listAgentTemplates().join("\n"));
         return 0;
@@ -80,6 +83,7 @@ function usage(): string {
     "  anima-mesh heartbeat [--instance dir] [--dry-run] [--no-deliver]",
     "  anima-mesh deliver [--instance dir] [--agent NAME] [--channel c1,c2]",
     "  anima-mesh card [--instance dir] [--out FILE]",
+    "  anima-mesh export-local [--instance dir] [--agents a,b | --all]",
     "  anima-mesh templates",
   ].join("\n");
 }
@@ -291,6 +295,23 @@ async function cmdCard(args: string[], io: { log: (s: string) => void }): Promis
   } else {
     io.log(json);
   }
+  return 0;
+}
+
+async function cmdExportLocal(args: string[], io: { log: (s: string) => void }): Promise<number> {
+  const instanceRoot = flag(args, "instance") ?? ".";
+  const agentsFlag = flag(args, "agents");
+  const result = await exportLocalAgents(instanceRoot, {
+    names: agentsFlag ? agentsFlag.split(",").map((s) => s.trim()).filter(Boolean) : undefined,
+    all: hasFlag(args, "all"),
+  });
+  for (const rel of result.written) io.log(`wrote ${rel}`);
+  for (const s of result.skipped) io.log(`skipped ${s.name}: ${s.reason}`);
+  io.log(
+    result.written.length > 0
+      ? "local agents exported — regenerate after editing bundle agent files or identity config"
+      : "nothing exported",
+  );
   return 0;
 }
 

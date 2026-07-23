@@ -130,6 +130,12 @@ effects. Promotion up the autonomy ladder (L2 draft-for-approval, L3
 whitelisted reversible actions, L4 gated external actions) is a frontmatter
 edit with git history: trust as an operational dial with a paper trail.
 
+You can also just **talk to the mesh**: init compiled the hub into local
+interactive surfaces — `claude --agent <persona>` (Claude Code) or
+Tab-switch to it in opencode, from the brain repo. Same concept file, same
+personality, conversation instead of a heartbeat; see
+[local-agents.md](local-agents.md).
+
 ## 3. Choose cognition
 
 Each agent's concept declares `model` + `harness`. Mix freely: an expensive

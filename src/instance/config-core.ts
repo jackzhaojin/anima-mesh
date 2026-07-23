@@ -46,6 +46,19 @@ export interface InstanceConfig {
     overrides?: Record<string, { harness?: string; model?: string }>;
   };
   /**
+   * Local interactive surfaces (`anima-mesh export-local`): which agents get
+   * `.claude/agents/` + `.opencode/agents/` artifacts by default, and model
+   * overrides for those artifacts. Absent ⇒ the hub agent, models mapped
+   * from agent frontmatter.
+   */
+  localAgents?: {
+    agents?: string[];
+    /** `provider/model` for the opencode artifact (e.g. `kimi-code/k3`). */
+    opencodeModel?: string;
+    /** Claude Code artifact `model:` (alias or full id). Absent ⇒ inherit. */
+    claudeModel?: string;
+  };
+  /**
    * Inbound direction: messages addressed to the mesh's persona become
    * agentic runs (the model decides the disposition — never a keyword
    * router). Sender allowlists live at the channel edge (Worker secrets /

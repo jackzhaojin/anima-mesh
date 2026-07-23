@@ -126,6 +126,17 @@ default the store to the local directory and register subprocess providers.
   `{date}-{agent}.direction-{runid}.md` (the dot keeps brief delivery blind
   to it); replies are cut at 1900 chars for channel limits. Sender gating
   and budgets live at the channel edge (the Worker), not here.
+- `drafts.ts` — `draft-request` fenced blocks: parse → gate (level +
+  `draft-write` whitelist) → path-jail to the drafts dir → write in the
+  run's own flush → ledger. Model proposes, code disposes.
+- `defects.ts` — `defect-report` fenced blocks: the drafts spine pointed at
+  engine feedback. Parse → gate (level + `defect-report` whitelist) →
+  identity-leak guard (the engine repo is PUBLIC; principal/persona
+  names/emails DENY, never rewrite) → GitHub issue on `config.engine.repo`
+  via `defects/report-core.ts` (label `defect`, title-dedup, 2/run cap) →
+  ledger `defect-reported`/`defect-report-denied`. Credential:
+  `GITHUB_DEFECTS_TOKEN` (Issues R/W PAT on the engine repo), else the
+  instance's `githubToken`; none ⇒ honest ledgered denial.
 - `verifiers-core.ts` / `verifiers.ts` — the three seam checks
   (+ conformance): expected outputs exist, no gated ledger entry without its
   approval, all declared actions logged, bundle still conformant. Store-aware
@@ -200,8 +211,28 @@ re-checked per request, narrow env) — see `workers/web/README.md`.
 - `interview.ts` — answers from file, flags, interactive prompts, or
   `agenticEnrich` (a provider refines the answers; malformed model output
   falls back silently — model proposes, code disposes).
+- Init also exports the hub's local surfaces (below) when the roster has
+  one — new instances start with them in place.
+
+## local/ — the third tier (interactive surfaces)
+
+- `agents-core.ts` — compile an `AgentConcept` + instance identity into
+  `.claude/agents/<slug>.md` (Claude Code) and `.opencode/agents/<slug>.md`
+  (opencode) artifacts: SAME persona body, surface-specific frontmatter.
+  The hub exports under the persona's first name; commercial agents stay
+  dual-gated; artifacts are generated, never hand-edited (tune the concept,
+  re-export). See `docs/local-agents.md`.
+- `agents.ts` — the Node disk half (`exportLocalAgents`).
+
+## defects/ — engine feedback
+
+- `report-core.ts` (Workers-safe) — `defect-report` block parsing, the
+  identity-leak guard, and the GitHub Issues client (UA header set — the
+  Workers 403 learning; title-dedup against open `defect` issues). Harness
+  wiring in `harness/defects.ts`.
 
 ## cli.ts
 
 `main(argv) → exit code`, so tests drive it in-process. Commands:
-`init · validate · run · gate · report · templates`.
+`init · validate · run · gate · report · deliver · heartbeat · card ·
+export-local · templates`.
