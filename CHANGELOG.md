@@ -3,7 +3,7 @@
 AnimaMesh is pre-1.0, so this history is organized by **minor release line**:
 the capability boundary operators actually adopt. Patch tags are deliberately
 rolled into the value and maturity of their minor rather than narrated one by
-one. The latest tag is **v0.10.0**.
+one. The latest tag is **v0.10.1**.
 
 ## Upgrade procedure
 
@@ -30,7 +30,7 @@ The ledger remains append-only; never "migrate" it by editing old entries.
 
 ## [v0.10.x] — the draft surface: agents prepare the principal's work
 
-**Latest tag: v0.10.0 · 2026-07-23**
+**Latest tag: v0.10.1 · 2026-07-23**
 
 ### Value
 

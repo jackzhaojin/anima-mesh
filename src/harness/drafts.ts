@@ -121,8 +121,11 @@ export async function applyDraftRequests(options: ApplyDraftsOptions): Promise<s
 
   const written: string[] = [];
   for (const req of requests.slice(0, MAX_DRAFTS_PER_RUN)) {
+    // Models routinely write the drafts dir into the path ("drafts/x.md")
+    // even when asked for a subpath — strip it rather than nest it.
+    const sub = req.path.startsWith(`${config.drafts}/`) ? req.path.slice(config.drafts.length + 1) : req.path;
     const violation =
-      draftPathViolation(req.path) ??
+      draftPathViolation(sub) ??
       (req.content.length > MAX_DRAFT_BYTES ? `content exceeds ${MAX_DRAFT_BYTES} bytes` : null);
     if (violation) {
       await store.appendLedger({
@@ -136,7 +139,7 @@ export async function applyDraftRequests(options: ApplyDraftsOptions): Promise<s
       progress(`run ${runId.slice(0, 8)}: draft-request rejected (${req.path}) — ${violation}`);
       continue;
     }
-    const rel = `${config.drafts}/${req.path}`;
+    const rel = `${config.drafts}/${sub}`;
     await store.writeFile(rel, req.content);
     await store.appendLedger({
       ts: clock(),
@@ -168,7 +171,8 @@ export function draftCapabilityLines(draftsDir: string): string[] {
   return [
     `- You may create or update working artifacts under \`${draftsDir}/\` (session prep, outlines,`,
     "  quiz sheets — never bundle concepts). End your output with one fenced block PER FILE",
-    "  (full replacement content, ≤4 files per run, .md only):",
+    "  (full replacement content, ≤4 files per run, .md only). `path` is RELATIVE to the",
+    `  drafts dir — write \`nag-prep/07-x.md\`, not \`${draftsDir}/nag-prep/07-x.md\`:`,
     "  ```draft-request",
     "  path: <subpath>.md",
     "  ---",

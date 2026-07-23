@@ -129,6 +129,18 @@ describe("draft-write through a beat run — model proposes, code disposes", () 
     expect(String((denied?.detail as { reason?: string }).reason)).toContain("segments");
   });
 
+  it("strips a model-written drafts/ prefix instead of nesting it (live-proof regression)", async () => {
+    const report = ["## Brief", "", draftBlock("drafts/nag-prep/07-plan.md", "# Prefixed\n"), ""].join("\n");
+    const root = await makeInstance({
+      "bundle/agents/hub.md": agentFile("hub", { level: "L3", whitelist: ["draft-write"], heartbeat: "daily" }),
+    });
+    const fake = new FakeProvider(() => ({ text: report }));
+    await runAgent({ instanceRoot: root, agentName: "hub", provider: fake, runId: "run-prefix" });
+
+    expect(existsSync(path.join(root, "drafts/nag-prep/07-plan.md"))).toBe(true);
+    expect(existsSync(path.join(root, "drafts/drafts"))).toBe(false);
+  });
+
   it("caps a runaway run: writes the first N, ledgers the overflow as denied", async () => {
     const blocks = Array.from({ length: MAX_DRAFTS_PER_RUN + 2 }, (_, i) => draftBlock(`p${i}.md`, `# ${i}\n`));
     const root = await makeInstance({
