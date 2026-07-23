@@ -28,6 +28,8 @@ The ledger remains append-only; never "migrate" it by editing old entries.
 
 ## [Unreleased]
 
+(nothing yet)
+
 ## [v0.10.x] — the draft surface: agents prepare the principal's work
 
 **Latest tag: v0.10.1 · 2026-07-23**
@@ -84,8 +86,6 @@ Mechanics:
   in the agent concept (L3+). No config or bundle migration required.
 - The drafts dir remains `animamesh.config.json → drafts` (default
   `drafts/`).
-
-(nothing yet)
 
 ## [v0.9.x] — the schedule surface: the hub can schedule the follow-through
 
