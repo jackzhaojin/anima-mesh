@@ -68,12 +68,50 @@ describe("discord channel", () => {
     expect(payload.username).toBe("Vesper");
   });
 
-  it("truncates over the 2000-char Discord limit with a repo pointer", async () => {
+  it("splits a long report into sequential messages, each under the Discord limit", async () => {
     const { impl, calls } = fakeFetch({ status: 204 });
     await discordChannel.deliver({ title: "T", body: "x".repeat(5000) }, { env, fetchImpl: impl });
-    const payload = JSON.parse(String(calls[0]!.init.body));
-    expect(payload.content.length).toBeLessThanOrEqual(2000);
-    expect(payload.content).toContain("truncated");
+    expect(calls.length).toBeGreaterThan(1);
+    const contents = calls.map((c) => JSON.parse(String(c.init.body)).content as string);
+    for (const content of contents) expect(content.length).toBeLessThanOrEqual(2000);
+    // nothing lost: the chunks reassemble the whole body
+    expect(contents.join("").replace(/[^x]/g, "").length).toBe(5000);
+    expect(contents.join("")).not.toContain("truncated");
+  });
+
+  it("prefers paragraph boundaries when splitting", async () => {
+    const para = "y".repeat(400);
+    const body = Array.from({ length: 12 }, () => para).join("\n\n"); // ~4800 chars
+    const { impl, calls } = fakeFetch({ status: 204 });
+    await discordChannel.deliver({ title: "T", body }, { env, fetchImpl: impl });
+    const contents = calls.map((c) => JSON.parse(String(c.init.body)).content as string);
+    expect(contents.length).toBeGreaterThan(1);
+    // every chunk after the first starts at a paragraph start, not mid-word
+    for (const content of contents.slice(1)) expect(content.startsWith("y")).toBe(true);
+    for (const content of contents) expect(content.endsWith("y")).toBe(true);
+  });
+
+  it("caps a runaway report at 8 messages with a repo pointer", async () => {
+    const { impl, calls } = fakeFetch({ status: 204 });
+    await discordChannel.deliver({ title: "T", body: "z".repeat(40000) }, { env, fetchImpl: impl });
+    expect(calls.length).toBe(8);
+    const last = JSON.parse(String(calls[7]!.init.body)).content as string;
+    expect(last.length).toBeLessThanOrEqual(2000);
+    expect(last).toContain("truncated");
+  });
+
+  it("bot-DM mode opens the DM channel once and sends every chunk through it", async () => {
+    const dmEnv = { DISCORD_BOT_TOKEN: "bot-tok", DISCORD_DM_USER_ID: "principal-1" };
+    const { impl, calls } = fakeFetch({ status: 200, json: { id: "dm-chan-9" } }, { status: 200 });
+    const result = await discordChannel.deliver(
+      { title: "Brief", body: "x".repeat(5000) },
+      { env: dmEnv, fetchImpl: impl },
+    );
+    expect(result.detail).toMatch(/in \d+ message\(s\)/);
+    const opens = calls.filter((c) => c.url.includes("/users/@me/channels"));
+    const sends = calls.filter((c) => c.url.includes("/channels/dm-chan-9/messages"));
+    expect(opens.length).toBe(1);
+    expect(sends.length).toBeGreaterThan(1);
   });
 
   it("surfaces webhook failures", async () => {
