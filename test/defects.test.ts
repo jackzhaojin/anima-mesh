@@ -1,5 +1,6 @@
 import { describe, it, expect, afterEach } from "vitest";
-import { rm } from "node:fs/promises";
+import { rm, readFile } from "node:fs/promises";
+import { existsSync } from "node:fs";
 import * as path from "node:path";
 import { makeTree, concept } from "./helpers.js";
 import {
@@ -8,8 +9,10 @@ import {
   identityLeakGuard,
   engineRepoSlug,
   createDefectIssue,
+  defectDraftSlug,
   MAX_DEFECTS_PER_RUN,
 } from "../src/defects/report-core.js";
+import { listDefectDrafts, fileDefectDrafts } from "../src/defects/file.js";
 import { runAgent } from "../src/harness/run.js";
 import { FakeProvider } from "../src/providers/fake.js";
 import { Ledger } from "../src/ledger/ledger.js";
@@ -17,11 +20,13 @@ import type { InstanceConfig } from "../src/instance/config-core.js";
 import { DEFAULT_CONFIG } from "../src/instance/config-core.js";
 
 /**
- * Defect reports — the mesh's feedback loop into the engine. These prove the
- * contract from defects/report-core.ts + harness/defects.ts: model proposes,
- * code disposes; the identity-leak guard keeps instance identity off the
- * public engine repo (D2/D13); a promised filing lands or its denial is
- * ledgered; no credential is an honest denial, never a crash.
+ * Defect reports — the mesh's feedback loop into the engine, DRAFTS-FIRST.
+ * These prove the contract from defects/report-core.ts + harness/defects.ts
+ * + defects/file.ts: a defect-report block becomes a draft in the instance's
+ * own repo with NO credential (the store write covers it); filing to the
+ * public engine repo is a deliberate later step (or an explicit-token
+ * opt-in), and the identity-leak guard runs at that public boundary
+ * (D2/D13). Model proposes, code disposes.
  */
 
 const roots: string[] = [];
@@ -147,87 +152,103 @@ describe("createDefectIssue — dedup then create", () => {
   });
 });
 
-describe("defect-report through a beat run — model proposes, code disposes", () => {
-  function agentFile(extra: Record<string, unknown> = {}): string {
-    return concept(
-      "agent",
-      { name: "hub", title: "Hub", level: "L3", model: "test-model", harness: "fake", heartbeat: "daily", ...extra },
-      "Do the job.",
-    );
-  }
+function agentFile(extra: Record<string, unknown> = {}): string {
+  return concept(
+    "agent",
+    { name: "hub", title: "Hub", level: "L3", model: "test-model", harness: "fake", heartbeat: "daily", ...extra },
+    "Do the job.",
+  );
+}
 
-  async function makeInstance(agentExtra: Record<string, unknown> = {}): Promise<string> {
-    const root = await makeTree({
-      "animamesh.config.json": JSON.stringify({
-        bundle: "bundle",
-        engine: { repo: "github.com/example/engine" },
-        identity: { principal: { name: "Ada Lovelace" }, persona: { name: "Quill Byron" } },
-      }),
-      "bundle/index.md": concept("index", {}, "# Index\n"),
-      "bundle/log.md": concept("log", {}, "# Log\n"),
-      "bundle/constitution.md": concept("constitution", { immutable: true }, "# Constitution\n"),
-      "bundle/agents/hub.md": agentFile(agentExtra),
-    });
-    roots.push(root);
-    return root;
-  }
+async function makeInstance(agentExtra: Record<string, unknown> = {}, extraFiles: Record<string, string> = {}): Promise<string> {
+  const root = await makeTree({
+    "animamesh.config.json": JSON.stringify({
+      bundle: "bundle",
+      engine: { repo: "github.com/example/engine" },
+      identity: { principal: { name: "Ada Lovelace" }, persona: { name: "Quill Byron" } },
+    }),
+    "bundle/index.md": concept("index", {}, "# Index\n"),
+    "bundle/log.md": concept("log", {}, "# Log\n"),
+    "bundle/constitution.md": concept("constitution", { immutable: true }, "# Constitution\n"),
+    "bundle/agents/hub.md": agentFile(agentExtra),
+    ...extraFiles,
+  });
+  roots.push(root);
+  return root;
+}
 
-  function githubStub() {
-    const posts: unknown[] = [];
-    const fetchImpl = (async (input: string | URL | Request, init?: RequestInit) => {
-      if (init?.method === "POST") {
-        posts.push(JSON.parse(String(init.body)));
-        return new Response(JSON.stringify({ html_url: "https://github.com/example/engine/issues/9", number: 9 }), {
-          status: 201,
-        });
-      }
-      return new Response("[]", { status: 200 });
-    }) as typeof fetch;
-    return { fetchImpl, posts };
-  }
+function githubStub() {
+  const posts: unknown[] = [];
+  const fetchImpl = (async (input: string | URL | Request, init?: RequestInit) => {
+    if (init?.method === "POST") {
+      posts.push(JSON.parse(String(init.body)));
+      return new Response(JSON.stringify({ html_url: "https://github.com/example/engine/issues/9", number: 9 }), {
+        status: 201,
+      });
+    }
+    return new Response("[]", { status: 200 });
+  }) as typeof fetch;
+  return { fetchImpl, posts };
+}
 
-  const CLEAN_REPORT = [
-    "## Brief",
-    "",
-    defectBlock("Harness drops trailing newline in reports", "Repro: run any beat; expected trailing newline, got none."),
-    "",
-  ].join("\n");
+const CLEAN_TITLE = "Harness drops trailing newline in reports";
+const CLEAN_SLUG = defectDraftSlug(CLEAN_TITLE);
+const CLEAN_REPORT = [
+  "## Brief",
+  "",
+  defectBlock(CLEAN_TITLE, "Repro: run any beat; expected trailing newline, got none."),
+  "",
+].join("\n");
 
-  it("whitelisted L3 agent files the issue; ledger records the URL; verifiers stay green", async () => {
+describe("defect-report through a beat run — drafts-first, no credential needed", () => {
+  it("whitelisted L3 agent gets a draft in drafts/defects/, ledgered, verifiers green — zero network", async () => {
     const root = await makeInstance({ whitelist: ["defect-report"] });
     const { fetchImpl, posts } = githubStub();
     const report = await runAgent({
       instanceRoot: root,
       agentName: "hub",
       provider: new FakeProvider(() => ({ text: CLEAN_REPORT })),
-      runId: "run-defect",
-      providerCtx: { env: { GITHUB_DEFECTS_TOKEN: "tok" }, fetchImpl },
-    });
-    expect(report.ok).toBe(true);
-    expect(posts).toHaveLength(1);
-    const entries = new Ledger(path.join(root, "ledger/actions.jsonl")).entriesForRun("run-defect");
-    const filed = entries.find((e) => e.action === "defect-reported");
-    expect(filed?.detail).toMatchObject({ url: "https://github.com/example/engine/issues/9", duplicate: false });
-  });
-
-  it("denies without the whitelist: ledgered, nothing posted, run unaffected", async () => {
-    const root = await makeInstance(); // L3 but no whitelist entry
-    const { fetchImpl, posts } = githubStub();
-    const report = await runAgent({
-      instanceRoot: root,
-      agentName: "hub",
-      provider: new FakeProvider(() => ({ text: CLEAN_REPORT })),
-      runId: "run-deny",
-      providerCtx: { env: { GITHUB_DEFECTS_TOKEN: "tok" }, fetchImpl },
+      runId: "run-draft",
+      providerCtx: { env: {}, fetchImpl }, // no token anywhere → draft only
     });
     expect(report.ok).toBe(true);
     expect(posts).toHaveLength(0);
-    const entries = new Ledger(path.join(root, "ledger/actions.jsonl")).entriesForRun("run-deny");
-    const denied = entries.find((e) => e.action === "defect-report-denied");
-    expect(String((denied?.detail as { reason?: string }).reason)).toContain("whitelist");
+    const draft = await readFile(path.join(root, `drafts/defects/${CLEAN_SLUG}.md`), "utf8");
+    expect(draft).toContain(`title: ${JSON.stringify(CLEAN_TITLE)}`);
+    expect(draft).toContain("filed: no");
+    const entries = new Ledger(path.join(root, "ledger/actions.jsonl")).entriesForRun("run-draft");
+    const drafted = entries.find((e) => e.action === "defect-drafted");
+    expect(drafted?.detail).toMatchObject({ path: `drafts/defects/${CLEAN_SLUG}.md` });
   });
 
-  it("denies an identity leak: the public repo never sees instance names", async () => {
+  it("recurrence overwrites the same draft — one file per distinct defect", async () => {
+    const root = await makeInstance({ whitelist: ["defect-report"] });
+    const fake = new FakeProvider(() => ({ text: CLEAN_REPORT }));
+    await runAgent({ instanceRoot: root, agentName: "hub", provider: fake, runId: "run-a", providerCtx: { env: {} } });
+    await runAgent({ instanceRoot: root, agentName: "hub", provider: fake, runId: "run-b", providerCtx: { env: {} } });
+    const drafts = listDefectDrafts(root);
+    expect(drafts).toHaveLength(1);
+    expect(drafts[0]!.runId).toBe("run-b");
+  });
+
+  it("with GITHUB_DEFECTS_TOKEN explicitly set, the run also files and annotates the draft", async () => {
+    const root = await makeInstance({ whitelist: ["defect-report"] });
+    const { fetchImpl, posts } = githubStub();
+    await runAgent({
+      instanceRoot: root,
+      agentName: "hub",
+      provider: new FakeProvider(() => ({ text: CLEAN_REPORT })),
+      runId: "run-autofile",
+      providerCtx: { env: { GITHUB_DEFECTS_TOKEN: "tok" }, fetchImpl },
+    });
+    expect(posts).toHaveLength(1);
+    const draft = await readFile(path.join(root, `drafts/defects/${CLEAN_SLUG}.md`), "utf8");
+    expect(draft).toContain("filed: https://github.com/example/engine/issues/9");
+    const entries = new Ledger(path.join(root, "ledger/actions.jsonl")).entriesForRun("run-autofile");
+    expect(entries.some((e) => e.action === "defect-filed")).toBe(true);
+  });
+
+  it("a leaky report still drafts (private repo) but auto-filing is skipped with the reason ledgered", async () => {
     const leaky = ["## Brief", "", defectBlock("Discord delivery to Quill fails", "Ada saw a blank DM."), ""].join("\n");
     const root = await makeInstance({ whitelist: ["defect-report"] });
     const { fetchImpl, posts } = githubStub();
@@ -239,29 +260,30 @@ describe("defect-report through a beat run — model proposes, code disposes", (
       providerCtx: { env: { GITHUB_DEFECTS_TOKEN: "tok" }, fetchImpl },
     });
     expect(posts).toHaveLength(0);
+    const draft = await readFile(path.join(root, `drafts/defects/${defectDraftSlug("Discord delivery to Quill fails")}.md`), "utf8");
+    expect(draft).toContain("leak-check");
     const entries = new Ledger(path.join(root, "ledger/actions.jsonl")).entriesForRun("run-leak");
-    const denied = entries.find((e) => e.action === "defect-report-denied");
-    expect(String((denied?.detail as { reason?: string }).reason)).toContain("identity leak");
+    const skipped = entries.find((e) => e.action === "defect-file-skipped");
+    expect(String((skipped?.detail as { reason?: string }).reason)).toContain("identity leak");
   });
 
-  it("no credential is an honest ledgered denial naming the fix", async () => {
-    const root = await makeInstance({ whitelist: ["defect-report"] });
-    const failFetch = (async () => new Response("unreachable", { status: 500 })) as typeof fetch;
-    await runAgent({
+  it("denies without the whitelist: ledgered, no draft, run unaffected", async () => {
+    const root = await makeInstance(); // L3 but no whitelist entry
+    const report = await runAgent({
       instanceRoot: root,
       agentName: "hub",
       provider: new FakeProvider(() => ({ text: CLEAN_REPORT })),
-      runId: "run-nocred",
-      // Partial App config makes githubToken throw deterministically, no
-      // matter what GITHUB_* the host process carries.
-      providerCtx: { env: { GITHUB_APP_ID: "1" }, fetchImpl: failFetch },
+      runId: "run-deny",
+      providerCtx: { env: {} },
     });
-    const entries = new Ledger(path.join(root, "ledger/actions.jsonl")).entriesForRun("run-nocred");
+    expect(report.ok).toBe(true);
+    expect(existsSync(path.join(root, "drafts/defects"))).toBe(false);
+    const entries = new Ledger(path.join(root, "ledger/actions.jsonl")).entriesForRun("run-deny");
     const denied = entries.find((e) => e.action === "defect-report-denied");
-    expect(String((denied?.detail as { reason?: string }).reason)).toContain("GITHUB_DEFECTS_TOKEN");
+    expect(String((denied?.detail as { reason?: string }).reason)).toContain("whitelist");
   });
 
-  it(`caps at ${MAX_DEFECTS_PER_RUN} filings per run and ledgers the overflow`, async () => {
+  it(`caps at ${MAX_DEFECTS_PER_RUN} drafts per run and ledgers the overflow`, async () => {
     const many = [
       "## Brief",
       "",
@@ -271,19 +293,57 @@ describe("defect-report through a beat run — model proposes, code disposes", (
       "",
     ].join("\n");
     const root = await makeInstance({ whitelist: ["defect-report"] });
-    const { fetchImpl, posts } = githubStub();
     await runAgent({
       instanceRoot: root,
       agentName: "hub",
       provider: new FakeProvider(() => ({ text: many })),
       runId: "run-cap",
-      providerCtx: { env: { GITHUB_DEFECTS_TOKEN: "tok" }, fetchImpl },
+      providerCtx: { env: {} },
     });
-    expect(posts).toHaveLength(MAX_DEFECTS_PER_RUN);
+    expect(listDefectDrafts(root)).toHaveLength(MAX_DEFECTS_PER_RUN);
     const entries = new Ledger(path.join(root, "ledger/actions.jsonl")).entriesForRun("run-cap");
     const overflow = entries.find(
       (e) => e.action === "defect-report-denied" && String((e.detail as { reason?: string }).reason).includes("cap"),
     );
     expect(overflow).toBeDefined();
+  });
+});
+
+describe("defect file — the deliberate promotion step", () => {
+  function draftFile(title: string, body: string, extra: Record<string, unknown> = {}): string {
+    return concept("defect-draft", { title, agent: "hub", runId: "run-x", filed: "no", ...extra }, body);
+  }
+
+  it("files unfiled drafts, writes the URL back, and skips already-filed ones", async () => {
+    const root = await makeInstance({}, {
+      "drafts/defects/bug-one.md": draftFile("Bug one", "Generic repro."),
+      "drafts/defects/bug-two.md": draftFile("Bug two", "Generic repro.", { filed: "https://github.com/example/engine/issues/1" }),
+    });
+    const { fetchImpl, posts } = githubStub();
+    const result = await fileDefectDrafts({ instanceRoot: root, all: true, token: "tok", fetchImpl });
+    expect(result.filed.map((f) => f.slug)).toEqual(["bug-one"]);
+    expect(result.skipped[0]).toMatchObject({ slug: "bug-two" });
+    expect(posts).toHaveLength(1);
+    const draft = await readFile(path.join(root, "drafts/defects/bug-one.md"), "utf8");
+    expect(draft).toContain("filed: https://github.com/example/engine/issues/9");
+  });
+
+  it("never files a leaking draft — re-checked against the CURRENT file content", async () => {
+    const root = await makeInstance({}, {
+      "drafts/defects/leaky.md": draftFile("Report about Quill", "Ada hit this."),
+    });
+    const { fetchImpl, posts } = githubStub();
+    const result = await fileDefectDrafts({ instanceRoot: root, all: true, token: "tok", fetchImpl });
+    expect(posts).toHaveLength(0);
+    expect(result.skipped[0]!.reason).toContain("identity leak");
+  });
+
+  it("naming an unknown slug fails loudly; list surfaces status", async () => {
+    const root = await makeInstance({}, {
+      "drafts/defects/bug-one.md": draftFile("Bug one", "Generic repro."),
+    });
+    await expect(fileDefectDrafts({ instanceRoot: root, slugs: ["nope"], token: "t" })).rejects.toThrow(/no defect draft/);
+    const drafts = listDefectDrafts(root);
+    expect(drafts[0]).toMatchObject({ slug: "bug-one", filedUrl: undefined });
   });
 });

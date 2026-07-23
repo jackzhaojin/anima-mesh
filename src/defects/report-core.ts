@@ -1,7 +1,7 @@
 import type { InstanceConfig } from "../instance/config-core.js";
 
 /**
- * Defect reports — the mesh's feedback loop INTO the engine.
+ * Defect reports — the mesh's feedback loop INTO the engine, drafts-first.
  *
  * An agent whose whitelist permits `defect-report` may end a run (beat or
  * direction) with fenced blocks:
@@ -12,11 +12,19 @@ import type { InstanceConfig } from "../instance/config-core.js";
  *   <repro steps, expected vs actual, engine version if known>
  *   ```
  *
- * The harness parses, gates (level + whitelist), runs the identity-leak
- * guard (the engine repo is PUBLIC — instance identity never crosses D2/D13),
- * files a GitHub issue on `config.engine.repo`, and ledgers every filing or
- * denial. Model proposes, deterministic code disposes — a leaky report is
- * DENIED with the reason ledgered, never rewritten.
+ * The harness parses, gates (level + whitelist), and saves each report as a
+ * DRAFT in the instance's own repo (`<drafts>/defects/<slug>.md`) — riding
+ * the run's normal commit, so the cloud tier needs NO extra credential (the
+ * instance's existing GitHub App / store write covers it). Same title →
+ * same file, refreshed: a recurring engine bug is one draft, not one per
+ * beat.
+ *
+ * Filing to the PUBLIC engine repo (`config.engine.repo`) is a separate,
+ * deliberate step: `anima-mesh defect file` locally (see defects/file.ts),
+ * or automatic in-run ONLY when `GITHUB_DEFECTS_TOKEN` is explicitly
+ * configured. Either way the identity-leak guard runs at the public
+ * boundary — a report carrying principal/persona identity is never filed
+ * (D2/D13), and the leak is recorded on the draft for a human to clean up.
  *
  * Workers-safe: fetch + string logic only.
  */
@@ -155,19 +163,63 @@ export async function createDefectIssue(options: CreateDefectIssueOptions): Prom
   return { url: issue.html_url, number: issue.number, duplicate: false };
 }
 
+/** Deterministic draft filename for a defect title: same title → same file. */
+export function defectDraftSlug(title: string): string {
+  const slug = title
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 64)
+    .replace(/-+$/, "");
+  return slug || "defect";
+}
+
+export interface DefectDraftFields {
+  title: string;
+  body: string;
+  agent: string;
+  runId: string;
+  /** ISO timestamp of this sighting. */
+  seenAt: string;
+  /** Leak-guard hits at draft time — recorded so a human cleans up before filing. */
+  leaked?: string[];
+  /** Issue URL once filed; absent while the draft is unfiled. */
+  filedUrl?: string;
+}
+
+/** The draft artifact: frontmatter the `defect file` step can parse back. */
+export function defectDraftContent(fields: DefectDraftFields): string {
+  return [
+    "---",
+    "type: defect-draft",
+    `title: ${JSON.stringify(fields.title)}`,
+    `agent: ${fields.agent}`,
+    `runId: ${fields.runId}`,
+    `last-seen: ${fields.seenAt}`,
+    `filed: ${fields.filedUrl ?? "no"}`,
+    ...(fields.leaked && fields.leaked.length > 0
+      ? [`leak-check: "FAILED — de-identify before filing: ${fields.leaked.join(", ")}"`]
+      : []),
+    "---",
+    "",
+    fields.body.trim(),
+    "",
+  ].join("\n");
+}
+
 /** Prompt advertisement — only offered when the whitelist would allow it. */
-export function defectCapabilityLines(engineRepo: string): string[] {
+export function defectCapabilityLines(draftsDir: string): string[] {
   return [
     "- ENGINE feedback loop: if THIS RUN hit an AnimaMesh engine defect (harness/CLI/Workers",
-    "  misbehavior — not instance content), you may file it as a GitHub issue on the public",
-    `  engine repo (\`${engineRepo}\`). End your output with at most ${MAX_DEFECTS_PER_RUN} blocks:`,
+    `  misbehavior — not instance content), capture it. End your output with at most ${MAX_DEFECTS_PER_RUN} blocks:`,
     "  ```defect-report",
     "  title: <one line, engine-generic>",
     "  ---",
     "  <repro, expected vs actual, engine version if known>",
     "  ```",
-    "  The repo is PUBLIC: never include the organization's, principal's, or persona's names,",
-    "  emails, or bundle content — describe mechanics generically. The harness gates each block,",
-    "  files the issue, and ledgers the URL; leaky or malformed reports are denied, never rewritten.",
+    `  The harness saves each as a draft under \`${draftsDir}/defects/\` in THIS private repo`,
+    "  (same title → same file, refreshed on recurrence) and ledgers it. Filing to the PUBLIC",
+    "  engine repo happens later, deliberately — so keep every report de-identified anyway:",
+    "  no organization/principal/persona names or emails, no bundle content, mechanics only.",
   ];
 }

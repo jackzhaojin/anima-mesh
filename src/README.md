@@ -129,14 +129,14 @@ default the store to the local directory and register subprocess providers.
 - `drafts.ts` — `draft-request` fenced blocks: parse → gate (level +
   `draft-write` whitelist) → path-jail to the drafts dir → write in the
   run's own flush → ledger. Model proposes, code disposes.
-- `defects.ts` — `defect-report` fenced blocks: the drafts spine pointed at
-  engine feedback. Parse → gate (level + `defect-report` whitelist) →
-  identity-leak guard (the engine repo is PUBLIC; principal/persona
-  names/emails DENY, never rewrite) → GitHub issue on `config.engine.repo`
-  via `defects/report-core.ts` (label `defect`, title-dedup, 2/run cap) →
-  ledger `defect-reported`/`defect-report-denied`. Credential:
-  `GITHUB_DEFECTS_TOKEN` (Issues R/W PAT on the engine repo), else the
-  instance's `githubToken`; none ⇒ honest ledgered denial.
+- `defects.ts` — `defect-report` fenced blocks, DRAFTS-FIRST: parse → gate
+  (level + `defect-report` whitelist) → write
+  `<drafts>/defects/<slug>.md` via the store (rides the run's commit — the
+  cloud tier needs NO extra credential; same title → same file) → ledger
+  `defect-drafted`. Filing to the public engine repo is the deliberate
+  `defect file` CLI step (`defects/file.ts`), or in-run only when
+  `GITHUB_DEFECTS_TOKEN` is explicitly set; the identity-leak guard runs
+  at that public boundary (leaky ⇒ skipped + ledgered, never rewritten).
 - `verifiers-core.ts` / `verifiers.ts` — the three seam checks
   (+ conformance): expected outputs exist, no gated ledger entry without its
   approval, all declared actions logged, bundle still conformant. Store-aware
@@ -227,12 +227,16 @@ re-checked per request, narrow env) — see `workers/web/README.md`.
 ## defects/ — engine feedback
 
 - `report-core.ts` (Workers-safe) — `defect-report` block parsing, the
-  identity-leak guard, and the GitHub Issues client (UA header set — the
-  Workers 403 learning; title-dedup against open `defect` issues). Harness
-  wiring in `harness/defects.ts`.
+  draft artifact format (`defect-draft` frontmatter), the identity-leak
+  guard, and the GitHub Issues client (UA header set — the Workers 403
+  learning; title-dedup against open `defect` issues). Harness wiring in
+  `harness/defects.ts`.
+- `file.ts` (Node) — the deliberate promotion step: `listDefectDrafts` +
+  `fileDefectDrafts` (leak guard re-run on current content; URL written
+  back into `filed:`). CLI: `defect list|file`.
 
 ## cli.ts
 
 `main(argv) → exit code`, so tests drive it in-process. Commands:
 `init · validate · run · gate · report · deliver · heartbeat · card ·
-export-local · templates`.
+export-local · defect · templates`.

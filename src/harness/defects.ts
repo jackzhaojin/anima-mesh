@@ -3,28 +3,31 @@ import type { InstanceConfig } from "../instance/config-core.js";
 import { assertActionAllowed, GateViolation } from "../gates/gatekeeper.js";
 import type { ApprovalRecord } from "../gates/approvals.js";
 import type { Level } from "../autonomy/ladder.js";
-import { githubToken } from "../instance/github-auth.js";
 import { getEnv } from "../instance/env-core.js";
 import {
   parseDefectReports,
   engineRepoSlug,
   identityLeakGuard,
   createDefectIssue,
+  defectDraftSlug,
+  defectDraftContent,
   MAX_DEFECTS_PER_RUN,
   MAX_DEFECT_BYTES,
 } from "../defects/report-core.js";
 
 /**
- * Apply `defect-report` blocks from a run's output: parse → gate (level +
- * whitelist, one decision for the batch) → per-report identity-leak guard →
- * file on `config.engine.repo` → ledger. Same propose/dispose contract as
- * drafts.ts; see defects/report-core.ts for the block format and rationale.
+ * Apply `defect-report` blocks from a run's output — DRAFTS-FIRST: parse →
+ * gate (level + whitelist, one decision for the batch) → save each report
+ * as `<drafts>/defects/<slug>.md` via the store, riding the run's own
+ * commit. No credential needed on any tier; the instance's existing write
+ * path (GitHub App on the cloud) is enough. See defects/report-core.ts for
+ * the block format and rationale.
  *
- * Credential order: `GITHUB_DEFECTS_TOKEN` (fine-grained PAT, Issues R/W on
- * the engine repo — the recommended, smallest-blast-radius credential),
- * else the instance's `githubToken` (App/PAT — only works if that identity
- * carries Issues:write on the ENGINE repo, which the brain-repo App usually
- * does not). No credential ⇒ honest ledgered denial, never a crash.
+ * Filing to the public engine repo happens in-run ONLY when
+ * `GITHUB_DEFECTS_TOKEN` is explicitly configured (an opt-in, not a
+ * requirement) AND the identity-leak guard passes; otherwise drafts wait
+ * for `anima-mesh defect file` (defects/file.ts). Leak hits are recorded
+ * on the draft and ledgered — the private draft is safe to keep either way.
  */
 
 export interface ApplyDefectsOptions {
@@ -41,7 +44,7 @@ export interface ApplyDefectsOptions {
   fetchImpl?: typeof fetch;
 }
 
-/** Issue URLs actually filed this run (deduped filings included). */
+/** Instance-relative draft paths written this run. */
 export async function applyDefectReports(options: ApplyDefectsOptions): Promise<string[]> {
   const { store, config, agent, runId, clock, progress } = options;
   const reports = parseDefectReports(options.text);
@@ -60,7 +63,7 @@ export async function applyDefectReports(options: ApplyDefectsOptions): Promise<
   };
 
   // One gate decision for the batch — the same call shape as every other
-  // reversible action. A denial ledgers ALL requested titles and files none.
+  // reversible action. A denial ledgers ALL requested titles and saves none.
   try {
     assertActionAllowed({
       agent: agent.name,
@@ -77,37 +80,66 @@ export async function applyDefectReports(options: ApplyDefectsOptions): Promise<
     return [];
   }
 
+  // Auto-filing is an explicit opt-in — never the App/store credential, so
+  // an unconfigured instance produces clean drafts, not a 404 per beat.
+  const autoFileToken = getEnv(options.env, "GITHUB_DEFECTS_TOKEN");
   const repo = engineRepoSlug(config);
-  if (!repo) {
-    await deny(reports.map((r) => r.title), "config.engine.repo is missing or not owner/name-shaped");
-    return [];
-  }
 
-  let token = getEnv(options.env, "GITHUB_DEFECTS_TOKEN");
-  if (!token) {
-    try {
-      token = await githubToken(options.env, options.fetchImpl ?? fetch);
-    } catch {
-      token = undefined;
-    }
-  }
-  if (!token) {
-    await deny(
-      reports.map((r) => r.title),
-      "no GitHub credential with Issues:write — set GITHUB_DEFECTS_TOKEN (fine-grained PAT, Issues R/W on the engine repo)",
-    );
-    return [];
-  }
-
-  const filed: string[] = [];
+  const written: string[] = [];
   for (const report of reports.slice(0, MAX_DEFECTS_PER_RUN)) {
-    const leaked = identityLeakGuard(`${report.title}\n${report.body}`, config);
-    if (leaked.length > 0) {
-      await deny([report.title], `identity leak — the engine repo is public and the report contains: ${leaked.join(", ")}`);
-      continue;
-    }
     if (report.body.length > MAX_DEFECT_BYTES) {
       await deny([report.title], `body exceeds ${MAX_DEFECT_BYTES} bytes`);
+      continue;
+    }
+    const leaked = identityLeakGuard(`${report.title}\n${report.body}`, config);
+    const rel = `${config.drafts}/defects/${defectDraftSlug(report.title)}.md`;
+    const draft = (filedUrl?: string) =>
+      defectDraftContent({
+        title: report.title,
+        body: report.body,
+        agent: agent.name,
+        runId,
+        seenAt: clock(),
+        leaked: leaked.length > 0 ? leaked : undefined,
+        filedUrl,
+      });
+    await store.writeFile(rel, draft());
+    await store.appendLedger({
+      ts: clock(),
+      runId,
+      agent: agent.name,
+      action: "defect-drafted",
+      type: "defect-report",
+      detail: { title: report.title, path: rel, ...(leaked.length > 0 ? { leakCheck: leaked } : {}) },
+    });
+    progress(`run ${runId.slice(0, 8)}: defect drafted — ${rel}`);
+    written.push(rel);
+
+    if (!autoFileToken) continue;
+    if (!repo) {
+      await store.appendLedger({
+        ts: clock(),
+        runId,
+        agent: agent.name,
+        action: "defect-file-skipped",
+        type: "defect-report",
+        detail: { title: report.title, reason: "config.engine.repo is missing or not owner/name-shaped" },
+      });
+      continue;
+    }
+    if (leaked.length > 0) {
+      await store.appendLedger({
+        ts: clock(),
+        runId,
+        agent: agent.name,
+        action: "defect-file-skipped",
+        type: "defect-report",
+        detail: {
+          title: report.title,
+          reason: `identity leak — the engine repo is public and the report contains: ${leaked.join(", ")}`,
+        },
+      });
+      progress(`run ${runId.slice(0, 8)}: defect filing skipped (identity leak) — draft kept at ${rel}`);
       continue;
     }
     try {
@@ -115,28 +147,34 @@ export async function applyDefectReports(options: ApplyDefectsOptions): Promise<
         repo,
         title: report.title,
         body: report.body,
-        token,
+        token: autoFileToken,
         fetchImpl: options.fetchImpl,
       });
+      await store.writeFile(rel, draft(issue.url));
       await store.appendLedger({
         ts: clock(),
         runId,
         agent: agent.name,
-        action: "defect-reported",
+        action: "defect-filed",
         type: "defect-report",
         detail: { title: report.title, url: issue.url, number: issue.number, duplicate: issue.duplicate },
       });
-      progress(
-        `run ${runId.slice(0, 8)}: defect ${issue.duplicate ? "already filed" : "filed"} — ${issue.url}`,
-      );
-      filed.push(issue.url);
+      progress(`run ${runId.slice(0, 8)}: defect ${issue.duplicate ? "already filed" : "filed"} — ${issue.url}`);
     } catch (err) {
-      await deny([report.title], err instanceof Error ? err.message : String(err));
+      await store.appendLedger({
+        ts: clock(),
+        runId,
+        agent: agent.name,
+        action: "defect-file-skipped",
+        type: "defect-report",
+        detail: { title: report.title, reason: err instanceof Error ? err.message : String(err) },
+      });
+      progress(`run ${runId.slice(0, 8)}: defect filing failed — draft kept at ${rel}`);
     }
   }
   const overflow = reports.slice(MAX_DEFECTS_PER_RUN);
   if (overflow.length > 0) {
     await deny(overflow.map((r) => r.title), `over the ${MAX_DEFECTS_PER_RUN}-defects-per-run cap`);
   }
-  return filed;
+  return written;
 }

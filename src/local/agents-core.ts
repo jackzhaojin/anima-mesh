@@ -137,20 +137,27 @@ export function composeInteractiveBody(agent: AgentConcept, config: InstanceConf
   );
 
   const engineRepo = engineRepoSlug(config);
-  if (agent.whitelist.includes("defect-report") && engineRepo) {
+  if (agent.whitelist.includes("defect-report")) {
     sections.push(
       "",
       "## Engine defects",
       "",
       "When the AnimaMesh ENGINE misbehaves (harness, CLI, or Workers bugs — not this instance's",
-      `content), log it as a GitHub issue on \`${engineRepo}\`:`,
+      "content), capture it drafts-first:",
       "",
-      "- The engine repo is PUBLIC — de-identify first: no names or emails of the organization,",
-      "  principal, or persona; no bundle content; describe the mechanics generically.",
-      `- Use: \`gh issue create --repo ${engineRepo} --label defect --title "<one-line summary>"`,
-      `  --body "<repro steps, expected vs actual, engine ref>"\``,
-      `- If \`gh\` is unavailable or unauthenticated, write the same content to`,
-      `  \`${config.drafts}/defects/<yyyy-mm-dd>-<slug>.md\` and tell the principal.`,
+      `- Write or refresh \`${config.drafts}/defects/<slug>.md\` (one file per distinct defect;`,
+      "  frontmatter `title:`; body: repro, expected vs actual, engine ref). De-identify even",
+      "  in the draft — it is destined for the PUBLIC engine repo: no names or emails of the",
+      "  organization, principal, or persona; no bundle content; mechanics only.",
+      ...(engineRepo
+        ? [
+            "- Filing the GitHub issue is a separate, deliberate step. When the principal says to",
+            `  file, run \`anima-mesh defect file <slug>\` (or \`gh issue create --repo ${engineRepo}\``,
+            "  `--label defect …` and record the URL in the draft's `filed:` frontmatter).",
+          ]
+        : []),
+      "- Tell the principal about new drafts in your stand-up — unfiled defects are invisible",
+      "  feedback.",
     );
   }
 

@@ -114,8 +114,10 @@ describe("composeLocalAgents — the compile contract", () => {
       config,
     );
     expect(withIt).toContain("Engine defects");
-    expect(withIt).toContain("gh issue create --repo example/engine --label defect");
-    expect(withIt).toContain("de-identify");
+    expect(withIt).toContain("drafts/defects/<slug>.md");
+    expect(withIt).toContain("anima-mesh defect file");
+    expect(withIt).toContain("gh issue create --repo example/engine");
+    expect(withIt).toContain("De-identify even");
   });
 
   it("spokes are opencode subagents", () => {

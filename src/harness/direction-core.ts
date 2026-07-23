@@ -10,7 +10,7 @@ import {
 } from "./run-core.js";
 import { applyDraftRequests, stripDraftRequests, draftCapabilityLines } from "./drafts.js";
 import { applyDefectReports } from "./defects.js";
-import { defectCapabilityLines, engineRepoSlug, stripDefectReports } from "../defects/report-core.js";
+import { defectCapabilityLines, stripDefectReports } from "../defects/report-core.js";
 import {
   verifyConformanceBundle,
   verifyExpectedOutputsStore,
@@ -195,7 +195,7 @@ export async function runDirectionCore(options: DirectionRunOptions): Promise<Di
     reply,
     "",
     ...(draftsWritten.length > 0 ? ["## Drafts written this run", "", ...draftsWritten.map((p) => `- ${p}`), ""] : []),
-    ...(defectsFiled.length > 0 ? ["## Engine defects filed this run", "", ...defectsFiled.map((u) => `- ${u}`), ""] : []),
+    ...(defectsFiled.length > 0 ? ["## Engine defects captured this run", "", ...defectsFiled.map((p) => `- ${p}`), ""] : []),
   ].join("\n");
   await store.writeReport(reportName, reportContent);
   await store.appendLedger({
@@ -274,9 +274,7 @@ async function buildDirectionPrompt(
           ...draftCapabilityLines(config.drafts),
         ]
       : []),
-    ...(agent.whitelist.includes("defect-report") && engineRepoSlug(config)
-      ? defectCapabilityLines(engineRepoSlug(config)!)
-      : []),
+    ...(agent.whitelist.includes("defect-report") ? defectCapabilityLines(config.drafts) : []),
   ].join("\n");
 
   const directionSection = [

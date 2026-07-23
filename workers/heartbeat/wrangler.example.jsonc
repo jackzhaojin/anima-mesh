@@ -52,9 +52,11 @@
   // for the 'github-docs' read source GITHUB_DOCS_TOKEN (fine-grained PAT,
   // Contents READ-ONLY on the docs repo; falls back to GITHUB_TOKEN; public
   // repos need none) — validate with GET /docs/check.
-  // for `defect-report` filings GITHUB_DEFECTS_TOKEN (fine-grained PAT,
-  // Issues R/W on the ENGINE repo — config.engine.repo); without it the
-  // harness ledgers an honest denial and files nothing.
+  // `defect-report` blocks need NO secret — they land as drafts in the
+  // instance repo via the store write. OPTIONAL: GITHUB_DEFECTS_TOKEN
+  // (fine-grained PAT, Issues R/W on the ENGINE repo) turns on in-run
+  // auto-filing of leak-clean reports; without it drafts just accumulate
+  // for `anima-mesh defect file`.
   // anthropic-api uses subscription OAuth over plain fetch;
   // ANTHROPIC_API_KEY is not used by this adapter.
 }

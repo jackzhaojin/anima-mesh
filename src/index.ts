@@ -111,11 +111,21 @@ export {
   identityLeakGuard,
   engineRepoSlug,
   createDefectIssue,
+  defectDraftSlug,
+  defectDraftContent,
   MAX_DEFECTS_PER_RUN,
   type DefectReport,
   type DefectIssueResult,
+  type DefectDraftFields,
 } from "./defects/report-core.js";
 export { applyDefectReports, type ApplyDefectsOptions } from "./harness/defects.js";
+export {
+  listDefectDrafts,
+  fileDefectDrafts,
+  type DefectDraft,
+  type FileDefectsOptions,
+  type FileDefectsResult,
+} from "./defects/file.js";
 
 export { scaffoldBrain, type InitAnswers, type ScaffoldResult } from "./init/scaffold.js";
 export { loadAnswersFile, normalizeAnswers, interactiveInterview, agenticEnrich } from "./init/interview.js";

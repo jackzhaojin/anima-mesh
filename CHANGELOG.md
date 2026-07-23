@@ -32,7 +32,21 @@ The ledger remains append-only; never "migrate" it by editing old entries.
 
 ## [v0.11.x] — the third tier: local interactive surfaces + engine defect telemetry
 
-**Latest tag: v0.11.0 · 2026-07-24**
+**Latest tag: v0.11.1 · 2026-07-23**
+
+**v0.11.1 (same-day revision, before any adopter): defects are
+DRAFTS-FIRST.** A `defect-report` block now writes
+`<drafts>/defects/<slug>.md` in the instance's own repo, riding the run's
+normal commit — the cloud tier needs NO new credential (the existing
+GitHub App / store write covers it; principal feedback on v0.11.0's
+PAT-first design). Same title → same file, so a recurring bug is one
+draft. Filing to the public engine repo becomes deliberate:
+`anima-mesh defect list|file <slug>|--all` (leak guard re-run on current
+file content; issue URL written back into `filed:`; credential = env
+token or the local `gh` session). In-run auto-filing still exists but
+only as an explicit `GITHUB_DEFECTS_TOKEN` opt-in — leaky reports draft
+privately and are never filed. Ledger vocabulary:
+`defect-drafted`/`defect-filed`/`defect-file-skipped`/`defect-report-denied`.
 
 ### Value
 
@@ -475,8 +489,8 @@ initial local cognition options.
 - Scaffold with `pnpm cli init`, validate the result, and continue through the
   later minor upgrade notes before choosing a production tag.
 
-[Unreleased]: https://github.com/jackzhaojin/anima-mesh/compare/v0.11.0...HEAD
-[v0.11.x]: https://github.com/jackzhaojin/anima-mesh/tree/v0.11.0
+[Unreleased]: https://github.com/jackzhaojin/anima-mesh/compare/v0.11.1...HEAD
+[v0.11.x]: https://github.com/jackzhaojin/anima-mesh/tree/v0.11.1
 [v0.10.x]: https://github.com/jackzhaojin/anima-mesh/tree/v0.10.1
 [v0.9.x]: https://github.com/jackzhaojin/anima-mesh/tree/v0.9.3
 [v0.8.x]: https://github.com/jackzhaojin/anima-mesh/tree/v0.8.0

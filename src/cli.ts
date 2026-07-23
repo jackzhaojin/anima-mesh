@@ -22,6 +22,8 @@ import { deliverLatestReport } from "./channels/index.js";
 import { heartbeat } from "./harness/heartbeat.js";
 import { buildAgentCard } from "./a2a/card.js";
 import { exportLocalAgents } from "./local/agents.js";
+import { listDefectDrafts, fileDefectDrafts } from "./defects/file.js";
+import { execFileSync } from "node:child_process";
 import { writeFileSync } from "node:fs";
 
 /**
@@ -51,6 +53,8 @@ export async function main(argv: string[], io: { log: (s: string) => void; error
         return await cmdCard(rest, io);
       case "export-local":
         return await cmdExportLocal(rest, io);
+      case "defect":
+        return await cmdDefect(rest, io);
       case "templates":
         io.log(listAgentTemplates().join("\n"));
         return 0;
@@ -84,6 +88,7 @@ function usage(): string {
     "  anima-mesh deliver [--instance dir] [--agent NAME] [--channel c1,c2]",
     "  anima-mesh card [--instance dir] [--out FILE]",
     "  anima-mesh export-local [--instance dir] [--agents a,b | --all]",
+    "  anima-mesh defect list|file <slug>|file --all [--instance dir]",
     "  anima-mesh templates",
   ].join("\n");
 }
@@ -313,6 +318,50 @@ async function cmdExportLocal(args: string[], io: { log: (s: string) => void }):
       : "nothing exported",
   );
   return 0;
+}
+
+async function cmdDefect(args: string[], io: { log: (s: string) => void; error: (s: string) => void }): Promise<number> {
+  const sub = args.find((a) => !a.startsWith("--"));
+  const instanceRoot = flag(args, "instance") ?? ".";
+  if (sub === "list" || sub === undefined) {
+    const drafts = listDefectDrafts(instanceRoot);
+    if (drafts.length === 0) {
+      io.log("no defect drafts");
+      return 0;
+    }
+    for (const d of drafts) {
+      const status = d.filedUrl ? `filed ${d.filedUrl}` : d.leaked.length > 0 ? `LEAKY (${d.leaked.join(", ")})` : "unfiled";
+      io.log(`${d.slug} — ${d.title} [${status}]`);
+    }
+    return 0;
+  }
+  if (sub === "file") {
+    const slugs = args.filter((a) => !a.startsWith("--") && a !== "file");
+    const all = hasFlag(args, "all");
+    if (!all && slugs.length === 0) {
+      io.error("defect file: name a draft slug or pass --all");
+      return 2;
+    }
+    // Local, deliberate step: env token first, else the founder's gh session.
+    let token = process.env.GITHUB_DEFECTS_TOKEN ?? process.env.GITHUB_TOKEN;
+    if (!token) {
+      try {
+        token = execFileSync("gh", ["auth", "token"], { encoding: "utf8" }).trim();
+      } catch {
+        /* gh absent/unauthenticated */
+      }
+    }
+    if (!token) {
+      io.error("defect file: no credential — set GITHUB_DEFECTS_TOKEN, GITHUB_TOKEN, or authenticate `gh`");
+      return 1;
+    }
+    const result = await fileDefectDrafts({ instanceRoot, slugs: all ? undefined : slugs, all, token });
+    for (const f of result.filed) io.log(`filed ${f.slug} → ${f.url}${f.duplicate ? " (already open — deduped)" : ""}`);
+    for (const s of result.skipped) io.log(`skipped ${s.slug}: ${s.reason}`);
+    return 0;
+  }
+  io.error(`defect: unknown subcommand '${sub}' (use list|file)`);
+  return 2;
 }
 
 // Entry point when invoked as a binary (not imported by tests).
