@@ -1,15 +1,24 @@
 #!/usr/bin/env npx tsx
 /**
  * Agent Worker Kimi CLI Print Mode PoC.
- * Uses --print --output-format=stream-json for structured JSONL output.
+ * Uses -p --output-format stream-json for structured JSONL output.
  * Best for: programmatic agents, tool-call observability, worker pipelines.
+ *
+ * NOTE: legacy kimi-cli spelled this `--print -p <prompt>
+ * --output-format=stream-json`. Kimi Code (0.27+) dropped `--print` — `-p`
+ * alone is the non-interactive entry point. The JSONL message shape is
+ * unchanged, but the stream now ends with a `role: "meta"` session-resume line.
  */
 
 import { spawn } from "child_process";
+import * as path from "path";
 import * as readline from "readline";
 
+// Repo root, derived from this file's location — never a hardcoded machine path.
+const REPO_ROOT = path.resolve(import.meta.dirname, "../../../..");
+
 interface Message {
-  role: "user" | "assistant" | "tool";
+  role: "user" | "assistant" | "tool" | "meta";
   content?: string | Array<{ type: string; text?: string; think?: string }>;
   tool_calls?: Array<{
     type: "function";
@@ -23,8 +32,8 @@ function runKimiJson(prompt: string): Promise<Message[]> {
   return new Promise((resolve, reject) => {
     const proc = spawn(
       "kimi",
-      ["--print", "-p", prompt, "--output-format=stream-json"],
-      { cwd: "/Users/jackjin/dev/continuous-agent-develop" }
+      ["-p", prompt, "--output-format", "stream-json"],
+      { cwd: REPO_ROOT }
     );
 
     const messages: Message[] = [];
@@ -45,6 +54,8 @@ function runKimiJson(prompt: string): Promise<Message[]> {
 }
 
 function formatContent(content: unknown): string {
+  // Tool-call-only assistant messages carry no content at all.
+  if (content == null) return "";
   if (typeof content === "string") return content;
   if (Array.isArray(content)) {
     return content

@@ -100,7 +100,7 @@ Always available without configuration:
 ### User-Level Agent Test
 
 ```
-✅ Agent discovered: jack-web-build-and-test-v1 from ~/.claude/agents/
+✅ Agent discovered: <user-level agent> from ~/.claude/agents/
 ✅ Agent invoked successfully
 ✅ Agent created output file (hello.html)
 ⏱️  Duration: 32609ms
@@ -175,7 +175,7 @@ Have Explore find all TypeScript files
 
 1. **Use subagents for isolated tasks** - Research, validation, exploration
 2. **Create project-specific agents** in `.claude/agents/` for common workflows
-3. **Leverage user-level agents** for cross-project capabilities (like `jack-web-build-and-test-v1`)
+3. **Leverage user-level agents** in `~/.claude/agents/` for cross-project capabilities
 4. **Use Haiku model** for lightweight agents to reduce latency and cost
 5. **Write clear descriptions** so Claude knows when to delegate automatically
 6. **Consider context management** - subagents prevent main context bloat

@@ -18,7 +18,7 @@ This project explores the more advanced parts of the Codex SDK:
 ## Run
 
 ```bash
-cd /Users/jackjin/dev/continuous-agent-develop/references/poc/codex/streaming-tools-poc
+cd references/poc/codex/streaming-tools-poc
 npm install
 npm run stream:tools
 ```

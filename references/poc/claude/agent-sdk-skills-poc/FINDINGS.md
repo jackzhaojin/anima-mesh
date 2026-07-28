@@ -187,7 +187,7 @@ Instructions for Claude when this skill is invoked.
 ### User Skills: `~/.claude/skills/`
 - Personal skills across all projects
 - Loaded when settingSources includes "user"
-- Your location: symlink to `/Users/jackjin/dev/jack-dev-server-configs/local/claude-settings/skills`
+- May be a symlink to a directory managed elsewhere; the SDK follows it
 
 Your user skills:
 - claude-mcp-builder

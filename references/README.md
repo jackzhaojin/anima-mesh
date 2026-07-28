@@ -8,14 +8,18 @@ onboarding material for the provider chokepoint.
 
 The study behind the `opencode` provider's design values:
 
-- `wire/` — bidirectional JSON-RPC over stdio (`kimi --wire`): full
+- `acp/` — bidirectional JSON-RPC over stdio (`kimi acp`): full
   observability, event-by-event streaming, approval interception.
-- `print/` — headless (`kimi --print --output-format=stream-json`): the
+- `print/` — headless (`kimi -p --output-format stream-json`): the
   agent-worker pattern; structured JSONL out, no interactivity.
 
-Key learning: print mode suits fire-and-forget workers; wire mode suits
-custom UIs. The engine ultimately drives Kimi via `opencode serve` (REST +
-SSE) instead — same observability as wire mode with a stable HTTP surface.
+Key learning: print mode suits fire-and-forget workers; the stdio protocol
+suits custom UIs. The engine ultimately drives Kimi via `opencode serve`
+(REST + SSE) instead — same observability with a stable HTTP surface.
+
+Originally written against legacy `kimi-cli`, whose `--wire` mode Kimi Code
+replaced with the Agent Client Protocol; `acp/` is the ported form. See
+[poc/kimi/README.md](poc/kimi/README.md) for the full flag mapping.
 
 ## poc/claude — Claude Agent SDK studies
 

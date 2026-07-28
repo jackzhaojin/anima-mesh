@@ -2,7 +2,7 @@ import { query, type SDKMessage, type SDKResultMessage } from '@anthropic-ai/cla
 import { config } from 'dotenv';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
-import { mkdirSync, existsSync } from 'fs';
+import { mkdirSync, existsSync, rmSync } from 'fs';
 
 // Get project root directory
 const __filename = fileURLToPath(import.meta.url);
@@ -12,8 +12,13 @@ const PROJECT_ROOT = dirname(dirname(__dirname));
 // Load environment variables
 config({ path: join(PROJECT_ROOT, '.env') });
 
+// The subagent under test. `general-purpose` is a built-in, so this experiment
+// works on any machine — it must not depend on a personal ~/.claude/agents entry.
+const TARGET_AGENT = 'general-purpose';
+
 /**
- * Test actually invoking jack-web-build-and-test-v1 to build something
+ * Test actually invoking a subagent to build something, and verify via the
+ * message stream (not string matching) that delegation really happened.
  */
 async function testInvokeBuildAgent(): Promise<void> {
   const oauthToken = process.env.CLAUDE_CODE_OAUTH_TOKEN;
@@ -31,7 +36,12 @@ async function testInvokeBuildAgent(): Promise<void> {
     mkdirSync(outputDir, { recursive: true });
   }
 
-  console.log('\n🧪 Testing Invocation: jack-web-build-and-test-v1');
+  // Clear the target first — otherwise a leftover file makes the assertion
+  // below pass without the agent having done anything.
+  const outputFile = join(outputDir, 'hello.html');
+  rmSync(outputFile, { force: true });
+
+  console.log(`\n🧪 Testing Invocation: ${TARGET_AGENT}`);
   console.log('═'.repeat(60));
   console.log(`Model: ${model}`);
   console.log(`Project Root: ${PROJECT_ROOT}`);
@@ -39,18 +49,18 @@ async function testInvokeBuildAgent(): Promise<void> {
   console.log('═'.repeat(60));
 
   // Test prompt - invoke the agent with a simple task
-  const testPrompt = `Use the jack-web-build-and-test-v1 subagent to create a simple "Hello World" HTML page.
+  const testPrompt = `Use the ${TARGET_AGENT} subagent to create a simple "Hello World" HTML page.
 
 The page should:
 1. Have a title "Hello World"
 2. Display "Hello from Subagent POC!" as an h1
 3. Include a button that shows an alert when clicked
-4. Be saved to ${outputDir}/hello.html
+4. Be saved to ${outputFile}
 
 This is a validation test - keep it simple.`;
 
   console.log(`\n📝 Test Prompt: Create simple Hello World page`);
-  console.log(`📁 Output: ${outputDir}/hello.html`);
+  console.log(`📁 Output: ${outputFile}`);
   console.log('\n🔄 Running query (invoking subagent)...\n');
 
   try {
@@ -68,8 +78,23 @@ This is a validation test - keep it simple.`;
     });
 
     let result = '';
+    // Ground truth for delegation: an actual Task tool_use block in the stream.
+    const delegatedTo: string[] = [];
+
     for await (const message of stream) {
       const msg = message as SDKMessage;
+
+      if (msg.type === 'assistant') {
+        const content = (msg as any).message?.content;
+        if (Array.isArray(content)) {
+          for (const block of content) {
+            if (block?.type === 'tool_use' && block.name === 'Task') {
+              delegatedTo.push(String(block.input?.subagent_type ?? 'unknown'));
+            }
+          }
+        }
+      }
+
       if (msg.type === 'result') {
         const resultMsg = msg as SDKResultMessage;
         if (resultMsg.subtype === 'success') {
@@ -88,22 +113,22 @@ This is a validation test - keep it simple.`;
     console.log('\n' + '═'.repeat(60));
     console.log(`⏱️  Duration: ${duration}ms`);
 
-    // Check if the file was created
-    const outputFile = join(outputDir, 'hello.html');
     const fileCreated = existsSync(outputFile);
     console.log(`📄 File created: ${fileCreated ? '✅ YES' : '❌ NO'}`);
-
-    // Check if subagent was invoked (look for indicators in result)
-    const subagentInvoked = result.toLowerCase().includes('subagent') ||
-                           result.toLowerCase().includes('task') ||
-                           result.toLowerCase().includes('jack-web-build');
-    console.log(`🤖 Subagent invoked: ${subagentInvoked ? '✅ YES' : '❌ UNCLEAR'}`);
+    console.log(
+      `🤖 Task tool used: ${delegatedTo.length > 0 ? `✅ YES (${delegatedTo.join(', ')})` : '❌ NO'}`
+    );
     console.log('═'.repeat(60));
 
-    if (fileCreated) {
-      console.log('\n✅ SUCCESS: File was created by subagent workflow');
+    const passed = fileCreated && delegatedTo.includes(TARGET_AGENT);
+    if (passed) {
+      console.log(`\n✅ SUCCESS: ${TARGET_AGENT} was invoked and the file was created`);
+    } else if (fileCreated) {
+      console.log('\n⚠️  File was created, but not via the expected subagent');
+      process.exitCode = 1;
     } else {
-      console.log('\n⚠️  File was not created - check output above');
+      console.log('\n❌ FAIL: file was not created - check output above');
+      process.exitCode = 1;
     }
 
   } catch (error) {

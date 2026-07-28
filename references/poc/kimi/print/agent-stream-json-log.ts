@@ -2,15 +2,21 @@
 /**
  * Agent Stream JSON Log — Kimi CLI Print Mode PoC.
  *
- * Runs a complex multi-tool prompt via --print --output-format=stream-json,
+ * Runs a complex multi-tool prompt via -p --output-format stream-json,
  * logs every JSONL line to console and to a timestamped file in output/.
  * Best for: debugging verbosity, understanding what print mode exposes.
+ *
+ * NOTE: legacy kimi-cli spelled this `--print ... --output-format=stream-json`.
+ * Kimi Code (0.27+) dropped `--print`; `-p` is the non-interactive entry point.
  */
 
 import { spawn } from "child_process";
 import * as fs from "fs";
 import * as path from "path";
 import * as readline from "readline";
+
+// Repo root, derived from this file's location — never a hardcoded machine path.
+const REPO_ROOT = path.resolve(import.meta.dirname, "../../../..");
 
 const PROMPT =
   "Search the web for 'Kimi K2.5 latest features March 2026', " +
@@ -32,8 +38,8 @@ async function main() {
 
   const proc = spawn(
     "kimi",
-    ["--print", "-p", PROMPT, "--output-format=stream-json"],
-    { cwd: "/Users/jackjin/dev/continuous-agent-develop" }
+    ["-p", PROMPT, "--output-format", "stream-json"],
+    { cwd: REPO_ROOT }
   );
 
   const rl = readline.createInterface({ input: proc.stdout, crlfDelay: Infinity });

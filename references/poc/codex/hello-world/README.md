@@ -22,7 +22,8 @@ The SDK wraps the local `codex` CLI. In this environment, `codex login status` r
 ## Run
 
 ```bash
-cd /Users/jackjin/dev/continuous-agent-develop/references/poc/codex/hello-world
+cd references/poc/codex/hello-world
+npm install
 npm run hello
 ```
 

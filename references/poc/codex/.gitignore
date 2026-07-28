@@ -1,2 +1,5 @@
 node_modules/
-output/*.txt
+
+# Run traces + generated demo files. `output/*.txt` only matched
+# `<this dir>/output/` — a bare `output/` matches the per-POC dirs at any depth.
+output/

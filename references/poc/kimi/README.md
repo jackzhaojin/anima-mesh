@@ -1,53 +1,73 @@
 # Kimi Code CLI Integration PoCs
 
-This folder contains proof-of-concept integrations for [Kimi Code CLI](https://github.com/MoonshotAI/kimi-cli) demonstrating both **Wire mode** (bidirectional JSON-RPC) and **Print mode** (headless, non-interactive).
+This folder contains proof-of-concept integrations for [Kimi Code CLI](https://moonshotai.github.io/kimi-code/) demonstrating both **ACP mode** (bidirectional JSON-RPC over stdio) and **Print mode** (headless, non-interactive).
+
+> **Migration note (verified 2026-07-27 against Kimi Code 0.27.0).** These PoCs
+> were originally written against the legacy `kimi-cli`, which Kimi Code
+> replaces. Three flags used by the originals no longer exist:
+>
+> | legacy `kimi-cli` | Kimi Code 0.27+ |
+> |---|---|
+> | `--quiet` | removed — `-p` is the non-interactive entry point |
+> | `--print -p X --output-format=stream-json` | `-p X --output-format stream-json` |
+> | `--wire` | removed — replaced by `kimi acp` (Agent Client Protocol) |
+>
+> The `wire/` folder is now `acp/` and its two clients were rewritten against
+> ACP. Print-mode JSONL kept its message shape (`role`/`content`/`tool_calls`/
+> `tool_call_id`) but now ends with a `role: "meta"` session-resume line.
 
 ## What we built
 
-### Wire mode (`wire/`)
+### ACP mode (`acp/`)
 
-Wire mode exposes Kimi CLI's internal JSON-RPC 2.0 protocol over stdin/stdout. This is the mode used by custom UIs, IDE plugins, and any tool that needs full observability and control.
+`kimi acp` runs Kimi Code as an [Agent Client Protocol](https://agentclientprotocol.com)
+server over stdin/stdout. This is the mode used by custom UIs, IDE plugins, and
+any tool that needs full observability and control.
 
-- **`basic-wire.ts`** — Minimal hardcoded client. Sends `initialize`, then two prompts (`hello` and `write me a haiku`), collects text responses, and exits.
-- **`stream-wire.ts`** — Advanced interactive REPL. Streams every event in real-time (`TurnBegin`, `StepBegin`, `ContentPart`, `ToolCall`, `StatusUpdate`, etc.), handles approvals/questions/tool requests automatically, and supports `/cancel` and `/quit` commands.
+- **`basic-acp.ts`** — Minimal hardcoded client. Sends `initialize`, opens a
+  session with `session/new`, runs two prompts (`hello` and `write me a haiku`)
+  via `session/prompt`, collects the streamed text, and exits.
+- **`stream-acp.ts`** — Advanced interactive REPL. Renders every `session/update`
+  in real time (`agent_thought_chunk`, `agent_message_chunk`, `tool_call`,
+  `tool_call_update`, `plan`), auto-approves `session/request_permission`, and
+  supports `/cancel` and `/quit`.
 
 ### Print mode (`print/`)
 
-Print mode runs Kimi CLI headlessly — perfect for scripts, CI/CD, and agent workers.
+Print mode runs Kimi Code headlessly — perfect for scripts, CI/CD, and agent workers.
 
-- **`basic-print.ts`** — Simplest possible usage. Runs `kimi --quiet -p "..."` and prints the final text response.
-- **`agent-worker.ts`** — Uses `--print --output-format=stream-json` to capture the full structured message stream (assistant thinking, tool calls, tool results) in real-time.
+- **`basic-print.ts`** — Simplest possible usage. Runs `kimi -p "..."` and prints the response.
+- **`agent-worker.ts`** — Uses `-p --output-format stream-json` to capture the full structured message stream (assistant thinking, tool calls, tool results) in real-time.
 - **`agent-stream-json-log.ts`** — Runs a complex multi-tool prompt, pretty-prints each JSONL line to the console, and writes the raw stream to a timestamped file in `output/` for later inspection.
 
 ## How to run
 
-All PoCs are written in TypeScript and executed with `tsx`. **There is no local `node_modules` or `package.json` inside this folder.** Instead, we rely on the parent project (`continuous-agent-develop`) which already has `tsx` and TypeScript installed in its root `node_modules`.
+All PoCs are written in TypeScript and executed with `tsx`. **There is no local `node_modules` or `package.json` inside this folder.** They use only Node.js built-ins (`child_process`, `fs`, `path`, `readline`) plus `tsx`, which the repo root already provides.
 
-Run any script from the **project root**:
+Run any script from the **repo root**:
 
 ```bash
-# From /Users/jackjin/dev/continuous-agent-develop
-npx tsx references/poc/kimi/wire/basic-wire.ts
-npx tsx references/poc/kimi/wire/stream-wire.ts
+npx tsx references/poc/kimi/acp/basic-acp.ts
+npx tsx references/poc/kimi/acp/stream-acp.ts
 npx tsx references/poc/kimi/print/basic-print.ts
 npx tsx references/poc/kimi/print/agent-worker.ts
 npx tsx references/poc/kimi/print/agent-stream-json-log.ts
 ```
 
-### Why no local `node_modules`?
-
-The scripts only use **Node.js built-in modules** (`child_process`, `crypto`, `fs`, `path`, `readline`) plus `tsx` for execution. Since `tsx` is already available in the root project's `node_modules`, these PoCs are completely self-contained and require no additional installation inside this subfolder.
+The print PoCs derive their working directory from the script's own location,
+so they behave the same regardless of where you invoke them from.
 
 ## Key learnings
 
 | Mode | Best for | Real-time tool visibility | Interactive control |
 |------|----------|---------------------------|---------------------|
-| `--quiet` | Fire-and-forget tasks | ❌ | ❌ |
-| `--print --output-format=stream-json` | Agent workers, pipelines | ✅ (message-by-message) | ❌ (auto-approved) |
-| `--wire` | Custom UIs, full observability | ✅ (event-by-event, token-by-token) | ✅ |
+| `-p` (text) | Fire-and-forget tasks | ❌ | ❌ |
+| `-p --output-format stream-json` | Agent workers, pipelines | ✅ (message-by-message) | ❌ (auto-approved) |
+| `kimi acp` | Custom UIs, full observability | ✅ (event-by-event, token-by-token) | ✅ |
 
-- Print mode's `stream-json` gives you thinking blocks, tool calls, and tool results as they happen — but lacks step boundaries and live token metrics.
-- Wire mode gives you everything: `TurnBegin`, `StepBegin`, `think` events, `StatusUpdate` with token usage, and the ability to intercept approvals or steer mid-turn.
+- Print mode's `stream-json` gives you tool calls and tool results as they happen — but only whole messages, with no step boundaries or live token metrics.
+- ACP mode gives you token-by-token `agent_thought_chunk` and `agent_message_chunk` streams, per-tool `tool_call`/`tool_call_update` transitions, and the ability to intercept approvals via `session/request_permission`.
+- ACP carries **no token-usage metrics** — the legacy wire `StatusUpdate` event has no equivalent. The `/usage` session command is the replacement.
 
 ## Output logs
 
