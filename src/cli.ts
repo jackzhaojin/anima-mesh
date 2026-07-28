@@ -321,7 +321,10 @@ async function cmdExportLocal(args: string[], io: { log: (s: string) => void }):
 }
 
 async function cmdDefect(args: string[], io: { log: (s: string) => void; error: (s: string) => void }): Promise<number> {
-  const sub = args.find((a) => !a.startsWith("--"));
+  // Positionals = tokens that neither are flags nor follow a flag — so
+  // `defect file <slug> --instance <dir>` never reads <dir> as a slug.
+  const positional = args.filter((a, i) => !a.startsWith("--") && args[i - 1]?.startsWith("--") !== true);
+  const sub = positional[0];
   const instanceRoot = flag(args, "instance") ?? ".";
   if (sub === "list" || sub === undefined) {
     const drafts = listDefectDrafts(instanceRoot);
@@ -336,7 +339,7 @@ async function cmdDefect(args: string[], io: { log: (s: string) => void; error: 
     return 0;
   }
   if (sub === "file") {
-    const slugs = args.filter((a) => !a.startsWith("--") && a !== "file");
+    const slugs = positional.slice(1);
     const all = hasFlag(args, "all");
     if (!all && slugs.length === 0) {
       io.error("defect file: name a draft slug or pass --all");

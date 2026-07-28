@@ -135,4 +135,16 @@ describe("cli", () => {
     expect(await main(["run", "ghost", "--instance", dir], c.io)).toBe(1);
     expect(c.err()).toContain("agent 'ghost' not found");
   });
+
+  it("defect never reads a flag value as a subcommand or slug", async () => {
+    const dir = path.join(await freshRoot(), "brain");
+    await initInstance(dir);
+    const list = capture();
+    expect(await main(["defect", "list", "--instance", dir], list.io)).toBe(0);
+    expect(list.out()).toContain("no defect drafts");
+    // Regression: `defect file --instance <dir>` once treated <dir> as a slug.
+    const file = capture();
+    expect(await main(["defect", "file", "--instance", dir], file.io)).toBe(2);
+    expect(file.err()).toContain("name a draft slug");
+  });
 });

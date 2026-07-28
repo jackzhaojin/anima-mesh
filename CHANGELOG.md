@@ -3,7 +3,7 @@
 AnimaMesh is pre-1.0, so this history is organized by **minor release line**:
 the capability boundary operators actually adopt. Patch tags are deliberately
 rolled into the value and maturity of their minor rather than narrated one by
-one. The latest tag is **v0.11.2**.
+one. The latest tag is **v0.11.3**.
 
 ## Upgrade procedure
 
@@ -32,7 +32,13 @@ The ledger remains append-only; never "migrate" it by editing old entries.
 
 ## [v0.11.x] — the third tier: local interactive surfaces + engine defect telemetry
 
-**Latest tag: v0.11.2 · 2026-07-27**
+**Latest tag: v0.11.3 · 2026-07-27**
+
+**v0.11.3 (fix): `defect file <slug> --instance <dir>` no longer reads
+the `--instance` value as a slug.** The `defect` subcommand's positional
+extraction kept flag values, so the documented invocation failed with
+"no defect draft '<dir>'". Found dogfooding the first real filing;
+CLI-level regression test added.
 
 **v0.11.2 (posture revision, docs/comments only — no behavior change):
 the standing instance PAT is the STANDARD defect posture.** Operator
