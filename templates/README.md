@@ -21,7 +21,15 @@ surfaces** (`.claude/agents/` + `.opencode/agents/` — see
 [docs/local-agents.md](../docs/local-agents.md)) from the scaffolded
 concept, so a new instance can talk to its persona in a coding terminal on
 day one. Templates deliberately ship WITHOUT the `defect-report` whitelist
-entry — it's an L3-trust grant made by the principal later, not a default.
+entry — at the shipped L1 it would only generate denials. But granting it
+IS the standard path, not an exotic option: when the principal promotes
+the hub to L3, add `defect-report` to its whitelist, and set the
+instance's standing PAT (`GITHUB_DEFECTS_TOKEN`, see
+`workers/heartbeat/wrangler.example.jsonc`) so the mesh reports engine
+bugs as public issues on its own. The whole loop is deterministic
+capability, not model discretion: code gates the whitelist + ladder
+level, runs the identity-leak guard, title-dedups against open issues,
+files, and ledgers — the model only writes the report.
 
 ## Back office (active-eligible)
 

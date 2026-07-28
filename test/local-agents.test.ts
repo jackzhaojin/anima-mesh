@@ -114,10 +114,12 @@ describe("composeLocalAgents — the compile contract", () => {
       config,
     );
     expect(withIt).toContain("Engine defects");
+    expect(withIt).toContain("issue-first");
+    expect(withIt).toContain("gh issue create --repo example/engine");
+    // Drafts are the fallback, still documented for when filing can't happen.
     expect(withIt).toContain("drafts/defects/<slug>.md");
     expect(withIt).toContain("anima-mesh defect file");
-    expect(withIt).toContain("gh issue create --repo example/engine");
-    expect(withIt).toContain("De-identify even");
+    expect(withIt).toContain("De-identify FIRST");
   });
 
   it("spokes are opencode subagents", () => {

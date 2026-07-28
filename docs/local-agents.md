@@ -111,4 +111,12 @@ into the draft's `filed:` frontmatter. Credential for this local step: env
 
 Grant the whitelist entry deliberately: it belongs on L3 agents whose
 judgment you already trust with reversible actions. Shipped templates do
-not include it — L1 report-only agents would only generate denials.
+not include it — L1 report-only agents would only generate denials — but
+granting it to the hub at its L3 promotion is the STANDARD posture for a
+new instance, alongside minting the instance PAT. Interactive artifacts
+compiled for a `defect-report` agent carry the same issue-first
+instructions (file via the local `gh` session; draft only when filing
+can't happen). Every step of the loop that must be trustworthy is
+deterministic code, not model judgment: whitelist + ladder gate, the
+identity-leak guard, title-dedup, the ledger entry. The model only writes
+the report.

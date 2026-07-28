@@ -3,7 +3,7 @@
 AnimaMesh is pre-1.0, so this history is organized by **minor release line**:
 the capability boundary operators actually adopt. Patch tags are deliberately
 rolled into the value and maturity of their minor rather than narrated one by
-one. The latest tag is **v0.11.4**.
+one. The latest tag is **v0.11.5**.
 
 ## Upgrade procedure
 
@@ -32,7 +32,17 @@ The ledger remains append-only; never "migrate" it by editing old entries.
 
 ## [v0.11.x] — the third tier: local interactive surfaces + engine defect telemetry
 
-**Latest tag: v0.11.4 · 2026-07-27**
+**Latest tag: v0.11.5 · 2026-07-27**
+
+**v0.11.5: issue-first reaches the interactive tier + the future-instance
+docs.** `export-local` artifacts now instruct `defect-report` agents to
+file engine bugs directly as public issues (local `gh` session;
+title-dedup by hand; drafts only when filing can't happen), matching the
+scheduled tiers. Templates/docs state the standard posture for NEW
+instances: grant `defect-report` at the hub's L3 promotion, mint the
+standing instance PAT, and note that every trust-bearing step of the loop
+is deterministic code (whitelist + ladder gate, identity-leak guard,
+title-dedup, ledger) — the model only writes the report.
 
 **v0.11.4 (behavior refinement, operator decision): defect filing is
 ISSUE-FIRST — no draft left behind.** With `GITHUB_DEFECTS_TOKEN` set, a

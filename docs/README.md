@@ -28,7 +28,9 @@ specifics (those live in each instance's own repo — see the boundary doc).
    shelf: CRM as typed concepts, with compliance screens encoded in data
 9. [local-agents.md](local-agents.md) — the third tier: compile any agent
    concept into Claude Code + opencode interactive surfaces
-   (`export-local`), and the `defect-report` loop back into this repo
+   (`export-local`), and the `defect-report` loop back into this repo —
+   issue-first with the instance's standing PAT, deterministic at every
+   trust-bearing step (gate, leak guard, dedup, ledger)
 10. [learnings/](learnings/README.md) — hard-won platform knowledge with
     evidence; **check here first when a vendor edge misbehaves**
 

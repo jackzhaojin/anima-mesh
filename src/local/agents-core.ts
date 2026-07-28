@@ -143,21 +143,23 @@ export function composeInteractiveBody(agent: AgentConcept, config: InstanceConf
       "## Engine defects",
       "",
       "When the AnimaMesh ENGINE misbehaves (harness, CLI, or Workers bugs — not this instance's",
-      "content), capture it drafts-first:",
+      "content), file it as a public engine-repo issue — issue-first; a draft is only the",
+      "fallback:",
       "",
-      `- Write or refresh \`${config.drafts}/defects/<slug>.md\` (one file per distinct defect;`,
-      "  frontmatter `title:`; body: repro, expected vs actual, engine ref). De-identify even",
-      "  in the draft — it is destined for the PUBLIC engine repo: no names or emails of the",
-      "  organization, principal, or persona; no bundle content; mechanics only.",
+      "- De-identify FIRST — the engine repo is PUBLIC: no names or emails of the organization,",
+      "  principal, or persona; no bundle content; mechanics only (repro, expected vs actual,",
+      "  engine ref if known).",
       ...(engineRepo
         ? [
-            "- Filing the GitHub issue is a separate, deliberate step. When the principal says to",
-            `  file, run \`anima-mesh defect file <slug>\` (or \`gh issue create --repo ${engineRepo}\``,
-            "  `--label defect …` and record the URL in the draft's `filed:` frontmatter).",
+            `- File directly: \`gh issue create --repo ${engineRepo} --label defect …\` (search open`,
+            "  `defect` issues first — a recurring bug is ONE issue, not one per sighting). Report",
+            "  the URL in your stand-up.",
           ]
         : []),
-      "- Tell the principal about new drafts in your stand-up — unfiled defects are invisible",
-      "  feedback.",
+      "- Only when filing can't happen (no credential, an identity reference you cannot scrub,",
+      `  API failure): write \`${config.drafts}/defects/<slug>.md\` (one file per distinct defect;`,
+      "  frontmatter `title:`; body as above) and surface it in your stand-up —",
+      "  `anima-mesh defect file <slug>` promotes it once the blocker clears.",
     );
   }
 
