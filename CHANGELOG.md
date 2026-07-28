@@ -3,7 +3,7 @@
 AnimaMesh is pre-1.0, so this history is organized by **minor release line**:
 the capability boundary operators actually adopt. Patch tags are deliberately
 rolled into the value and maturity of their minor rather than narrated one by
-one. The latest tag is **v0.11.5**.
+one. The latest tag is **v0.12.0**.
 
 ## Upgrade procedure
 
@@ -29,6 +29,58 @@ The ledger remains append-only; never "migrate" it by editing old entries.
 ## [Unreleased]
 
 (nothing yet)
+
+## [v0.12.x] — capability truth, and real web search on the cloud tier
+
+**Latest tag: v0.12.0 · 2026-07-27**
+
+**The defect that forced it ([issue #4](https://github.com/jackzhaojin/anima-mesh/issues/4)).**
+Two consecutive cloud runs reported that "the external web-fetch tool
+returned no usable content". There was no tool. `anthropic-api` sends a
+single Messages call with no `tools` array, while the agent's job
+description budgeted "~8 web fetches per heartbeat" — so the model, unable
+to distinguish *absent capability* from *broken capability*, reported a
+tool failure and came within one sentence of filing unchecked subjects as
+unchanged. The root cause was never the network or the credential: it was
+a prompt that promised what the runtime did not have.
+
+**Providers now declare what they grant.** `AgentWorkerProvider.capabilities`
+(`fileReads`, `webSearch`) is stated to the agent in its own prompt, after
+the job description and explicitly overriding it, because job text is
+written once while harnesses change with every override. Undeclared reads
+as `NO_CAPABILITIES` — under-claiming costs a sentence, over-claiming costs
+a fabricated research week. The prompt no longer tells API-tier agents that
+"your working directory is the bundle root"; that was only ever true on the
+subprocess tiers.
+
+**Agents request web search; the harness answers honestly.** `web: <n>` in
+concept frontmatter budgets *n* searches per run. Granted, the prompt says
+so and the budget reaches the provider. Refused — the agent's concept asks
+for web on a harness that has none — the prompt says *that*, names it as a
+gap to report, and tells the agent not to attempt fetches. Silent empty
+results are no longer a reachable state.
+
+**Real web search on the cloud tier.** `anthropic-api` runs Anthropic's
+server-side `web_search_20250305` tool inside the same Messages call, so
+external checks work on Workers with no client tool loop and no subprocess.
+Paused turns (`stop_reason: pause_turn`) are continued with their own
+content replayed, text written before a pause is kept, and the HTTP retry
+budget stays per-request rather than being spent by the sweep's own
+progress. A gateway that refuses the tool does **not** kill the beat: the
+run repeats without tools, carrying a mid-prompt capability correction so
+the agent reports "could not check", and returns `degraded` for the ledger.
+`claude-agent-sdk` gains `WebSearch` on the same opt-in; `claude-code` and
+`opencode` deliberately under-claim web (their tool grants depend on the
+local install), and `moonshot-api` declares none until its `$web_search`
+builtin is actually wired.
+
+**Upgrade notes.** No bundle or ledger migration. Existing agents keep
+working with `web` absent (0 = no web, the previous behavior made explicit).
+To restore an agent's external checks, add `web: <n>` to its concept and
+confirm its effective harness is `anthropic-api` (mind `cognition.overrides`
+— an agent declaring `moonshot-api` may be running elsewhere). Third-party
+providers implementing `AgentWorkerProvider` still type-check unchanged;
+they simply grant nothing until they declare otherwise.
 
 ## [v0.11.x] — the third tier: local interactive surfaces + engine defect telemetry
 

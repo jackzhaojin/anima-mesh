@@ -10,6 +10,12 @@ const DEFAULT_TIMEOUT_MS = 15 * 60 * 1000;
 
 export const claudeCodeProvider: AgentWorkerProvider = {
   name: "claude-code",
+  // The CLI grants its own read tools against `cwd`. Web is deliberately
+  // UNDER-claimed: `claude -p` runs with default permissions here (no
+  // --allowedTools), so web access depends on the local install's settings
+  // and is not something this seam can promise. Under-claiming costs a
+  // sentence of prompt; over-claiming costs a fabricated research week.
+  capabilities: { fileReads: true, webSearch: false },
 
   assertConfigured(): void {
     const which = process.platform === "win32" ? "where" : "which";

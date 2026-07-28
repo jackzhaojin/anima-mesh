@@ -7,7 +7,13 @@ import {
 } from "./moonshot-api.js";
 import { createAnthropicApiProvider, anthropicApiProvider } from "./anthropic-api.js";
 
-export type { AgentWorkerProvider, ProviderRunOptions, ProviderResult } from "./types.js";
+export type {
+  AgentWorkerProvider,
+  ProviderRunOptions,
+  ProviderResult,
+  ProviderCapabilities,
+} from "./types.js";
+export { providerCapabilities, NO_CAPABILITIES } from "./types.js";
 export { FakeProvider } from "./fake.js";
 export {
   createMoonshotApiProvider,

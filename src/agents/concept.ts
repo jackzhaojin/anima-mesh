@@ -18,6 +18,13 @@ export interface AgentConcept {
   whitelist: string[];
   /** Read sources inlined into this agent's prompt context (e.g. "onedrive"). */
   sources: string[];
+  /**
+   * Web searches this agent may spend per run (frontmatter `web:`). 0 = none.
+   * A budget here is a REQUEST, not a guarantee: the harness reconciles it
+   * against the provider's capabilities and tells the agent, in the prompt,
+   * which answer it got.
+   */
+  web: number;
   commercial: boolean;
   /** The job description — handed to the provider as the core of the prompt. */
   job: string;
@@ -40,6 +47,7 @@ export function agentFromConcept(concept: Concept): AgentConcept {
     heartbeat: typeof fm.heartbeat === "string" ? fm.heartbeat : undefined,
     whitelist: Array.isArray(fm.whitelist) ? fm.whitelist.filter((x): x is string => typeof x === "string") : [],
     sources: Array.isArray(fm.sources) ? fm.sources.filter((x): x is string => typeof x === "string") : [],
+    web: typeof fm.web === "number" && Number.isFinite(fm.web) && fm.web > 0 ? Math.floor(fm.web) : 0,
     commercial: fm.commercial === true,
     job: concept.body.trim(),
     relPath: concept.relPath,

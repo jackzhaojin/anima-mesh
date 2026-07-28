@@ -154,6 +154,10 @@ function tapSession(base: string, sessionId: string, onProgress: (note: string) 
 
 export const opencodeProvider: AgentWorkerProvider = {
   name: "opencode",
+  // Same posture as claude-code: read tools against `cwd` are the CLI's
+  // default; web availability depends on the local install, so it is not
+  // claimed here.
+  capabilities: { fileReads: true, webSearch: false },
 
   assertConfigured(): void {
     const which = process.platform === "win32" ? "where" : "which";

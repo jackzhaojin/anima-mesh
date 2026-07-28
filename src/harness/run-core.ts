@@ -4,7 +4,13 @@ import { parseScheduleRequest, mutateSchedule } from "./schedule.js";
 import { applyDraftRequests, draftCapabilityLines } from "./drafts.js";
 import { applyDefectReports } from "./defects.js";
 import { defectCapabilityLines } from "../defects/report-core.js";
-import { resolveProvider, type AgentWorkerProvider, type ApiProviderContext } from "../providers/index.js";
+import {
+  resolveProvider,
+  providerCapabilities,
+  type AgentWorkerProvider,
+  type ApiProviderContext,
+  type ProviderCapabilities,
+} from "../providers/index.js";
 import type { InstanceStore } from "../instance/store.js";
 import type { InstanceConfig } from "../instance/config-core.js";
 import { sourceSections } from "../sources/registry.js";
@@ -154,10 +160,26 @@ export async function runAgentCore(options: RunCoreOptions): Promise<RunReport> 
   await store.appendLedger({ ts: startedAt, runId, agent: agent.name, action: "run-started", type: "report" });
 
   const providerCtx = options.providerCtx ?? { env: store.instanceEnv?.() ?? {} };
-  const prompt = await buildPrompt(agent, store, config, dateStamp, providerCtx, progress, options.sourceFs);
+  // Provider FIRST, prompt second: what the harness can actually do is an
+  // input to the prompt, not an afterthought. Assembling context before
+  // knowing the runtime is how agents came to be told about tools they did
+  // not have (issue #4). Resolving first also fails an unconfigured harness
+  // before any live source fetch is spent.
   const cognition = effectiveCognition(agent, config);
   const provider = options.provider ?? resolveProvider(cognition.harness, providerCtx);
   provider.assertConfigured();
+  const capabilities = providerCapabilities(provider);
+  const webBudget = capabilities.webSearch ? agent.web : 0;
+  const prompt = await buildPrompt(
+    agent,
+    store,
+    config,
+    dateStamp,
+    { provider: provider.name, capabilities, webBudget },
+    providerCtx,
+    progress,
+    options.sourceFs,
+  );
   progress(`run ${runId.slice(0, 8)}: ${agent.name} via ${provider.name} (${cognition.model})`);
 
   // The bundle IS the agent's working world: relative reads in any harness
@@ -168,7 +190,14 @@ export async function runAgentCore(options: RunCoreOptions): Promise<RunReport> 
     cwd: store.bundleDir ?? (typeof process !== "undefined" ? process.cwd() : "/"),
     model: cognition.model,
     onProgress: progress,
+    ...(webBudget > 0 ? { webSearchMaxUses: webBudget } : {}),
   });
+  // A capability the run asked for and did not get is operational evidence,
+  // not a footnote — it belongs in the ledger next to the run that produced
+  // the thinner report.
+  if (result.degraded) {
+    progress(`run ${runId.slice(0, 8)}: DEGRADED — ${result.degraded}`);
+  }
 
   // L1 contract: the harness, not the agent, writes the artifact.
   const reportName = `${dateStamp}-${agent.name}-${runId.slice(0, 8)}.md`;
@@ -319,6 +348,7 @@ async function buildPrompt(
   store: InstanceStore,
   config: InstanceConfig,
   dateStamp: string,
+  runtime: { provider: string; capabilities: ProviderCapabilities; webBudget: number },
   providerCtx?: ApiProviderContext,
   log?: (note: string) => void,
   sourceFs?: SourceFs,
@@ -331,8 +361,9 @@ async function buildPrompt(
     "## Your job",
     agent.job,
     "",
+    ...capabilityLines(agent, runtime),
+    "",
     "## Operating rules",
-    "- Your working directory is the bundle root: paths like `ops/calendar.md` and `facts/*.md` resolve directly.",
     "- Base every claim about stable facts on the bundle excerpts below — never on recall.",
     "- You produce a single markdown report. The harness writes it to disk; you cause no side effects.",
     "- If something needs the principal's decision or approval, say so explicitly in a `## Needs you` section.",
@@ -371,6 +402,76 @@ async function buildPrompt(
     ...external,
     "\n## Output\nReturn ONLY the markdown body of your report (no code fences around the whole thing).",
   ].join("\n");
+}
+
+/**
+ * The capability contract, stated to the agent in its own prompt.
+ *
+ * This exists because of engine issue #4: research-watch's job said "budget
+ * ~8 web fetches per heartbeat" while its cloud harness sent no tools at all.
+ * The model had no way to distinguish "I have no web tool" from "the web tool
+ * returned nothing", so two consecutive runs reported a *tool failure* that
+ * had never been a tool — and unchecked subjects came within one sentence of
+ * being read as unchanged.
+ *
+ * So: say what the runtime grants, say it AFTER the job description, and say
+ * that it wins. A job description is written once; capabilities change with
+ * every harness swap and override.
+ */
+export function capabilityLines(
+  agent: AgentConcept,
+  runtime: { provider: string; capabilities: ProviderCapabilities; webBudget: number },
+): string[] {
+  const { capabilities: caps, provider } = runtime;
+  const lines = [
+    "## Your capabilities this run",
+    `Harness: \`${provider}\`. These are the FACTS about what you can do right now, and they`,
+    "override anything your job description implies. Never describe a check you could not run as",
+    "a check that found nothing — an unrun check is a gap, and gaps get reported.",
+    "",
+  ];
+
+  if (caps.fileReads) {
+    lines.push(
+      "- **File reads: YES.** Your working directory is the bundle root — paths like `ops/calendar.md`",
+      "  and `facts/*.md` resolve directly, beyond the excerpts inlined below.",
+    );
+  } else {
+    lines.push(
+      "- **File reads: NO.** You have no filesystem access and cannot open paths. Everything you can",
+      "  know about this instance is inlined below; a file you were not given is a file you cannot read.",
+    );
+  }
+
+  if (runtime.webBudget > 0) {
+    lines.push(
+      `- **Web search: YES**, up to ${runtime.webBudget} searches this run. Spend them on the checks that`,
+      "  most need live confirmation, and cite what you found. Unspent budget is not a virtue; an",
+      "  unsupported claim is still an unsupported claim.",
+    );
+  } else if (agent.web > 0) {
+    // Declared but unavailable — the exact shape that silently failed before.
+    lines.push(
+      `- **Web search: NO — and your concept asks for ${agent.web}.** This harness (\`${provider}\`) cannot`,
+      "  search the web, so no external check can run this cycle. Do NOT attempt fetches and do NOT",
+      "  report the result as an empty or failed lookup: report plainly that the capability is absent,",
+      "  name which checks went unrun, and continue with the work you CAN do from the context below.",
+    );
+  } else {
+    lines.push(
+      "- **Web search: NO.** You cannot browse, search, or fetch URLs. Anything you would need to look",
+      "  up externally is out of reach this run — say so rather than reasoning from stale recall.",
+    );
+  }
+
+  lines.push(
+    "- **Other tools: NONE.** You run no commands and cause no side effects. Your only output is the",
+    "  report body; the harness writes it.",
+    agent.sources.length > 0
+      ? `- **External context: the source sections below (${agent.sources.join(", ")})** — read them as this run's live listing, and nothing beyond them.`
+      : "- **External context: none declared** beyond the bundle excerpts below.",
+  );
+  return lines;
 }
 
 export function levelMeaning(level: string): string {

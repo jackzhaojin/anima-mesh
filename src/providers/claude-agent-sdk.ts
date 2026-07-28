@@ -17,12 +17,18 @@ const DEFAULT_TIMEOUT_MS = 15 * 60 * 1000;
 const MAX_TURNS = 25;
 // Read-only tools: the L1 contract — the harness, not the agent, writes artifacts.
 const ALLOWED_TOOLS = ["Read", "Grep", "Glob"];
+// Granted only when the agent concept budgets web searches (`web:`), so an
+// agent that never asked for the web cannot wander onto it.
+const WEB_TOOL = "WebSearch";
 
 export function createClaudeAgentSdkProvider(ctx: ApiProviderContext = {}): AgentWorkerProvider {
   const env = ctx.env ?? {};
 
   return {
     name: "claude-agent-sdk",
+    // Tools are whitelisted by this provider itself (below), so unlike the
+    // CLI harnesses both answers here are facts, not guesses.
+    capabilities: { fileReads: true, webSearch: true },
 
     assertConfigured(): void {
       if (!getEnv(env, "CLAUDE_CODE_OAUTH_TOKEN")) {
@@ -47,7 +53,7 @@ export function createClaudeAgentSdkProvider(ctx: ApiProviderContext = {}): Agen
           cwd: opts.cwd, // bundle root: relative reads keep working, same as claude-code
           maxTurns: MAX_TURNS,
           settingSources: [], // no user/project settings bleed into agent runs
-          allowedTools: ALLOWED_TOOLS,
+          allowedTools: (opts.webSearchMaxUses ?? 0) > 0 ? [...ALLOWED_TOOLS, WEB_TOOL] : ALLOWED_TOOLS,
           // SDK option REPLACES the subprocess env (not merged) — spread
           // process.env ourselves and pin the resolved token on top.
           env: { ...(typeof process !== "undefined" ? process.env : {}), ...(token ? { CLAUDE_CODE_OAUTH_TOKEN: token } : {}) },

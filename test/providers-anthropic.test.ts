@@ -188,3 +188,120 @@ describe("anthropic-api provider (subscription OAuth over plain fetch)", () => {
     expect(() => provider.assertConfigured()).not.toThrow();
   });
 });
+
+/**
+ * Server-side web search — the capability whose ABSENCE was issue #4. It runs
+ * inside the API call, so the cloud tier gets real external checks without a
+ * client tool loop or a subprocess.
+ */
+describe("anthropic-api — server-side web search", () => {
+  const bodyOf = (fetchImpl: ReturnType<typeof vi.fn>, call = 0) =>
+    JSON.parse(fetchImpl.mock.calls[call]![1].body);
+
+  it("sends no tools array at all when the agent has no web budget", async () => {
+    const fetchImpl = vi.fn().mockResolvedValue(okResponse());
+    const provider = createAnthropicApiProvider({ env: ENV, fetchImpl });
+    await provider.run({ prompt: "p", cwd: "/" });
+    expect(bodyOf(fetchImpl).tools).toBeUndefined();
+  });
+
+  it("declares the capability, and spends exactly the budget it was given", async () => {
+    const fetchImpl = vi.fn().mockResolvedValue(okResponse("digest"));
+    const provider = createAnthropicApiProvider({ env: ENV, fetchImpl });
+    expect(provider.capabilities).toEqual({ fileReads: false, webSearch: true });
+
+    const result = await provider.run({ prompt: "p", cwd: "/", webSearchMaxUses: 8 });
+
+    expect(bodyOf(fetchImpl).tools).toEqual([
+      { type: "web_search_20250305", name: "web_search", max_uses: 8 },
+    ]);
+    expect(result.text).toBe("digest");
+    expect(result.degraded).toBeUndefined();
+  });
+
+  it("continues a paused turn and keeps the text written before the pause", async () => {
+    const paused = new Response(
+      JSON.stringify({
+        content: [
+          { type: "text", text: "checked Adobe:" },
+          { type: "server_tool_use", id: "srv_1", name: "web_search" },
+        ],
+        stop_reason: "pause_turn",
+      }),
+      { status: 200, headers: { "content-type": "application/json" } },
+    );
+    const fetchImpl = vi.fn().mockResolvedValueOnce(paused).mockResolvedValueOnce(okResponse("no releases"));
+    const provider = createAnthropicApiProvider({ env: ENV, fetchImpl });
+
+    const result = await provider.run({ prompt: "sweep", cwd: "/", webSearchMaxUses: 5 });
+
+    expect(fetchImpl).toHaveBeenCalledTimes(2);
+    // The continuation replays the paused turn's own content — that IS how
+    // the search resumes; dropping it restarts the sweep from nothing.
+    const second = bodyOf(fetchImpl, 1);
+    expect(second.messages).toHaveLength(2);
+    expect(second.messages[1].role).toBe("assistant");
+    expect(second.messages[1].content[1].name).toBe("web_search");
+    // Nothing written before the pause is thrown away.
+    expect(result.text).toBe("checked Adobe:\nno releases");
+  });
+
+  it("degrades honestly when the gateway refuses server tools — never a silent clean run", async () => {
+    const rejection = new Response(
+      JSON.stringify({ type: "error", error: { type: "invalid_request_error", message: "web_search tool not permitted" } }),
+      { status: 400 },
+    );
+    const fetchImpl = vi.fn().mockResolvedValueOnce(rejection).mockResolvedValueOnce(okResponse("internal-only digest"));
+    const provider = createAnthropicApiProvider({ env: ENV, fetchImpl, retryDelaysMs: [0, 0] });
+
+    const result = await provider.run({ prompt: "sweep the pillars", cwd: "/", webSearchMaxUses: 8 });
+
+    // The beat survives — a digest without its web sweep still carries the
+    // internal analysis...
+    expect(result.text).toBe("internal-only digest");
+    // ...but the run is marked degraded for the ledger...
+    expect(result.degraded).toContain("rejected server-side web search");
+    // ...and the AGENT is told mid-run, so it reports "could not check"
+    // rather than "nothing changed" — the whole point of issue #4.
+    const retryBody = bodyOf(fetchImpl, 1);
+    expect(retryBody.tools).toBeUndefined();
+    expect(retryBody.messages[0].content).toContain("sweep the pillars");
+    expect(retryBody.messages[0].content).toContain("Capability correction");
+    expect(retryBody.messages[0].content).toContain("Web search is NOT available");
+  });
+
+  it("returns what it gathered when a sweep never converges, flagged as degraded", async () => {
+    const paused = () =>
+      new Response(JSON.stringify({ content: [{ type: "text", text: "partial" }], stop_reason: "pause_turn" }), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      });
+    const fetchImpl = vi.fn().mockImplementation(async () => paused());
+    const provider = createAnthropicApiProvider({ env: ENV, fetchImpl });
+
+    const result = await provider.run({ prompt: "p", cwd: "/", webSearchMaxUses: 8 });
+
+    expect(result.degraded).toContain("did not converge");
+    expect(result.text).toContain("partial");
+  });
+
+  it("keeps the HTTP retry budget per request, not per turn", async () => {
+    // A paused turn followed by a transient 529 must still get its retries —
+    // otherwise a long sweep spends the retry budget on its own progress.
+    const paused = new Response(
+      JSON.stringify({ content: [{ type: "text", text: "a" }], stop_reason: "pause_turn" }),
+      { status: 200, headers: { "content-type": "application/json" } },
+    );
+    const fetchImpl = vi
+      .fn()
+      .mockResolvedValueOnce(paused)
+      .mockResolvedValueOnce(new Response("overloaded", { status: 529 }))
+      .mockResolvedValueOnce(new Response("overloaded", { status: 529 }))
+      .mockResolvedValueOnce(okResponse("b"));
+    const provider = createAnthropicApiProvider({ env: ENV, fetchImpl, retryDelaysMs: [0, 0] });
+
+    const result = await provider.run({ prompt: "p", cwd: "/", webSearchMaxUses: 3 });
+    expect(result.text).toBe("a\nb");
+    expect(fetchImpl).toHaveBeenCalledTimes(4);
+  });
+});

@@ -49,6 +49,26 @@ subprocess providers (`claude-code`, `claude-agent-sdk`, `opencode`) are
 laptop-tier by architecture. Vendor gateway traps are documented with
 evidence in [learnings/](learnings/README.md).
 
+Every provider also declares **capabilities** — `fileReads` and `webSearch` —
+and prompt assembly states them to the agent verbatim, after its job
+description and explicitly overriding it. This is not documentation for its
+own sake: an agent whose job budgeted "~8 web fetches" while its harness sent
+no tools at all could not tell a missing capability from a broken one, and
+twice reported a tool failure for a tool that never existed
+([issue #4](https://github.com/jackzhaojin/anima-mesh/issues/4)). Providers
+under-claim by default — undeclared reads as "grants nothing", because a
+wasted sentence of prompt is cheaper than a fabricated week of research.
+
+**Web search** is the one capability an agent requests: `web: <n>` in concept
+frontmatter budgets *n* searches per run. The harness reconciles that request
+against the resolved provider and tells the agent which answer it got, so a
+budget on a harness that cannot search produces a loud, reported gap rather
+than a silent empty result. On `anthropic-api` the searches run **server-side
+inside the Messages call** (`web_search_20250305`), which is why the cloud
+tier has real external checks without a client tool loop; paused turns are
+continued, and a gateway that refuses the tool degrades the run — correcting
+the agent mid-prompt and marking `degraded` — instead of failing the beat.
+
 **External context** crosses a separate, read-only seam. An agent opts in with
 `sources:` in its concept frontmatter; prompt assembly fetches a current listing
 from `onedrive` (Microsoft Graph) or `github-docs` (GitHub REST in Workers, or a

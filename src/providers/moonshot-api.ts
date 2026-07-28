@@ -38,6 +38,10 @@ export function createMoonshotApiProvider(ctx: ApiProviderContext = {}): AgentWo
 
   return {
     name: "moonshot-api",
+    // Plain chat-completions, no tools array: the worker has nothing but the
+    // prompt. Moonshot's own `$web_search` builtin is NOT wired here — until
+    // it is, claiming web access would recreate issue #4 on this harness.
+    capabilities: { fileReads: false, webSearch: false },
 
     assertConfigured(): void {
       if (!getEnv(env, "MOONSHOT_API_KEY")) {
