@@ -61,11 +61,12 @@ that form pass through; bare names map (`kimi-for-coding` →
 The Claude Code artifact omits `model:` by default — it inherits whatever
 the session runs.
 
-## Defect reports — the feedback loop into the engine (drafts-first)
+## Defect reports — the feedback loop into the engine
 
 An agent whose whitelist carries `defect-report` captures engine bugs as
-**drafts in the instance's own repo** — no credential beyond the store
-write the instance already has (the GitHub App on the cloud tier):
+**drafts in the instance's own repo** (capture needs no credential beyond
+the store write the instance already has) and, in the standard posture,
+**files them as public engine-repo issues in the same run**:
 
 - **Scheduled/direction runs**: end output with a fenced block —
 
@@ -82,9 +83,17 @@ write the instance already has (the GitHub App on the cloud tier):
   ledgered `defect-drafted`). Same title → same file, refreshed — a
   recurring bug is one draft, not one per beat.
 - **Interactive sessions**: the generated artifacts instruct the same
-  drafts-first capture, with filing as a separate step.
+  capture, with filing as a separate step.
 
-**Filing to the public engine repo is deliberate**, not automatic:
+**The standard posture (v0.11.2) is a standing instance PAT**: set the
+`GITHUB_DEFECTS_TOKEN` Worker secret (Issues R/W on the engine repo; a
+year-long expiry is the intended shape — put the renewal on a calendar)
+and runs file leak-clean reports themselves as issues, annotating the
+draft with the URL. Issues are the destination of record; drafts are
+capture + fallback. One token per instance — every brain that carries it
+can open issues.
+
+**Tokenless tiers promote drafts deliberately:**
 
 ```bash
 anima-mesh defect list  [--instance dir]          # what's captured, filed or leaky
@@ -98,12 +107,6 @@ or persona's names or emails is skipped, never filed, never rewritten
 `defect`, title-deduped against open issues) and the URL is written back
 into the draft's `filed:` frontmatter. Credential for this local step: env
 `GITHUB_DEFECTS_TOKEN`/`GITHUB_TOKEN`, else the `gh` CLI session.
-
-Cloud auto-filing exists only as an explicit opt-in: set the
-`GITHUB_DEFECTS_TOKEN` Worker secret (fine-grained PAT, Issues R/W on the
-engine repo only) and runs will file leak-clean reports themselves,
-annotating the draft. Without it — the recommended default — drafts simply
-accumulate in the private repo and nothing external happens.
 
 Grant the whitelist entry deliberately: it belongs on L3 agents whose
 judgment you already trust with reversible actions. Shipped templates do

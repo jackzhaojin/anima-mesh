@@ -16,18 +16,19 @@ import {
 } from "../defects/report-core.js";
 
 /**
- * Apply `defect-report` blocks from a run's output — DRAFTS-FIRST: parse →
- * gate (level + whitelist, one decision for the batch) → save each report
- * as `<drafts>/defects/<slug>.md` via the store, riding the run's own
- * commit. No credential needed on any tier; the instance's existing write
- * path (GitHub App on the cloud) is enough. See defects/report-core.ts for
- * the block format and rationale.
+ * Apply `defect-report` blocks from a run's output: parse → gate (level +
+ * whitelist, one decision for the batch) → capture each report as
+ * `<drafts>/defects/<slug>.md` via the store, riding the run's own commit
+ * — then file leak-clean reports to the public engine repo as issues when
+ * the instance carries its standing PAT (`GITHUB_DEFECTS_TOKEN`, the
+ * standard posture since v0.11.2). See defects/report-core.ts for the
+ * block format and rationale.
  *
- * Filing to the public engine repo happens in-run ONLY when
- * `GITHUB_DEFECTS_TOKEN` is explicitly configured (an opt-in, not a
- * requirement) AND the identity-leak guard passes; otherwise drafts wait
- * for `anima-mesh defect file` (defects/file.ts). Leak hits are recorded
- * on the draft and ledgered — the private draft is safe to keep either way.
+ * Capture itself needs no credential on any tier — the instance's
+ * existing write path is enough — so a tokenless instance still collects
+ * drafts for `anima-mesh defect file` (defects/file.ts), and the
+ * identity-leak guard gates every filing path. Leak hits are recorded on
+ * the draft and ledgered — the private draft is safe to keep either way.
  */
 
 export interface ApplyDefectsOptions {
@@ -80,8 +81,8 @@ export async function applyDefectReports(options: ApplyDefectsOptions): Promise<
     return [];
   }
 
-  // Auto-filing is an explicit opt-in — never the App/store credential, so
-  // an unconfigured instance produces clean drafts, not a 404 per beat.
+  // Auto-filing rides the dedicated token — never the App/store credential
+  // — so a tokenless instance produces clean drafts, not a 404 per beat.
   const autoFileToken = getEnv(options.env, "GITHUB_DEFECTS_TOKEN");
   const repo = engineRepoSlug(config);
 

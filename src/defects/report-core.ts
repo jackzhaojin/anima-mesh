@@ -1,7 +1,7 @@
 import type { InstanceConfig } from "../instance/config-core.js";
 
 /**
- * Defect reports — the mesh's feedback loop INTO the engine, drafts-first.
+ * Defect reports — the mesh's feedback loop INTO the engine.
  *
  * An agent whose whitelist permits `defect-report` may end a run (beat or
  * direction) with fenced blocks:
@@ -12,19 +12,21 @@ import type { InstanceConfig } from "../instance/config-core.js";
  *   <repro steps, expected vs actual, engine version if known>
  *   ```
  *
- * The harness parses, gates (level + whitelist), and saves each report as a
- * DRAFT in the instance's own repo (`<drafts>/defects/<slug>.md`) — riding
- * the run's normal commit, so the cloud tier needs NO extra credential (the
- * instance's existing GitHub App / store write covers it). Same title →
- * same file, refreshed: a recurring engine bug is one draft, not one per
- * beat.
+ * The harness parses, gates (level + whitelist), and captures each report
+ * as a draft in the instance's own repo (`<drafts>/defects/<slug>.md`) —
+ * riding the run's normal commit. Same title → same file, refreshed: a
+ * recurring engine bug is one draft, not one per beat.
  *
- * Filing to the PUBLIC engine repo (`config.engine.repo`) is a separate,
- * deliberate step: `anima-mesh defect file` locally (see defects/file.ts),
- * or automatic in-run ONLY when `GITHUB_DEFECTS_TOKEN` is explicitly
- * configured. Either way the identity-leak guard runs at the public
- * boundary — a report carrying principal/persona identity is never filed
- * (D2/D13), and the leak is recorded on the draft for a human to clean up.
+ * THE STANDARD POSTURE (v0.11.2): the instance carries a standing PAT in
+ * `GITHUB_DEFECTS_TOKEN` (Issues R/W on `config.engine.repo`) and
+ * leak-clean reports file in-run as public GitHub issues, the URL written
+ * back into the draft — issues are the destination of record; drafts are
+ * capture + fallback. One token makes any number of instances
+ * issue-capable. Tokenless tiers promote drafts deliberately with
+ * `anima-mesh defect file` (see defects/file.ts). Either way the
+ * identity-leak guard runs at the public boundary — a report carrying
+ * principal/persona identity is never filed (D2/D13), and the leak is
+ * recorded on the draft for a human to clean up.
  *
  * Workers-safe: fetch + string logic only.
  */
@@ -218,8 +220,9 @@ export function defectCapabilityLines(draftsDir: string): string[] {
     "  <repro, expected vs actual, engine version if known>",
     "  ```",
     `  The harness saves each as a draft under \`${draftsDir}/defects/\` in THIS private repo`,
-    "  (same title → same file, refreshed on recurrence) and ledgers it. Filing to the PUBLIC",
-    "  engine repo happens later, deliberately — so keep every report de-identified anyway:",
-    "  no organization/principal/persona names or emails, no bundle content, mechanics only.",
+    "  (same title → same file, refreshed on recurrence), ledgers it, and — when the instance",
+    "  carries its filing token — files leak-clean reports straight to the PUBLIC engine repo",
+    "  as GitHub issues. Keep every report de-identified: no organization/principal/persona",
+    "  names or emails, no bundle content, mechanics only; a leaky report is never filed.",
   ];
 }

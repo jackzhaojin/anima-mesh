@@ -39,8 +39,9 @@
   // GITHUB_APP_ID, GITHUB_APP_INSTALLATION_ID, GITHUB_APP_PRIVATE_KEY
   // (PKCS#8 PEM — convert GitHub's PKCS#1 download with
   // `openssl pkcs8 -topk8 -nocrypt`, and PIPE the file in:
-  // `wrangler secret put GITHUB_APP_PRIVATE_KEY < app.pem`) — or the legacy
-  // fine-grained PAT in GITHUB_TOKEN when no App var is set; plus
+  // `wrangler secret put GITHUB_APP_PRIVATE_KEY < app.pem`) — or a
+  // standing PAT in GITHUB_TOKEN, used when no App var is set (a
+  // long-lived PAT is a first-class setup, v0.11.2); plus
   // BEAT_TRIGGER_TOKEN;
   // cognition uses MOONSHOT_API_KEY and/or CLAUDE_CODE_OAUTH_TOKEN;
   // Discord surfaces use DISCORD_BOT_TOKEN and DISCORD_DM_USER_ID;
@@ -52,11 +53,13 @@
   // for the 'github-docs' read source GITHUB_DOCS_TOKEN (fine-grained PAT,
   // Contents READ-ONLY on the docs repo; falls back to GITHUB_TOKEN; public
   // repos need none) — validate with GET /docs/check.
-  // `defect-report` blocks need NO secret — they land as drafts in the
-  // instance repo via the store write. OPTIONAL: GITHUB_DEFECTS_TOKEN
-  // (fine-grained PAT, Issues R/W on the ENGINE repo) turns on in-run
-  // auto-filing of leak-clean reports; without it drafts just accumulate
-  // for `anima-mesh defect file`.
+  // `defect-report` capture needs NO secret — blocks land as drafts in
+  // the instance repo via the store write. THE STANDARD POSTURE (v0.11.2)
+  // adds GITHUB_DEFECTS_TOKEN (a standing PAT, Issues R/W on the ENGINE
+  // repo — a year-long expiry is the intended shape; renew on a calendar):
+  // leak-clean reports then auto-file as public issues in-run, and every
+  // instance carrying the token can open issues. Without it drafts just
+  // accumulate for `anima-mesh defect file`.
   // anthropic-api uses subscription OAuth over plain fetch;
   // ANTHROPIC_API_KEY is not used by this adapter.
 }

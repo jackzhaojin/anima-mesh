@@ -129,14 +129,16 @@ default the store to the local directory and register subprocess providers.
 - `drafts.ts` — `draft-request` fenced blocks: parse → gate (level +
   `draft-write` whitelist) → path-jail to the drafts dir → write in the
   run's own flush → ledger. Model proposes, code disposes.
-- `defects.ts` — `defect-report` fenced blocks, DRAFTS-FIRST: parse → gate
-  (level + `defect-report` whitelist) → write
-  `<drafts>/defects/<slug>.md` via the store (rides the run's commit — the
-  cloud tier needs NO extra credential; same title → same file) → ledger
-  `defect-drafted`. Filing to the public engine repo is the deliberate
-  `defect file` CLI step (`defects/file.ts`), or in-run only when
-  `GITHUB_DEFECTS_TOKEN` is explicitly set; the identity-leak guard runs
-  at that public boundary (leaky ⇒ skipped + ledgered, never rewritten).
+- `defects.ts` — `defect-report` fenced blocks: parse → gate (level +
+  `defect-report` whitelist) → capture as
+  `<drafts>/defects/<slug>.md` via the store (rides the run's commit —
+  capture needs NO extra credential; same title → same file) → ledger
+  `defect-drafted` → file leak-clean reports as public engine-repo issues
+  when the instance carries its standing PAT (`GITHUB_DEFECTS_TOKEN`, the
+  standard posture since v0.11.2). Tokenless instances promote drafts via
+  the `defect file` CLI step (`defects/file.ts`); the identity-leak guard
+  runs at the public boundary on every path (leaky ⇒ skipped + ledgered,
+  never rewritten).
 - `verifiers-core.ts` / `verifiers.ts` — the three seam checks
   (+ conformance): expected outputs exist, no gated ledger entry without its
   approval, all declared actions logged, bundle still conformant. Store-aware

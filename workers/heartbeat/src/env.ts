@@ -27,7 +27,7 @@ export interface Env {
   GITHUB_APP_ID?: string; // GitHub App auth (preferred): all three or none
   GITHUB_APP_INSTALLATION_ID?: string;
   GITHUB_APP_PRIVATE_KEY?: string; // PKCS#8 PEM (convert GitHub's PKCS#1 download first)
-  GITHUB_TOKEN?: string; // legacy PAT path — used only when no App var is set
+  GITHUB_TOKEN?: string; // PAT path for the brain store — a standing long-lived PAT is a first-class setup (v0.11.2); used when no App var is set
   MOONSHOT_API_KEY: string; // cognition for moonshot-api; optional in practice when no effective agent uses it
   DISCORD_BOT_TOKEN?: string;
   DISCORD_DM_USER_ID?: string; // doubles as the direction sender allowlist (v1: the principal only)
@@ -41,7 +41,7 @@ export interface Env {
   MSGRAPH_CLIENT_SECRET?: string; // absent for public clients (device-code consent)
   MSGRAPH_REFRESH_TOKEN?: string;
   GITHUB_DOCS_TOKEN?: string; // fine-grained PAT, Contents READ-ONLY on the docs repo; falls back to GITHUB_TOKEN
-  GITHUB_DEFECTS_TOKEN?: string; // fine-grained PAT, Issues R/W on the ENGINE repo — defect-report filings
+  GITHUB_DEFECTS_TOKEN?: string; // PAT with Issues R/W on the ENGINE repo — the STANDARD posture (v0.11.2): set it and leak-clean defect reports auto-file as issues
 }
 
 /** Flatten the Worker env into the engine's injectable env record. */

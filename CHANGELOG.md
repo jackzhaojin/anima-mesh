@@ -3,7 +3,7 @@
 AnimaMesh is pre-1.0, so this history is organized by **minor release line**:
 the capability boundary operators actually adopt. Patch tags are deliberately
 rolled into the value and maturity of their minor rather than narrated one by
-one. The latest tag is **v0.10.1**.
+one. The latest tag is **v0.11.2**.
 
 ## Upgrade procedure
 
@@ -32,7 +32,21 @@ The ledger remains append-only; never "migrate" it by editing old entries.
 
 ## [v0.11.x] — the third tier: local interactive surfaces + engine defect telemetry
 
-**Latest tag: v0.11.1 · 2026-07-23**
+**Latest tag: v0.11.2 · 2026-07-27**
+
+**v0.11.2 (posture revision, docs/comments only — no behavior change):
+the standing instance PAT is the STANDARD defect posture.** Operator
+decision: a long-lived (year-scale) PAT in `GITHUB_DEFECTS_TOKEN` is now
+the expected setup, not an opt-in — leak-clean `defect-report`s auto-file
+as public engine-repo issues in-run, issues are the destination of
+record, and drafts are capture + fallback. One token per instance means
+any number of instances can open issues. `GITHUB_TOKEN` (the store's PAT
+path) is likewise de-stigmatized from "legacy" to first-class — a single
+broad PAT can both manage the instance repo and file issues. Nothing
+mechanical moved: capture is still credential-free, the identity-leak
+guard still gates every public path, `defect file` still serves tokenless
+tiers. Put the PAT's renewal on a calendar; an expired token degrades
+gracefully back to drafts-only.
 
 **v0.11.1 (same-day revision, before any adopter): defects are
 DRAFTS-FIRST.** A `defect-report` block now writes
