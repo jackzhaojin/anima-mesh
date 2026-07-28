@@ -17,18 +17,20 @@ import {
 
 /**
  * Apply `defect-report` blocks from a run's output: parse → gate (level +
- * whitelist, one decision for the batch) → capture each report as
- * `<drafts>/defects/<slug>.md` via the store, riding the run's own commit
- * — then file leak-clean reports to the public engine repo as issues when
- * the instance carries its standing PAT (`GITHUB_DEFECTS_TOKEN`, the
- * standard posture since v0.11.2). See defects/report-core.ts for the
- * block format and rationale.
+ * whitelist, one decision for the batch) → ISSUE-FIRST (v0.11.4): with the
+ * instance's standing PAT (`GITHUB_DEFECTS_TOKEN`, the standard posture
+ * since v0.11.2) a leak-clean report files DIRECTLY to the public engine
+ * repo and leaves no draft — the issue tracker is the record. A draft
+ * (`<drafts>/defects/<slug>.md`, riding the run's own commit) is written
+ * only when filing can't happen here: no token, missing engine.repo, an
+ * identity-leak hit, or the API call failing. See defects/report-core.ts
+ * for the block format and rationale.
  *
- * Capture itself needs no credential on any tier — the instance's
- * existing write path is enough — so a tokenless instance still collects
- * drafts for `anima-mesh defect file` (defects/file.ts), and the
- * identity-leak guard gates every filing path. Leak hits are recorded on
- * the draft and ledgered — the private draft is safe to keep either way.
+ * Draft capture needs no credential on any tier — the instance's existing
+ * write path is enough — so a tokenless instance still collects drafts for
+ * `anima-mesh defect file` (defects/file.ts), and the identity-leak guard
+ * gates every filing path. Leak hits are recorded on the draft and
+ * ledgered — the private draft is safe to keep either way.
  */
 
 export interface ApplyDefectsOptions {
@@ -45,7 +47,7 @@ export interface ApplyDefectsOptions {
   fetchImpl?: typeof fetch;
 }
 
-/** Instance-relative draft paths written this run. */
+/** Issue URLs filed and/or instance-relative draft paths written this run. */
 export async function applyDefectReports(options: ApplyDefectsOptions): Promise<string[]> {
   const { store, config, agent, runId, clock, progress } = options;
   const reports = parseDefectReports(options.text);
@@ -94,30 +96,41 @@ export async function applyDefectReports(options: ApplyDefectsOptions): Promise<
     }
     const leaked = identityLeakGuard(`${report.title}\n${report.body}`, config);
     const rel = `${config.drafts}/defects/${defectDraftSlug(report.title)}.md`;
-    const draft = (filedUrl?: string) =>
-      defectDraftContent({
-        title: report.title,
-        body: report.body,
-        agent: agent.name,
-        runId,
-        seenAt: clock(),
-        leaked: leaked.length > 0 ? leaked : undefined,
-        filedUrl,
-      });
-    await store.writeFile(rel, draft());
-    await store.appendLedger({
-      ts: clock(),
-      runId,
-      agent: agent.name,
-      action: "defect-drafted",
-      type: "defect-report",
-      detail: { title: report.title, path: rel, ...(leaked.length > 0 ? { leakCheck: leaked } : {}) },
-    });
-    progress(`run ${runId.slice(0, 8)}: defect drafted — ${rel}`);
-    written.push(rel);
 
-    if (!autoFileToken) continue;
-    if (!repo) {
+    // Issue-first: a clean report with a token files directly and leaves no
+    // draft. Every non-filing branch below falls through to the draft write.
+    if (autoFileToken && repo && leaked.length === 0) {
+      try {
+        const issue = await createDefectIssue({
+          repo,
+          title: report.title,
+          body: report.body,
+          token: autoFileToken,
+          fetchImpl: options.fetchImpl,
+        });
+        await store.appendLedger({
+          ts: clock(),
+          runId,
+          agent: agent.name,
+          action: "defect-filed",
+          type: "defect-report",
+          detail: { title: report.title, url: issue.url, number: issue.number, duplicate: issue.duplicate },
+        });
+        progress(`run ${runId.slice(0, 8)}: defect ${issue.duplicate ? "already filed" : "filed"} — ${issue.url}`);
+        written.push(issue.url);
+        continue;
+      } catch (err) {
+        await store.appendLedger({
+          ts: clock(),
+          runId,
+          agent: agent.name,
+          action: "defect-file-skipped",
+          type: "defect-report",
+          detail: { title: report.title, reason: err instanceof Error ? err.message : String(err) },
+        });
+        progress(`run ${runId.slice(0, 8)}: defect filing failed — drafting instead`);
+      }
+    } else if (autoFileToken && !repo) {
       await store.appendLedger({
         ts: clock(),
         runId,
@@ -126,9 +139,7 @@ export async function applyDefectReports(options: ApplyDefectsOptions): Promise<
         type: "defect-report",
         detail: { title: report.title, reason: "config.engine.repo is missing or not owner/name-shaped" },
       });
-      continue;
-    }
-    if (leaked.length > 0) {
+    } else if (autoFileToken && leaked.length > 0) {
       await store.appendLedger({
         ts: clock(),
         runId,
@@ -140,38 +151,30 @@ export async function applyDefectReports(options: ApplyDefectsOptions): Promise<
           reason: `identity leak — the engine repo is public and the report contains: ${leaked.join(", ")}`,
         },
       });
-      progress(`run ${runId.slice(0, 8)}: defect filing skipped (identity leak) — draft kept at ${rel}`);
-      continue;
+      progress(`run ${runId.slice(0, 8)}: defect filing skipped (identity leak) — drafting privately`);
     }
-    try {
-      const issue = await createDefectIssue({
-        repo,
+
+    await store.writeFile(
+      rel,
+      defectDraftContent({
         title: report.title,
         body: report.body,
-        token: autoFileToken,
-        fetchImpl: options.fetchImpl,
-      });
-      await store.writeFile(rel, draft(issue.url));
-      await store.appendLedger({
-        ts: clock(),
-        runId,
         agent: agent.name,
-        action: "defect-filed",
-        type: "defect-report",
-        detail: { title: report.title, url: issue.url, number: issue.number, duplicate: issue.duplicate },
-      });
-      progress(`run ${runId.slice(0, 8)}: defect ${issue.duplicate ? "already filed" : "filed"} — ${issue.url}`);
-    } catch (err) {
-      await store.appendLedger({
-        ts: clock(),
         runId,
-        agent: agent.name,
-        action: "defect-file-skipped",
-        type: "defect-report",
-        detail: { title: report.title, reason: err instanceof Error ? err.message : String(err) },
-      });
-      progress(`run ${runId.slice(0, 8)}: defect filing failed — draft kept at ${rel}`);
-    }
+        seenAt: clock(),
+        leaked: leaked.length > 0 ? leaked : undefined,
+      }),
+    );
+    await store.appendLedger({
+      ts: clock(),
+      runId,
+      agent: agent.name,
+      action: "defect-drafted",
+      type: "defect-report",
+      detail: { title: report.title, path: rel, ...(leaked.length > 0 ? { leakCheck: leaked } : {}) },
+    });
+    progress(`run ${runId.slice(0, 8)}: defect drafted — ${rel}`);
+    written.push(rel);
   }
   const overflow = reports.slice(MAX_DEFECTS_PER_RUN);
   if (overflow.length > 0) {

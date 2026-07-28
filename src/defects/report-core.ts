@@ -12,21 +12,21 @@ import type { InstanceConfig } from "../instance/config-core.js";
  *   <repro steps, expected vs actual, engine version if known>
  *   ```
  *
- * The harness parses, gates (level + whitelist), and captures each report
- * as a draft in the instance's own repo (`<drafts>/defects/<slug>.md`) —
- * riding the run's normal commit. Same title → same file, refreshed: a
- * recurring engine bug is one draft, not one per beat.
+ * THE STANDARD POSTURE (v0.11.2, issue-first since v0.11.4): the instance
+ * carries a standing PAT in `GITHUB_DEFECTS_TOKEN` (Issues R/W on
+ * `config.engine.repo`) and the harness files leak-clean reports DIRECTLY
+ * as public GitHub issues, title-deduped, leaving no draft — the issue
+ * tracker is the record. One token makes any number of instances
+ * issue-capable.
  *
- * THE STANDARD POSTURE (v0.11.2): the instance carries a standing PAT in
- * `GITHUB_DEFECTS_TOKEN` (Issues R/W on `config.engine.repo`) and
- * leak-clean reports file in-run as public GitHub issues, the URL written
- * back into the draft — issues are the destination of record; drafts are
- * capture + fallback. One token makes any number of instances
- * issue-capable. Tokenless tiers promote drafts deliberately with
- * `anima-mesh defect file` (see defects/file.ts). Either way the
- * identity-leak guard runs at the public boundary — a report carrying
- * principal/persona identity is never filed (D2/D13), and the leak is
- * recorded on the draft for a human to clean up.
+ * A draft in the instance's own repo (`<drafts>/defects/<slug>.md`,
+ * riding the run's normal commit; same title → same file) is written only
+ * when filing can't happen: no token, missing engine.repo, an
+ * identity-leak hit, or an API failure. Tokenless tiers promote drafts
+ * deliberately with `anima-mesh defect file` (see defects/file.ts).
+ * Either way the identity-leak guard runs at the public boundary — a
+ * report carrying principal/persona identity is never filed (D2/D13),
+ * and the leak is recorded on the draft for a human to clean up.
  *
  * Workers-safe: fetch + string logic only.
  */
@@ -219,10 +219,11 @@ export function defectCapabilityLines(draftsDir: string): string[] {
     "  ---",
     "  <repro, expected vs actual, engine version if known>",
     "  ```",
-    `  The harness saves each as a draft under \`${draftsDir}/defects/\` in THIS private repo`,
-    "  (same title → same file, refreshed on recurrence), ledgers it, and — when the instance",
-    "  carries its filing token — files leak-clean reports straight to the PUBLIC engine repo",
-    "  as GitHub issues. Keep every report de-identified: no organization/principal/persona",
-    "  names or emails, no bundle content, mechanics only; a leaky report is never filed.",
+    "  When the instance carries its filing token, the harness files leak-clean reports",
+    "  straight to the PUBLIC engine repo as GitHub issues (title-deduped) and ledgers them —",
+    `  no draft is kept. Only when filing can't happen (no token, an identity leak, an API`,
+    `  failure) does it save a private draft under \`${draftsDir}/defects/\` instead. Keep every`,
+    "  report de-identified: no organization/principal/persona names or emails, no bundle",
+    "  content, mechanics only; a leaky report is never filed.",
   ];
 }

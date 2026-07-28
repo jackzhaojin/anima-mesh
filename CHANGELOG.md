@@ -3,7 +3,7 @@
 AnimaMesh is pre-1.0, so this history is organized by **minor release line**:
 the capability boundary operators actually adopt. Patch tags are deliberately
 rolled into the value and maturity of their minor rather than narrated one by
-one. The latest tag is **v0.11.3**.
+one. The latest tag is **v0.11.4**.
 
 ## Upgrade procedure
 
@@ -32,7 +32,18 @@ The ledger remains append-only; never "migrate" it by editing old entries.
 
 ## [v0.11.x] — the third tier: local interactive surfaces + engine defect telemetry
 
-**Latest tag: v0.11.3 · 2026-07-27**
+**Latest tag: v0.11.4 · 2026-07-27**
+
+**v0.11.4 (behavior refinement, operator decision): defect filing is
+ISSUE-FIRST — no draft left behind.** With `GITHUB_DEFECTS_TOKEN` set, a
+leak-clean `defect-report` now files directly as a public engine-repo
+issue and writes NO draft — the issue tracker is the record. A draft in
+the instance repo appears only when filing can't happen: no token,
+missing `engine.repo`, an identity-leak hit, or an API failure (the
+failure reason is ledgered and the run falls back gracefully).
+`applyDefectReports` returns issue URLs and/or draft paths accordingly.
+Ledger vocabulary, the 2/run cap, title-dedup, and the leak guard are
+unchanged; `defect file` still promotes fallback drafts.
 
 **v0.11.3 (fix): `defect file <slug> --instance <dir>` no longer reads
 the `--instance` value as a slug.** The `defect` subcommand's positional

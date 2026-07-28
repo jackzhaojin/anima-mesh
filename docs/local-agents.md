@@ -63,10 +63,9 @@ the session runs.
 
 ## Defect reports — the feedback loop into the engine
 
-An agent whose whitelist carries `defect-report` captures engine bugs as
-**drafts in the instance's own repo** (capture needs no credential beyond
-the store write the instance already has) and, in the standard posture,
-**files them as public engine-repo issues in the same run**:
+An agent whose whitelist carries `defect-report` reports engine bugs —
+in the standard posture they **file directly as public engine-repo issues
+in the same run**, with a private draft only as the fallback:
 
 - **Scheduled/direction runs**: end output with a fenced block —
 
@@ -78,20 +77,22 @@ the store write the instance already has) and, in the standard posture,
   ```
   ~~~
 
-  The harness gates it (ladder level + whitelist) and writes
-  `<drafts>/defects/<slug>.md`, riding the run's own commit (cap 2/run,
-  ledgered `defect-drafted`). Same title → same file, refreshed — a
-  recurring bug is one draft, not one per beat.
+  The harness gates it (ladder level + whitelist), then files it as an
+  issue when it can (cap 2/run, ledgered `defect-filed`, title-deduped —
+  a recurring bug is one issue, not one per beat) or writes
+  `<drafts>/defects/<slug>.md` riding the run's own commit when it can't
+  (ledgered `defect-drafted`; same title → same file, refreshed).
 - **Interactive sessions**: the generated artifacts instruct the same
   capture, with filing as a separate step.
 
-**The standard posture (v0.11.2) is a standing instance PAT**: set the
-`GITHUB_DEFECTS_TOKEN` Worker secret (Issues R/W on the engine repo; a
-year-long expiry is the intended shape — put the renewal on a calendar)
-and runs file leak-clean reports themselves as issues, annotating the
-draft with the URL. Issues are the destination of record; drafts are
-capture + fallback. One token per instance — every brain that carries it
-can open issues.
+**The standard posture (v0.11.2, issue-first since v0.11.4) is a
+standing instance PAT**: set the `GITHUB_DEFECTS_TOKEN` Worker secret
+(Issues R/W on the engine repo; a year-long expiry is the intended shape
+— put the renewal on a calendar) and runs file leak-clean reports
+directly as issues, keeping **no draft** — the issue tracker is the
+record. A draft appears only when filing can't happen: no token, an
+identity-leak hit, or an API failure. One token per instance — every
+brain that carries it can open issues.
 
 **Tokenless tiers promote drafts deliberately:**
 

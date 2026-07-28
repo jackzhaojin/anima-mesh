@@ -20,13 +20,14 @@ import type { InstanceConfig } from "../src/instance/config-core.js";
 import { DEFAULT_CONFIG } from "../src/instance/config-core.js";
 
 /**
- * Defect reports — the mesh's feedback loop into the engine, DRAFTS-FIRST.
+ * Defect reports — the mesh's feedback loop into the engine, ISSUE-FIRST.
  * These prove the contract from defects/report-core.ts + harness/defects.ts
- * + defects/file.ts: a defect-report block becomes a draft in the instance's
- * own repo with NO credential (the store write covers it); filing to the
- * public engine repo is a deliberate later step (or an explicit-token
- * opt-in), and the identity-leak guard runs at that public boundary
- * (D2/D13). Model proposes, code disposes.
+ * + defects/file.ts: with the instance's standing token a leak-clean
+ * defect-report files directly as a public engine-repo issue and leaves no
+ * draft; a draft in the instance's own repo (NO credential — the store
+ * write covers it) exists only when filing can't happen (no token, leak,
+ * API failure), for later `defect file` promotion. The identity-leak guard
+ * runs at the public boundary (D2/D13). Model proposes, code disposes.
  */
 
 const roots: string[] = [];
@@ -200,7 +201,7 @@ const CLEAN_REPORT = [
   "",
 ].join("\n");
 
-describe("defect-report through a beat run — drafts-first, no credential needed", () => {
+describe("defect-report through a beat run — issue-first; drafts are the fallback", () => {
   it("whitelisted L3 agent gets a draft in drafts/defects/, ledgered, verifiers green — zero network", async () => {
     const root = await makeInstance({ whitelist: ["defect-report"] });
     const { fetchImpl, posts } = githubStub();
@@ -231,7 +232,7 @@ describe("defect-report through a beat run — drafts-first, no credential neede
     expect(drafts[0]!.runId).toBe("run-b");
   });
 
-  it("with GITHUB_DEFECTS_TOKEN explicitly set, the run also files and annotates the draft", async () => {
+  it("with GITHUB_DEFECTS_TOKEN set, a clean report files directly — issue only, NO draft", async () => {
     const root = await makeInstance({ whitelist: ["defect-report"] });
     const { fetchImpl, posts } = githubStub();
     await runAgent({
@@ -242,10 +243,27 @@ describe("defect-report through a beat run — drafts-first, no credential neede
       providerCtx: { env: { GITHUB_DEFECTS_TOKEN: "tok" }, fetchImpl },
     });
     expect(posts).toHaveLength(1);
-    const draft = await readFile(path.join(root, `drafts/defects/${CLEAN_SLUG}.md`), "utf8");
-    expect(draft).toContain("filed: https://github.com/example/engine/issues/9");
+    expect(existsSync(path.join(root, `drafts/defects/${CLEAN_SLUG}.md`))).toBe(false);
     const entries = new Ledger(path.join(root, "ledger/actions.jsonl")).entriesForRun("run-autofile");
     expect(entries.some((e) => e.action === "defect-filed")).toBe(true);
+    expect(entries.some((e) => e.action === "defect-drafted")).toBe(false);
+  });
+
+  it("with a token but a failing API, the report falls back to a draft with the reason ledgered", async () => {
+    const root = await makeInstance({ whitelist: ["defect-report"] });
+    const failingFetch = (async () => new Response("boom", { status: 500 })) as typeof fetch;
+    await runAgent({
+      instanceRoot: root,
+      agentName: "hub",
+      provider: new FakeProvider(() => ({ text: CLEAN_REPORT })),
+      runId: "run-fallback",
+      providerCtx: { env: { GITHUB_DEFECTS_TOKEN: "tok" }, fetchImpl: failingFetch },
+    });
+    const draft = await readFile(path.join(root, `drafts/defects/${CLEAN_SLUG}.md`), "utf8");
+    expect(draft).toContain("filed: no");
+    const entries = new Ledger(path.join(root, "ledger/actions.jsonl")).entriesForRun("run-fallback");
+    expect(entries.some((e) => e.action === "defect-file-skipped")).toBe(true);
+    expect(entries.some((e) => e.action === "defect-drafted")).toBe(true);
   });
 
   it("a leaky report still drafts (private repo) but auto-filing is skipped with the reason ledgered", async () => {
