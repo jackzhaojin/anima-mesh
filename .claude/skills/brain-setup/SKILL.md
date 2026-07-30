@@ -14,6 +14,12 @@ the right roster, and leaving the user with a validated instance and clear
 next steps. Background reading if you need it:
 [docs/starting-a-company.md](../../../docs/starting-a-company.md).
 
+When the user wants to see what a *finished* brain looks like — or you need
+a reference shape for any concept (a nag file, a prep pack, a CRM record, a
+promoted hub) — read [docs/sample-brain/](../../../docs/sample-brain/README.md):
+a complete scrubbed production instance that validates and runs
+credential-free. Copy shapes from it freely; never copy its fictional facts.
+
 ## Step 0 — offer the two paths
 
 Ask one question before anything else:

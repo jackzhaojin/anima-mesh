@@ -4,7 +4,9 @@
 half of the story is [architecture.md](architecture.md); the path to
 building your own is [starting-a-company.md](starting-a-company.md). This
 page is the show-and-tell: what the files actually look like after months
-of operation.*
+of operation. Want it as actual files? [sample-brain/](sample-brain/README.md)
+is this instance scrubbed into a complete runnable brain — validate it, run
+it credential-free, copy its shapes.*
 
 ![Anatomy of a brain](brain-anatomy.svg)
 

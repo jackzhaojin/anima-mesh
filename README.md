@@ -210,6 +210,10 @@ pnpm cli report --instance ../my-brain
 The init's acceptance test is its demo: **empty directory in, conformant brain
 out** — checked by the same validator every instance is checked by.
 
+Prefer to see a brain already filled in and working? [docs/sample-brain/](docs/sample-brain/README.md)
+is a complete scrubbed production instance — validate it, run it
+credential-free, and copy its shapes into your own.
+
 Next, push the brain to a private GitHub repository and follow
 [Deploying the cloud tier](docs/deploying-cloud.md). That is the normal
 always-on runtime: one Worker for heartbeats and directions, an optional
@@ -223,6 +227,7 @@ separately credentialed dashboard Worker, and one evidence commit per run.
 | [docs/architecture.md](docs/architecture.md) | The whole system on one page: cloud diagram, Discord flows, design constraints |
 | [docs/heartbeat-anatomy.md](docs/heartbeat-anatomy.md) | One beat, step by step: the DO alarm, the due decision, spokes-first/hub-last |
 | [docs/a-typical-brain.md](docs/a-typical-brain.md) | Show-and-tell: a real production instance, de-identified — start here for a demo |
+| [docs/sample-brain/](docs/sample-brain/README.md) | That instance as files: a complete scrubbed brain that validates and runs credential-free |
 | [docs/starting-a-company.md](docs/starting-a-company.md) | Empty directory → a mesh running a real company (repeatable for company #2, #3, …) |
 | [docs/deploying-cloud.md](docs/deploying-cloud.md) | Generic Cloudflare runbook: two Workers, secrets contract, Discord wiring |
 | [docs/local-agents.md](docs/local-agents.md) | The interactive tier: `export-local` agent artifacts + the `defect-report` loop |

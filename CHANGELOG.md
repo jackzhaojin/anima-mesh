@@ -28,7 +28,10 @@ The ledger remains append-only; never "migrate" it by editing old entries.
 
 ## [Unreleased]
 
-(nothing yet)
+- **docs: `docs/sample-brain/`** — a complete scrubbed production instance
+  (27 concepts, curated reports, prep pack, ledger) that passes `validate`
+  and runs credential-free via a `cognition.overrides` remap to the `fake`
+  provider. Reference shapes for new brains; demo-safe by construction.
 
 ## [v0.12.x] — capability truth, and real web search on the cloud tier
 

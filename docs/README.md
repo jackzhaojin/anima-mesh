@@ -19,20 +19,25 @@ specifics (those live in each instance's own repo — see the boundary doc).
 5. [a-typical-brain.md](a-typical-brain.md) — show-and-tell: a real
    production instance de-identified, with the brain-anatomy and
    dynamic-roster diagrams (start here for a talk or demo)
-6. [starting-a-company.md](starting-a-company.md) — empty directory → a
+6. [sample-brain/](sample-brain/README.md) — that instance **as files**:
+   a complete scrubbed brain that validates and runs credential-free
+   (`pnpm cli run chief-of-staff --instance docs/sample-brain`); its
+   [bundle/index.md](sample-brain/bundle/index.md) explains how every
+   piece ties into the daily loop
+7. [starting-a-company.md](starting-a-company.md) — empty directory → a
    mesh running a real company; opens with the two-repo topology diagram
    (what's in the engine vs. what's in your brain); the
    [brain-setup skill](../.claude/skills/brain-setup/SKILL.md) automates it
-7. [deploying-cloud.md](deploying-cloud.md) — the generic Cloudflare
+8. [deploying-cloud.md](deploying-cloud.md) — the generic Cloudflare
    runbook (two Workers, secrets contract, Discord wiring, multi-company)
-8. [okf-crm-domain.md](okf-crm-domain.md) — the first front-office domain
+9. [okf-crm-domain.md](okf-crm-domain.md) — the first front-office domain
    shelf: CRM as typed concepts, with compliance screens encoded in data
-9. [local-agents.md](local-agents.md) — the third tier: compile any agent
-   concept into Claude Code + opencode interactive surfaces
-   (`export-local`), and the `defect-report` loop back into this repo —
-   issue-first with the instance's standing PAT, deterministic at every
-   trust-bearing step (gate, leak guard, dedup, ledger)
-10. [learnings/](learnings/README.md) — hard-won platform knowledge with
+10. [local-agents.md](local-agents.md) — the third tier: compile any agent
+    concept into Claude Code + opencode interactive surfaces
+    (`export-local`), and the `defect-report` loop back into this repo —
+    issue-first with the instance's standing PAT, deterministic at every
+    trust-bearing step (gate, leak guard, dedup, ledger)
+11. [learnings/](learnings/README.md) — hard-won platform knowledge with
     evidence; **check here first when a vendor edge misbehaves**
 
 Upgrading, or wondering when a behavior changed? [../CHANGELOG.md](../CHANGELOG.md)

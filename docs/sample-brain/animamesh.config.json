@@ -1,0 +1,42 @@
+{
+  "bundle": "bundle",
+  "ledger": "ledger/actions.jsonl",
+  "approvals": "approvals",
+  "reports": "reports",
+  "drafts": "drafts",
+  "engine": {
+    "repo": "github.com/jackzhaojin/anima-mesh",
+    "ref": "v0.12.0",
+    "localPath": "../.."
+  },
+  "identity": {
+    "principal": {
+      "name": "Casey Lund",
+      "email": "casey@copperline.example"
+    },
+    "persona": {
+      "name": "Mira Solen",
+      "emails": [
+        "mira.solen@copperline.example"
+      ]
+    }
+  },
+  "activation": {
+    "boundaryMapVerified": false,
+    "optionTrigger": null,
+    "founderWaiver": false
+  },
+  "delivery": {
+    "channels": [
+      "discord"
+    ],
+    "deliverAgent": "chief-of-staff"
+  },
+  "cognition": {
+    "overrides": {
+      "anthropic-api": { "harness": "fake", "model": "fake" },
+      "opencode": { "harness": "fake", "model": "fake" },
+      "claude-code": { "harness": "fake", "model": "fake" }
+    }
+  }
+}

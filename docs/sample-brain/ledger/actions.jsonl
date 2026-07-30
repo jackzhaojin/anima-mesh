@@ -1,0 +1,8 @@
+{"ts":"2026-07-20T12:00:03.114Z","runId":"9c4e7b2a-1d3f-4c58-9e02-b7a5d4f81c36","agent":"research-watch","action":"run-started","type":"report"}
+{"ts":"2026-07-20T12:04:41.892Z","runId":"9c4e7b2a-1d3f-4c58-9e02-b7a5d4f81c36","agent":"research-watch","action":"report-written","type":"report","detail":{"path":"reports/2026-07-20-research-watch-9c4e7b2a.md"}}
+{"ts":"2026-07-20T12:04:42.031Z","runId":"9c4e7b2a-1d3f-4c58-9e02-b7a5d4f81c36","agent":"research-watch","action":"run-completed","type":"report"}
+{"ts":"2026-07-21T12:00:02.870Z","runId":"3f8a2c1d-5b7e-4a90-b214-8d6f0c3e9a17","agent":"chief-of-staff","action":"run-started","type":"report"}
+{"ts":"2026-07-21T12:05:17.664Z","runId":"3f8a2c1d-5b7e-4a90-b214-8d6f0c3e9a17","agent":"chief-of-staff","action":"report-written","type":"report","detail":{"path":"reports/2026-07-21-chief-of-staff-3f8a2c1d.md"}}
+{"ts":"2026-07-21T12:05:17.851Z","runId":"3f8a2c1d-5b7e-4a90-b214-8d6f0c3e9a17","agent":"chief-of-staff","action":"schedule-updated","type":"schedule","detail":{"wake":["compliance-ops"]}}
+{"ts":"2026-07-21T12:05:18.007Z","runId":"3f8a2c1d-5b7e-4a90-b214-8d6f0c3e9a17","agent":"chief-of-staff","action":"run-completed","type":"report"}
+{"ts":"2026-07-22T12:00:01.442Z","runId":"b81d4e6f-2a90-47c3-8f15-c9d2e7a30b58","agent":"heartbeat","action":"wake-consumed","type":"schedule","detail":{"agents":["compliance-ops"]}}
