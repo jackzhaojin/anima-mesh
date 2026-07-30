@@ -1,8 +1,9 @@
 # test/ — the regression suite
 
-`pnpm verify` = typecheck (src **and** test) + this suite + the Worker's
-workerd suite (`pnpm test:worker`). It is the contract: green before every
-commit, no exceptions. No network, no real model calls, no static fixtures —
+`pnpm verify` = typecheck (src **and** test) + this suite + both Workers'
+typechecks and suites (`typecheck:worker`/`test:worker` for the heartbeat
+Worker, `typecheck:web`/`test:web` for the web Worker). It is the contract:
+green before every commit, no exceptions. No network, no real model calls, no static fixtures —
 everything builds in temp dirs via `helpers.ts` and runs against
 `FakeProvider`.
 
@@ -29,16 +30,75 @@ everything builds in temp dirs via `helpers.ts` and runs against
   completes a run; agentic enrichment adopts valid suggestions, strips unknown
   agents, survives fenced/prose JSON, falls back on garbage, and never
   overrides an explicit human choice.
-- **cli.test.ts** — every command driven in-process (`main(argv)` → exit
-  code): init/validate/run/gate/report/templates, including failure exits.
+- **cli.test.ts** — the CLI (11 commands) driven in-process (`main(argv)` →
+  exit code): init/validate/run/gate/report/templates plus
+  `defect list`/`defect file` — including the v0.11.3 positional-parsing
+  regression: `defect file --instance <dir>` must never read the flag value
+  as a subcommand or slug (exit 2) — and failure exits throughout.
+- **capabilities.test.ts** — the issue #4 regression suite, the v0.12
+  capability contract: the prompt states what the harness grants and that it
+  overrides the job description; a declared-but-unavailable `web:` budget is
+  LOUD ("do NOT attempt fetches, report the gap"); the budget reaches the
+  provider only when the harness can search; an undeclared provider reads as
+  `NO_CAPABILITIES`; `web:` frontmatter parsing (opt-in, nonsense = 0).
+- **cognition-override.test.ts** — `cognition.overrides`: declared harness
+  stays the agent's identity while the override runs; evidence records what
+  actually ran; the cloud gate judges the EFFECTIVE harness both directions;
+  directions honor the override too.
+- **schedule.test.ts** — the `ops/schedule.md` surface: wakes consumed in
+  place and ledgered, pause beats wake (the contradiction stays on file),
+  cadence overrides change the due decision, wakes never bypass the tier or
+  the commercial dual gate, the gated `schedule-request` path (L3 + whitelist
+  applies; L1 or missing whitelist denied), and schedule conformance.
+- **drafts.test.ts** — `draft-request` blocks, model proposes / code
+  disposes: parse/strip, the path jail, L3-with-whitelist applies while L1 is
+  denied, escapes jailed, runaway runs capped — and the direction-run
+  DM-to-artifact loop.
+- **defects.test.ts** — the defect loop: block parsing, the identity-leak
+  guard (D2/D13 at the public boundary), issue-first with a token (labeled
+  issue, UA header, title-dedup, NO draft), draft fallback on no-token / API
+  failure / leak, whitelist denial, the per-run cap, and `defect file`
+  promotion re-running the leak guard on current content.
+- **direction.test.ts** — `runDirectionCore`: evidence artifact + the
+  `direction-*` ledger trio, a midday direction never eats the daily dedup,
+  brief delivery stays blind to direction artifacts, agent resolution order,
+  the 1900-char reply cap, and the commercial dual gate holding.
+- **local-agents.test.ts** — the local-surface compile contract: both
+  artifacts with identical persona bodies and surface-specific frontmatter,
+  hub-under-persona naming, roster selection honoring D11 (dual-gated agents
+  skipped by `--all`, loud on explicit request), `exportLocalAgents` + the
+  CLI command + scaffold writing artifacts out of the box.
+- **github-auth.test.ts** — `githubToken`: the PAT path with zero network,
+  the App path minting an installation token with a verifiable RS256 JWT +
+  User-Agent, near-expiry caching, App-over-PAT precedence, loud
+  partial-config failure, and the PKCS#1 conversion hint.
+- **github-docs.test.ts** — the `github-docs` source both ways: REST listing
+  (User-Agent always, token fallback chain, bounds + truncation surfaced)
+  and the local working tree via injected `SourceFs` (same scoping, API
+  fallback when the capability is absent); binary refusal, root-escape
+  refusal, and outages becoming honest prompt sections, never aborted runs.
+- **gmail-inbound.test.ts** — the inbound Gmail poll: unread-from-allowlisted
+  senders only (never open), the From header re-checked client-side, one
+  unreadable message never kills the poll, mark-read as the dedup contract.
+- **msgraph.test.ts** — the `onedrive` source: refresh grant with NO secret
+  for public clients, bounded breadth-first cabinet walk following shortcuts
+  into remote drives, pagination, truncation reported instead of walking
+  forever, clipped text-only reads, and unconfigured/outage = honest
+  sections.
 - **channels.test.ts / heartbeat-card.test.ts** — delivery channels against
   mocked fetch (env injection, per-channel auth failures); heartbeat
   due/skip/dedup semantics; the agent card excludes dual-gated agents and
   declares `streaming: false`.
-- **providers-moonshot.test.ts / providers-claude-sdk.test.ts** — the API
-  providers against mocked fetch / a mocked SDK module (never a subprocess):
-  request shape, retry/backoff, timeouts, env-binding, no key leakage;
-  `CLOUD_HARNESSES` contains exactly the fetch-only harnesses.
+- **providers-moonshot.test.ts / providers-anthropic.test.ts /
+  providers-claude-sdk.test.ts** — the API providers against mocked fetch / a
+  mocked SDK module (never a subprocess): request shape, retry/backoff,
+  timeouts, env-binding, no key leakage; `CLOUD_HARNESSES` contains exactly
+  the fetch-only harnesses. The anthropic file adds the v0.12 behaviors:
+  server-side web search spends exactly the granted budget (no budget → no
+  tools array at all), `pause_turn` continuation keeps pre-pause text, a
+  tool-refusing gateway degrades honestly instead of failing the run,
+  thinking-only responses retry once with thinking disabled, and 429 / HTML
+  block pages are diagnosed by name (shared-window vs. request-shape).
 - **store-github.test.ts** — the remote store against a scripted GitHub API
   with an in-test fixture tarball: read-your-writes, one commit per flush,
   `force:false` + exactly one conflict retry, User-Agent on every call, and
@@ -68,6 +128,22 @@ IS the expected traffic (`assertNoPendingInterceptors` in every afterEach).
   due decision → Kimi cognition → report + ledger → ONE commit (force:false,
   `animamesh-cloud`) → Discord DM; same-day dedup; an agent-level provider
   failure that the beat survives and reports.
+- **interactions.test.ts** — the inbound Discord door: Ed25519 signature
+  checks (PING/PONG, 401 on bad or unsigned), the sender gate (a stranger
+  gets silence and the attempt folds into the next drain's ONE commit), the
+  daily budget gate, and the full deferred flow — defer → cognition → one
+  evidence commit → followup reply, honest even when the run fails.
+- **direction-gmail.test.ts** — the Gmail poll cycle: unread principal mail →
+  agentic run → ONE commit → reply email → mark read; a processed message id
+  never runs twice; over-budget mail stays unread and unspent (eligible
+  again tomorrow); the poll cadence re-arms the alarm.
+
+`workers/web/test/web.test.ts` (`pnpm test:web`, in root verify) proves the
+dashboard Worker the same way: a deny-by-default door (login page with zero
+data, Google OIDC with signed state, wrong account / unverified email /
+forged or tampered session all strangers), a dashboard that never mislabels
+a direction artifact or a spoke report as the brief, the one action proxying
+`/beat` with the server-held Bearer, and logout clearing the session.
 
 Pinned to vitest 3.2.x + pool 0.12.x (the last vitest-3 line, matching this
 suite). The 0.13+ pool requires vitest 4 and replaces defineWorkersConfig and
@@ -84,8 +160,12 @@ every observable asserted — due ordering (spokes → hub), three green runs,
 ledger trios with frozen timestamps, the hub's prompt containing today's
 spoke reports + nags + pending approvals, byte-stable report bodies modulo
 runId, same-day replay = pure no-op, and the cloud view skipping
-subprocess harnesses with reason. When behavior changes intentionally,
-update the golden day deliberately — it is the mesh's flight recorder.
+subprocess harnesses with reason. The day runs through the real prompt
+assembly, so every agent's prompt carries the v0.12 capability block (the
+fake harness declares nothing — all three agents are told "no web, no
+files" out loud); the block's exact wording is pinned separately in
+`capabilities.test.ts`. When behavior changes intentionally, update the
+golden day deliberately — it is the mesh's flight recorder.
 
 ## Live seam tests — `pnpm test:live` (env-gated, skipped in verify)
 
@@ -112,7 +192,7 @@ LIVE_KIMI=1 LIVE_DISCORD=1 LIVE_AGENT=1 pnpm test:live
   asserted in code. Two Kimi calls. Run after changing buildPrompt or any
   agent job description.
 
-All four appear as *skipped* in `pnpm verify` — the contract suite stays
+All five appear as *skipped* in `pnpm verify` — the contract suite stays
 network-free; the live gates exist so "it works on mocks" is never the only
 evidence. Run them after touching a provider/channel/store seam.
 

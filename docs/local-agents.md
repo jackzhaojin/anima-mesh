@@ -9,6 +9,13 @@ source of truth for who an agent is, on every tier:
 | Direction run | `buildDirectionPrompt` (harness/direction-core.ts) | inlined + the inbound message |
 | **Local interactive** | `anima-mesh export-local` → generated artifacts | the agent READS the live bundle itself — it has tools |
 
+Since v0.12 the scheduled tiers state their context strategy to the agent
+outright: every prompt carries a capability block (file reads, web search,
+tools) that overrides the job description. The local tier's "reads the
+live bundle itself" is the same contract seen from the other side —
+`fileReads: true` is a *declared* capability on the subprocess providers
+(`claude-code`, `opencode`, `claude-agent-sdk`), not an assumption.
+
 `export-local` compiles an agent concept + the instance's identity
 (`animamesh.config.json`) into two artifacts under the instance root:
 
@@ -46,9 +53,11 @@ anima-mesh export-local --instance <dir> --all        # every activatable agent
 ### Model mapping
 
 The opencode artifact needs `provider/model`. Frontmatter models already in
-that form pass through; bare names map (`kimi-for-coding` →
-`kimi-code/kimi-for-coding`, `k3` → `kimi-code/k3`, `sonnet` →
-`anthropic/claude-sonnet-5`). Override per instance in the config:
+that form pass through; bare names map: `kimi-for-coding`,
+`kimi-for-coding-highspeed`, and `k3` → `kimi-code/<model>` (the
+subscription endpoint), any other `kimi-*` → `moonshot/<model>`, and
+`sonnet` → `anthropic/claude-sonnet-5` (`opus`/`haiku`/`claude-*` likewise
+map to their Anthropic ids). Override per instance in the config:
 
 ```jsonc
 "localAgents": {

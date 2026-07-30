@@ -21,10 +21,12 @@ Platform lessons learned in production go in [docs/learnings/](docs/learnings/RE
 ## Commands
 
 ```bash
-pnpm verify        # typecheck + full test suite + worker typecheck — green before every commit
-pnpm test          # vitest run
+pnpm verify        # typecheck + test + BOTH Workers' typecheck + suites — green before every commit
+pnpm test          # vitest run (src suite)
 pnpm typecheck     # tsc --noEmit (covers src/ AND test/)
-pnpm typecheck:worker  # tsc -p workers/heartbeat (Workers types)
+pnpm typecheck:worker  # tsc -p workers/heartbeat (Workers types); test:worker runs its workerd suite
+pnpm typecheck:web     # tsc -p workers/web; test:web runs its suite
+pnpm test:live     # live seam gates (skipped without LIVE_* env)
 pnpm cli <cmd>     # run the CLI from source (tsx src/cli.ts)
 pnpm build         # emit dist/ (tsconfig.build.json)
 ```
@@ -45,11 +47,19 @@ src/
                 fake, CLOUD_HARNESSES, resolveProvider(harness, ctx?));
                 node-providers.ts registers the subprocess ones on import
                 (claude-code, claude-agent-sdk, opencode) — Node entrypoints only.
+                Every adapter DECLARES capabilities (types.ts:
+                ProviderCapabilities — fileReads/webSearch; undeclared reads
+                as NO_CAPABILITIES) and the prompt states them to the agent;
+                `web: <n>` frontmatter budgets server-side web search where
+                granted (anthropic-api: web_search tool + pause_turn
+                continuation + thinking-budget retry).
                 anthropic-api = subscription OAuth over plain fetch; its system
                 prompt SHAPE is load-bearing (docs/learnings/2026-07-12)
   instance/     config loading/resolution · THE STORAGE SEAM: store.ts
                 interface, store-fs (local), store-github (tarball read,
                 one commit per flush, never force) · tar.ts · github-auth.ts
+                · env(-core).ts — the env-injection primitive every provider,
+                source, and the defect filer read through
   harness/      run-core/heartbeat-core (Workers-safe; store required;
                 tz-aware dates; cloudTier skips non-CLOUD_HARNESSES; the
                 EFFECTIVE harness — after config cognition.overrides — is
@@ -57,19 +67,32 @@ src/
                 wrappers · direction-core (inbound message → ONE agentic run;
                 direction-* ledger actions so directions never eat the daily
                 dedup; dot-named artifacts so brief delivery skips them) ·
-                verifiers(-core)
+                verifiers(-core) · the three propose/dispose write paths:
+                schedule.ts (wakes/pauses/cadence + schedule-request),
+                drafts.ts (path-jailed draft-request), defects.ts
+                (defect-report → public engine issue, leak-guarded)
   channels/     delivery registry (registry.ts, Workers-safe: discord/notion/
                 gmail/console, injected env) · index.ts fs wrapper
   sources/      READ-ONLY external context (agents opt in via `sources:`
                 frontmatter; inlined at prompt assembly; failures become
                 honest sections, never aborted runs) · msgraph.ts = the
                 'onedrive' cabinet source (refresh-token grant, bounded BFS
-                listing, shortcut/remoteItem traversal, text-only reads)
+                listing, shortcut/remoteItem traversal, text-only reads) ·
+                github-docs.ts = git-hosted corpus (REST on Workers,
+                local-files.ts working tree on Node) · registry.ts
+  local/        the interactive tier: agents-core.ts composes any agent
+                concept + instance identity into .claude/agents/ +
+                .opencode/agents/ artifacts (export-local; init runs it
+                when the roster has a hub)
+  defects/      report-core.ts (identity-leak guard, title dedup, 2/run cap,
+                issue creation — Workers-safe) · file.ts (promote fallback
+                drafts: `defect list|file`)
   a2a/          agent card: card-core.ts pure assembly · card.ts fs wrapper
   init/         interview (file/flags/interactive/agentic) · scaffoldBrain
                 (acceptance test: its own output must pass conformance)
-  cli.ts        init/validate/run/gate/report/templates — main(argv) → exit
-                code, driven in-process by tests; `github:owner/repo#ref`
+  cli.ts        init/validate/run/gate/report/deliver/heartbeat/card/
+                export-local/defect/templates — main(argv) → exit code,
+                driven in-process by tests; `github:owner/repo#ref`
                 instance scheme runs against a remote brain
 workers/heartbeat/  the cloud tier: Worker + HeartbeatDO (DST-correct daily
                 alarm, beat mutex) + DirectionDO (direction queue, Ed25519
@@ -112,7 +135,8 @@ references/poc/     read-only PoC examples — NOT engine code, excluded from ts
 - ESM throughout (`"type": "module"`): imports use `.js` suffixes, no
   `require()`, no `__dirname` (use `fileURLToPath(import.meta.url)`).
 - TypeScript strict + `noUncheckedIndexedAccess`; tests are typechecked too.
-- Runtime deps: currently only `yaml`. Adding one needs a strong reason.
+- Runtime deps: only `yaml` and `@anthropic-ai/claude-agent-sdk` (lazily
+  imported by its provider). Adding one needs a strong reason.
 - Tests build fixtures in temp dirs via `test/helpers.ts` (`makeTree`,
   `concept`, `minimalAnimaMeshFiles`) — no static fixture files, no network,
   no real model calls (use `FakeProvider`).

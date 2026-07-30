@@ -37,8 +37,15 @@ files, and ledgers — the model only writes the report.
   holds no state. Deploy once a second agent makes coordination real. Once
   promoted with `schedule-update` whitelisted, it can wake other agents for
   the next beat via a `schedule-request` block (gated in code, ledgered).
+  Two conditional duties ship in the job: CRM stewardship when the bundle
+  has a `crm/` shelf (surface stale relationships and empty next-actions —
+  propose, never write), and prep packs per open obligation once trusted
+  with `draft-write` (an L3 promotion; packs live under the drafts dir
+  only).
 - **compliance-ops** — owns the calendar; 60/14/1-day horizons; triages
-  official-looking mail by the instance's rules of engagement.
+  official-looking mail by the instance's rules of engagement. Ships
+  `web: 4` — enough to confirm the calendar's standing external status
+  checks, not open-ended browsing.
 - **bookkeeper** — continuous close; highest-trust spoke; never holds banking
   credentials (works from exports the principal provides).
 - **librarian** — re-runnable document-store enrichment; flags contradictions
@@ -46,7 +53,12 @@ files, and ledgers — the model only writes the report.
 - **governance** — quarterly minutes/snapshot/resolutions assembled from
   bundle + ledger.
 - **research-watch** — watch-list digests; separates signal (changed decision
-  premise) from churn (version bump).
+  premise) from churn (version bump). Ships `web: 8`, the roster's largest
+  budget — external digesting is the one job the bundle alone cannot do, and
+  this agent was the direct subject of engine issue #4: told to do web
+  checks on a harness with no web capability, it reported a tool failure
+  that was never a tool. Its job now says plainly what to do when the run
+  refuses the budget.
 
 ## Commercial (dual-gated — `commercial: true`)
 
@@ -58,4 +70,7 @@ files, and ledgers — the model only writes the report.
 
 `type: agent`, `name`, `title`, `level: L1` (always — promotion is earned in
 the instance, never shipped), `model`, `harness`, `heartbeat`, `whitelist: []`,
-`commercial: true|false`.
+`commercial: true|false`. Optional: `web: <n>` — web searches the agent may
+spend per run, honored only on harnesses that declare the `webSearch`
+capability; the prompt states the grant — or the refusal — out loud, so an
+unrun check is reported as a gap, never as "nothing changed".

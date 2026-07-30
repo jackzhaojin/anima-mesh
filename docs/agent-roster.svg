@@ -31,12 +31,13 @@
   <text x="458" y="128" font-size="15" font-weight="700" fill="#116329">2 · lives in the brain</text>
   <text x="458" y="150" font-size="12" fill="#2f4a3a" font-family="ui-monospace, SFMono-Regular, Menlo, monospace">bundle/agents/&lt;name&gt;.md</text>
   <rect x="458" y="162" width="344" height="128" rx="7" fill="#ffffff" stroke="#a9d6bb" stroke-width="1.1"/>
-  <text x="474" y="184" font-size="11.5" fill="#33513f" font-family="ui-monospace, SFMono-Regular, Menlo, monospace">level: L1        # always starts here</text>
-  <text x="474" y="202" font-size="11.5" fill="#33513f" font-family="ui-monospace, SFMono-Regular, Menlo, monospace">model / harness  # its cognition</text>
-  <text x="474" y="220" font-size="11.5" fill="#33513f" font-family="ui-monospace, SFMono-Regular, Menlo, monospace">heartbeat: weekly   # its rhythm</text>
-  <text x="474" y="238" font-size="11.5" fill="#33513f" font-family="ui-monospace, SFMono-Regular, Menlo, monospace">sources: [onedrive] # context opt-in</text>
-  <text x="474" y="256" font-size="11.5" fill="#33513f" font-family="ui-monospace, SFMono-Regular, Menlo, monospace">whitelist: []    # L3 allowed actions</text>
-  <text x="474" y="274" font-size="11.5" fill="#33513f" font-family="ui-monospace, SFMono-Regular, Menlo, monospace">commercial: false   # dual-gate flag</text>
+  <text x="474" y="182" font-size="11.5" fill="#33513f" font-family="ui-monospace, SFMono-Regular, Menlo, monospace">level: L1        # always starts here</text>
+  <text x="474" y="198" font-size="11.5" fill="#33513f" font-family="ui-monospace, SFMono-Regular, Menlo, monospace">model / harness  # its cognition</text>
+  <text x="474" y="214" font-size="11.5" fill="#33513f" font-family="ui-monospace, SFMono-Regular, Menlo, monospace">heartbeat: weekly   # its rhythm</text>
+  <text x="474" y="230" font-size="11.5" fill="#33513f" font-family="ui-monospace, SFMono-Regular, Menlo, monospace">sources: [onedrive] # context opt-in</text>
+  <text x="474" y="246" font-size="11.5" fill="#33513f" font-family="ui-monospace, SFMono-Regular, Menlo, monospace">web: 8      # search budget per run</text>
+  <text x="474" y="262" font-size="11.5" fill="#33513f" font-family="ui-monospace, SFMono-Regular, Menlo, monospace">whitelist: []    # L3 allowed actions</text>
+  <text x="474" y="278" font-size="11.5" fill="#33513f" font-family="ui-monospace, SFMono-Regular, Menlo, monospace">commercial: false   # dual-gate flag</text>
   <text x="458" y="314" font-size="11.5" fill="#4c8f63" font-style="italic">below the frontmatter: the job description,</text>
   <text x="458" y="331" font-size="11.5" fill="#4c8f63" font-style="italic">in prose — the part a model actually reads</text>
 
@@ -72,9 +73,10 @@
   <path d="M 322 470 L 340 470" stroke="#57606a" stroke-width="1.3" fill="none" marker-end="url(#ro-ar)"/>
 
   <rect x="342" y="438" width="122" height="64" rx="8" fill="#ffffff" stroke="#8c959f" stroke-width="1.2"/>
-  <text x="403" y="460" font-size="12.5" font-weight="700" fill="#1f2328" text-anchor="middle">L3</text>
-  <text x="403" y="478" font-size="11" fill="#57606a" text-anchor="middle">whitelisted</text>
-  <text x="403" y="493" font-size="11" fill="#57606a" text-anchor="middle">reversible actions</text>
+  <text x="403" y="455" font-size="12.5" font-weight="700" fill="#1f2328" text-anchor="middle">L3</text>
+  <text x="403" y="470" font-size="11" fill="#57606a" text-anchor="middle">whitelisted</text>
+  <text x="403" y="484" font-size="11" fill="#57606a" text-anchor="middle">reversible actions</text>
+  <text x="403" y="497" font-size="10" fill="#8c959f" text-anchor="middle" font-style="italic">schedule · draft · defect</text>
   <path d="M 464 470 L 482 470" stroke="#57606a" stroke-width="1.3" fill="none" marker-end="url(#ro-ar)"/>
 
   <rect x="484" y="438" width="98" height="64" rx="8" fill="#ffffff" stroke="#8c959f" stroke-width="1.2"/>

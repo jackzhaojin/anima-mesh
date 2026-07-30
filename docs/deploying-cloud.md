@@ -10,10 +10,16 @@ the instance repo (see [engine-vs-instance.md](engine-vs-instance.md)).*
 - Cloudflare account on **Workers Paid** (Durable Objects require it) and
   `wrangler` (needs Node 22+).
 - The brain pushed to a **private GitHub repo**, plus write auth scoped to
-  that one repo, Contents read/write. Prefer a **GitHub App** (create under
-  the owning org, install on the brain repo only, generate a private key —
-  no expiry cliff, short-lived minted tokens); a fine-grained PAT works but
-  expires and dies quietly.
+  that one repo, Contents read/write. Two first-class options: a **GitHub
+  App** (create under the owning org, install on the brain repo only,
+  generate a private key — no expiry cliff, short-lived minted tokens), or a
+  **standing PAT** (fine-grained or classic; simpler, and one broad PAT can
+  both manage the brain repo and file engine defect issues). A PAT expires —
+  put its renewal on a calendar.
+- Recommended: a GitHub token with **Issues read/write on the public engine
+  repo** for `GITHUB_DEFECTS_TOKEN`, so leak-clean `defect-report`s file
+  directly as engine issues (the standard posture since v0.11.2; without it,
+  defects degrade gracefully to private drafts).
 - A cognition credential that works over pure fetch from Workers — and
   **probe the endpoint from a real Worker first**
   ([learnings/2026-07-11](learnings/2026-07-11-workers-egress-waf.md):
@@ -53,11 +59,12 @@ the example file shows the shape.
 | Heartbeat secrets (`wrangler secret put`) | Purpose |
 |---|---|
 | `GITHUB_APP_ID` / `GITHUB_APP_INSTALLATION_ID` / `GITHUB_APP_PRIVATE_KEY` | read + commit the brain via GitHub App installation tokens (preferred — all three or none). The key must be **PKCS#8**: convert GitHub's download once with `openssl pkcs8 -topk8 -nocrypt -in downloaded.pem -out app.pem`, then **pipe it** (`wrangler secret put GITHUB_APP_PRIVATE_KEY < app.pem`) — interactive paste mangles newlines |
-| `GITHUB_TOKEN` | legacy alternative: fine-grained PAT, used only when no App var is set. A partial App trio fails loudly rather than falling back |
-| `MOONSHOT_API_KEY` and/or `CLAUDE_CODE_OAUTH_TOKEN` | cognition (whatever the agents' effective harnesses need) |
+| `GITHUB_TOKEN` | first-class alternative: a standing PAT, used only when no App var is set. A partial App trio fails loudly rather than falling back |
+| `GITHUB_DEFECTS_TOKEN` | Issues read/write on the **public engine repo** — lets leak-clean `defect-report`s file directly as engine issues (issue-first, v0.11.4). Unset ⇒ defects fall back to private drafts |
+| `MOONSHOT_API_KEY` and/or `CLAUDE_CODE_OAUTH_TOKEN` | cognition (whatever the agents' effective harnesses need). Only `anthropic-api` (`CLAUDE_CODE_OAUTH_TOKEN`) grants `web: <n>` search budgets on Workers |
 | `DISCORD_BOT_TOKEN` / `DISCORD_DM_USER_ID` | brief + failure DMs; the direction sender gate |
 | `BEAT_TRIGGER_TOKEN` | gates manual `POST /beat` (mint with `openssl rand -hex 32`) |
-| `GMAIL_CLIENT_ID` / `GMAIL_CLIENT_SECRET` / `GMAIL_REFRESH_TOKEN` / `AGENT_EMAIL` | only if the email surfaces are on |
+| `GMAIL_CLIENT_ID` / `GMAIL_CLIENT_SECRET` / `GMAIL_REFRESH_TOKEN` / `AGENT_EMAIL` | only if the email surfaces are on. **Publish the OAuth consent screen to "In Production" first** — a screen left in "Testing" expires every refresh token after 7 days ([learning](learnings/2026-07-12-google-oauth-testing-expiry.md)) |
 | `MSGRAPH_CLIENT_ID` / `MSGRAPH_REFRESH_TOKEN` (+ `MSGRAPH_CLIENT_SECRET` for confidential clients) | the 'onedrive' read source (agents opting in via `sources:` frontmatter); delegated read-only consent; validate with bearer-gated `GET /graph/check` |
 | `GITHUB_DOCS_TOKEN` | the 'github-docs' read source: fine-grained PAT, Contents READ-ONLY on the docs repo only (falls back to `GITHUB_TOKEN`; public repos need none); validate with bearer-gated `GET /docs/check` |
 

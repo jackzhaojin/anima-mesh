@@ -12,10 +12,19 @@ run.
 **`HeartbeatDO` — the scheduled side.** Its alarm fires daily at the
 instance's configured hour, DST-correct (`alarm-time.ts` — the reason this is
 an alarm, not a UTC-fixed cron trigger). A beat reads the instance as one
-tarball, runs every due agent whose harness is in `CLOUD_HARNESSES`
-(fetch-only cognition — subprocess harnesses are skipped with reason), lands
-all artifacts as **one commit**, delivers the hub's brief, and attempts a
-failure DM if anything breaks: silence must mean success.
+tarball, runs every due agent whose **effective** harness (after
+`cognition.overrides`) is in `CLOUD_HARNESSES` (fetch-only cognition —
+subprocess harnesses are skipped with reason), lands all artifacts as **one
+commit**, delivers the hub's brief, and attempts a failure DM if anything
+breaks: silence must mean success.
+
+Two capabilities ride inside a beat since v0.11/v0.12: agents budgeted
+`web: <n>` get **real server-side web search** when their effective harness
+is `anthropic-api` (the search runs inside the same Messages call — no
+client tool loop), and whitelisted `defect-report` blocks file de-identified
+issues on the public engine repo via `GITHUB_DEFECTS_TOKEN` (the Worker's
+only egress beyond GitHub, the model vendors, Graph, and the delivery
+channels).
 
 **`DirectionDO` — the inbound side.** `POST /interactions` receives Discord
 slash commands, verified against the app's Ed25519 public key
@@ -49,11 +58,12 @@ plus optional `MSGRAPH_*`/`GITHUB_DOCS_*` source vars, and
 `new_sqlite_classes` migrations) whose `main` points at this entry, then
 `wrangler deploy` + `wrangler secret put` for the GitHub App trio
 `GITHUB_APP_ID`/`GITHUB_APP_INSTALLATION_ID`/`GITHUB_APP_PRIVATE_KEY`
-(or legacy `GITHUB_TOKEN`), cognition keys
+(or a standing `GITHUB_TOKEN` PAT — first-class, not legacy), cognition keys
 (`MOONSHOT_API_KEY` and/or `CLAUDE_CODE_OAUTH_TOKEN`), `DISCORD_BOT_TOKEN`,
-`DISCORD_DM_USER_ID`, `BEAT_TRIGGER_TOKEN` (and optionally the
-`MOONSHOT_BASE_URL` var for endpoint-scoped keys, `GMAIL_*` for the email
-poll). Any first request arms the alarm; alarms survive deploys; secrets
+`DISCORD_DM_USER_ID`, `BEAT_TRIGGER_TOKEN`, and `GITHUB_DEFECTS_TOKEN`
+(Issues R/W on the public engine repo — the standard defect-filing posture;
+unset degrades to private drafts). Optionally the `MOONSHOT_BASE_URL` var
+for endpoint-scoped keys and `GMAIL_*` for the email poll. Any first request arms the alarm; alarms survive deploys; secrets
 persist across deploys. The full generic runbook:
 [docs/deploying-cloud.md](../../docs/deploying-cloud.md).
 

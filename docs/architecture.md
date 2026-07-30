@@ -13,13 +13,19 @@ all logic; a private **brain** repo holds one company's knowledge, config,
 and deploy workspace, and pins the engine by git tag. The full sorting rule:
 [engine-vs-instance.md](engine-vs-instance.md).
 
-**One brain, two runtimes.** The same harness runs from a laptop CLI over a
-local clone, or from Cloudflare Workers over the GitHub-hosted brain. The
+**One brain, three surfaces.** The same harness runs from a laptop CLI over
+a local clone, or from Cloudflare Workers over the GitHub-hosted brain. The
 `InstanceStore` seam (`store-fs` / `store-github`) is the only difference:
 cloud runs read the instance as **one tarball** and land all artifacts as
 **one commit** (never force-pushed). Both writers can coexist — the CLI
 pulls `--rebase` before writing, the cloud store re-snapshots once on a
 moved ref and otherwise fails loudly.
+
+The third surface is **interactive**: `export-local` compiles any agent
+concept into `.claude/agents/` and `.opencode/agents/` artifacts, so the
+persona that writes the daily brief is also a conversation in a coding
+terminal — same concept file, gates and ladder binding unchanged, the
+bundle read-only in sessions. Details in [local-agents.md](local-agents.md).
 
 **The heartbeat Worker** hosts two Durable Objects:
 
@@ -113,7 +119,9 @@ to them).
 **Outbound — the daily brief (flow ③):** the beat's last agent is the hub;
 its report is delivered as a Discord bot DM (or Notion/Gmail/console — the
 channel registry is pluggable). Failure DMs use the same path: silence must
-mean success.
+mean success. Long reports are never truncated: anything over Discord's
+message ceiling is split at paragraph boundaries and sent as sequential
+messages (`CONTENT_LIMIT` 1900 in `src/channels/discord.ts`).
 
 **Inbound — email:** the same `DirectionDO` alarm optionally polls a Gmail
 inbox (`from:<principal> is:unread`), re-checks the sender client-side,
@@ -132,6 +140,17 @@ and allowed sender are instance vars; unset = off.
   hallucination with a send button.
 - **Safety in code, never prompts** — gates, ladder, ledger, verifiers are
   deterministic; everything between wake-up and gate is model judgment.
+- **Model proposes, code disposes — three write paths, all gated.** A run's
+  output can carry exactly three kinds of write request as fenced blocks:
+  `schedule-request` (wake an agent), `draft-request` (write under the
+  drafts dir), and `defect-report` (file an engine bug). Each is parsed,
+  checked against the same ladder-level + whitelist gate, and ledgered
+  whether applied or denied — no acknowledged-but-unapplied state can exist.
+- **The defect loop is the one deliberate outward path** across the
+  public/private boundary: leak-clean reports file as public engine-repo
+  issues. The identity-leak guard **denies, never rewrites** — a report
+  naming a person or org stays private for a human to clean, because a
+  guard that edits text is a guard you can't audit.
 - **One commit per beat/drain**, authored by the mesh's identity, never
   forced — `git log` stays a readable audit trail.
 

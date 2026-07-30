@@ -140,9 +140,17 @@ dimension the platform actually constrains:
   runs in **one** invocation — no alarm chaining, no queues, no
   `waitUntil` relays. Boring on purpose: every continuation mechanism
   removed is a failure mode removed.
-- **Bounded per-agent cost.** Each provider call carries a 10-minute
-  `AbortSignal.timeout` and short in-provider retries (2 s → 8 s, honoring
-  `retry-after`). A hung vendor costs one agent its run, never the beat.
+- **Bounded per-agent cost.** Each cloud provider call (`moonshot-api`,
+  `anthropic-api`) carries a 10-minute `AbortSignal.timeout` and short
+  in-provider retries (2 s → 8 s, honoring `retry-after`); the subprocess
+  tiers allow longer defaults (15 min for `claude-code` /
+  `claude-agent-sdk`, 20 min for `opencode`). A hung vendor costs one
+  agent its run, never the beat.
+- **Web search stretches wall clock, not the budget.** An agent budgeted
+  `web: <n>` on `anthropic-api` runs its searches server-side inside the
+  Messages call, and a paused turn (`pause_turn`) is continued — up to 6
+  turns per run. That lengthens the run's wall clock, but it stays one
+  logical vendor call inside the same subrequest budget.
 - **Subrequests are budgeted.** The brain is read as **one tarball** at a
   pinned SHA, the GitHub App token is minted once and cached, and all
   writes buffer in memory until the end.
@@ -159,6 +167,7 @@ Failure handling is layered so that each blast radius stays one size:
 |---|---|---|
 | One spoke throws | that agent | recorded in `failures[]`, loop continues — a failed spoke never kills the beat |
 | Any failures at end | none (informational) | the commit still lands; a failure DM lists them — silence must mean success |
+| Gateway refuses the web-search tool | that agent's report depth | run retries once without tools, a capability correction appended mid-prompt; the result is marked `degraded`, and the beat continues |
 | Beat-level throw (auth, store, flush) | the beat | failure DM names the stage; alarm still re-arms in `finally` |
 | Flush ref conflict (another writer won) | the flush | re-snapshot, recompose, retry **once**, else fail loudly — never force-push |
 | Concurrent trigger | none | beat mutex; stale locks stolen after 30 min |
@@ -168,9 +177,19 @@ Failure handling is layered so that each blast radius stays one size:
 Exactly one commit — `beat(cloud): {date} — N run(s), M failure(s)` —
 containing, per agent run: the report artifact
 (`reports/{date}-{agent}-{runid}.md`) and three ledger appends
-(`run-started`, `report-written`, `run-completed`). The DO keeps only
-`lastBeat` for `/healthz` counts. Everything durable is in git; the
-observability story is `git log` first, dashboard second.
+(`run-started`, `report-written`, `run-completed`). The same commit also
+carries whatever the gated write paths produced: draft files under the
+drafts dir, defect issues filed (or their fallback drafts under
+`drafts/defects/` when filing couldn't happen), and `ops/schedule.md`
+mutations as wakes are consumed or renewed — each with its own ledger
+vocabulary (`draft-written`, `defect-filed`, `defect-drafted`,
+`schedule-updated`, `wake-consumed`, and the `-denied` variants). One beat,
+one commit, however many surfaces it touched. That contract binds every
+tier: a hand-rolled laptop-tier scheduler wrapper must land its beat's
+writes as one commit too, or a consumed wake silently un-consumes itself —
+see [learnings/2026-07-22-beat-writes-own-commit.md](learnings/2026-07-22-beat-writes-own-commit.md).
+The DO keeps only `lastBeat` for `/healthz` counts. Everything durable is
+in git; the observability story is `git log` first, dashboard second.
 
 ## The other pulse: directions
 
@@ -191,6 +210,9 @@ a `.direction-` infix (so brief delivery is blind to them). Full flow in
 | Due decision, ordering, failure isolation | `src/harness/heartbeat-core.ts` |
 | Schedule surface (wakes, pauses, overrides) | `src/harness/schedule.ts` |
 | One agent run (prompt → provider → verifiers) | `src/harness/run-core.ts` |
+| Capability block in the prompt | `src/harness/run-core.ts` (`capabilityLines`) |
+| Draft requests (parse, gate, path-jail) | `src/harness/drafts.ts` |
+| Defect reports (gate, leak guard, dedup, filing) | `src/harness/defects.ts`, `src/defects/report-core.ts` |
 | Tarball read / single-commit write | `src/instance/store-github.ts` |
 | GitHub App tokens | `src/instance/github-auth.ts` |
 | Providers, retries, timeouts, `CLOUD_HARNESSES` | `src/providers/` |

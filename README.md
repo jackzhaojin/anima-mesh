@@ -26,9 +26,13 @@ operator's laptop is closed.
 
 The CLI remains a first-class companion for scaffolding and validating a brain,
 manual or recovery runs, local development, and subprocess-only harnesses. It is
-not the production scheduler. AnimaMesh is also not a shared hosted service:
-each private instance deploys its own Workers, Durable Objects, repository, and
-secrets from this public engine.
+not the production scheduler. A third surface is the **interactive tier**:
+`export-local` compiles any agent concept into Claude Code and opencode agent
+artifacts, so the principal can *talk to* the mesh in a coding terminal with
+the exact persona the scheduled tiers run
+([docs/local-agents.md](docs/local-agents.md)). AnimaMesh is also not a shared
+hosted service: each private instance deploys its own Workers, Durable
+Objects, repository, and secrets from this public engine.
 
 ## How it's organized
 
@@ -115,12 +119,15 @@ generalizes to any relationship-shaped domain (vendors, candidates, press).
   whitelisted reversible actions → L4 external actions, each behind a human
   gate, permanently. Every agent starts at L1 and earns promotion; the level is
   recorded in the agent's own concept file, so trust is an operational dial
-  with a paper trail. Two L3 write paths ship today, both propose/dispose
+  with a paper trail. Three L3 write paths ship today, all propose/dispose
   (a fenced block in the run's output, applied only through the gate,
-  always ledgered): `schedule-update` (wake an agent for the next beat)
-  and `draft-write` (create/update artifacts under `drafts/` — session
+  always ledgered): `schedule-update` (wake an agent for the next beat),
+  `draft-write` (create/update artifacts under `drafts/` — session
   prep, outlines, quiz sheets — path-jailed, from beat AND direction runs,
-  so the principal can reshape prep material by replying in chat).
+  so the principal can reshape prep material by replying in chat), and
+  `defect-report` (file a de-identified engine bug as a public GitHub
+  issue — identity-leak guard, title dedup, and per-run cap are
+  deterministic code; the model only writes the report).
 - **The model chokepoint.** Each agent concept declares its `model` and
   `harness`; swapping vendors is a config edit, never a rebuild. Shipped
   harnesses: `moonshot-api` and `anthropic-api` (pure fetch — the two a cloud
@@ -129,7 +136,14 @@ generalizes to any relationship-shaped domain (vendors, candidates, press).
   opencode-configured model), `fake` (deterministic, for the regression
   suite). An instance can redirect a declared harness at runtime via
   `animamesh.config.json → cognition.overrides` — vendor trouble becomes a
-  config edit, with the agent's declared identity untouched.
+  config edit, with the agent's declared identity untouched. Providers also
+  **declare their capabilities** (file reads, web search), and the prompt
+  states them to the agent — explicitly overriding the job description,
+  because job text is written once while harnesses change per override.
+  `web: <n>` frontmatter budgets web searches per run; `anthropic-api`
+  grants them via Anthropic's server-side web-search tool in the same
+  Messages call, Workers-safe. A refused budget is stated out loud in the
+  prompt — silent empty research is not a reachable state.
 - **Cloud-first execution, one engine.** The primary runtime is a
   **Cloudflare Worker + Durable Object alarm** (`workers/heartbeat/`) over a
   GitHub-hosted brain. The laptop CLI runs the same heartbeat over a local
@@ -176,6 +190,13 @@ pnpm cli init ../my-brain --org "Acme Co" --principal "Ada" \
 # or let a model refine the interview
 pnpm cli init ../my-brain --answers answers.json --agentic opencode
 
+# no model credentials yet? add --harness fake: the deterministic provider
+# runs the full loop (prompt → report → ledger → verifiers) offline, so you
+# can see a complete agent run before wiring any vendor. Switch later by
+# editing model/harness frontmatter in bundle/agents/*.md.
+pnpm cli init ../my-brain --org "Acme Co" --principal "Ada" \
+  --agents compliance-ops,chief-of-staff --harness fake
+
 pnpm cli validate ../my-brain          # OKF + animamesh conformance
 pnpm cli run compliance-ops --instance ../my-brain
 pnpm cli run some-agent --instance github:owner/brain#branch   # zero local reads
@@ -200,8 +221,11 @@ separately credentialed dashboard Worker, and one evidence commit per run.
 |---|---|
 | [docs/](docs/README.md) | **The operator's shelf — start here**, with a read order for new sessions |
 | [docs/architecture.md](docs/architecture.md) | The whole system on one page: cloud diagram, Discord flows, design constraints |
+| [docs/heartbeat-anatomy.md](docs/heartbeat-anatomy.md) | One beat, step by step: the DO alarm, the due decision, spokes-first/hub-last |
+| [docs/a-typical-brain.md](docs/a-typical-brain.md) | Show-and-tell: a real production instance, de-identified — start here for a demo |
 | [docs/starting-a-company.md](docs/starting-a-company.md) | Empty directory → a mesh running a real company (repeatable for company #2, #3, …) |
 | [docs/deploying-cloud.md](docs/deploying-cloud.md) | Generic Cloudflare runbook: two Workers, secrets contract, Discord wiring |
+| [docs/local-agents.md](docs/local-agents.md) | The interactive tier: `export-local` agent artifacts + the `defect-report` loop |
 | [CHANGELOG.md](CHANGELOG.md) | Each minor release line: its value, maturity, and operator upgrade steps |
 | [docs/engine-vs-instance.md](docs/engine-vs-instance.md) | The sorting rule: what belongs in this public engine vs a private brain |
 | [docs/okf-crm-domain.md](docs/okf-crm-domain.md) | The CRM domain shelf: typed concepts, lifecycle stages, compliance screens as data |
@@ -224,17 +248,21 @@ conformance and complete a full agent run against the fake provider.
 
 ## Status
 
-v0.10.0 — pre-release. Package name on npm to be confirmed; pinned consumers
-should reference the repo by tag. The cloud tier introduced in v0.3 is now the
+v0.12.0 — pre-release. Package name on npm to be confirmed; pinned consumers
+should reference the repo by tag. The cloud tier introduced in v0.3 is the
 primary execution path; the CLI remains the bootstrap, operator, and
-subprocess-harness path. v0.10 adds the draft surface (gated `draft-request`
-blocks: a whitelisted agent maintains artifacts under `drafts/` from beat and
-direction runs — prep packs the principal reshapes by replying in chat); v0.9
-added the schedule surface (`ops/schedule.md`: one-shot wakes, pauses, cadence
-overrides — next-fire stays derived) and the gated `schedule-request` path, so
-a whitelisted hub can review the spokes' work and wake the right agent for the
-next beat; v0.8 replaced PAT auth with GitHub App installation tokens and
-guaranteed the failure DM. See
+subprocess-harness path. v0.12 makes **capability truth** part of the prompt
+contract: providers declare what they grant (file reads, web search), the
+prompt states it to the agent over the job description, `web: <n>` frontmatter
+budgets searches, and `anthropic-api` runs real server-side web search on
+Workers. v0.11 added the **third tier** — `export-local` compiles agent
+concepts into Claude Code/opencode interactive artifacts — and the
+`defect-report` loop, the mesh's first feedback path INTO the engine
+(issue-first, deterministic leak guard). v0.10 added the draft surface (gated
+`draft-request` blocks: prep packs the principal reshapes by replying in
+chat); v0.9 the schedule surface (`ops/schedule.md`: wakes, pauses, cadence
+overrides) and the gated `schedule-request` path; v0.8 replaced PAT auth with
+GitHub App installation tokens and guaranteed the failure DM. See
 [CHANGELOG.md](CHANGELOG.md) for the value and upgrade boundary of each minor
 line, and [docs/learnings/](docs/learnings/README.md) for evidence-backed
 platform lessons.

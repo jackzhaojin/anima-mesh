@@ -26,7 +26,10 @@ left to right:
   `drafts/`): three audit seams — the repo diff (what changed), the
   approvals gate (what waits for a human), and the append-only ledger (what
   the mesh did). An unlogged action is a verifier failure, not a style
-  violation.
+  violation. One sub-surface deserves a name: `drafts/defects/` holds
+  engine bug reports that couldn't file as public issues yet, with their
+  own promotion CLI (`defect list` / `defect file`) for pushing clean ones
+  upstream deliberately.
 
 Two details visitors usually don't expect:
 
@@ -63,7 +66,11 @@ hub coordinates by *reading* rather than *commanding*.
 Cognition is per-agent too: each file declares `model` + `harness`, and the
 instance config's `cognition.overrides` can reroute a harness at runtime —
 this instance once redirected its default vendor to another provider
-during an outage with a two-line config edit, no agent files touched.
+during an outage with a two-line config edit, no agent files touched. The
+same frontmatter carries the agent's reach: `sources:` opts into read-only
+external listings (a document cabinet, a docs repo), and `web: <n>`
+budgets that many web searches per run — granted or refused out loud
+depending on what the effective harness can actually do.
 
 ## A day in the life
 
@@ -83,7 +90,12 @@ What the principal actually experiences, on a day the laptop stays closed:
    applied through the hub's whitelist gate, ledgered, and visible in the
    same commit. (In this instance's first hour with the capability, the hub
    woke the bookkeeper because a filing-decision deadline outpaced its
-   monthly rhythm — exactly the judgment the mechanism exists for.)
+   monthly rhythm — exactly the judgment the mechanism exists for.) On the
+   cloud tier the research digest is web-search-backed — the watcher spends
+   its `web:` budget on live checks and cites what it found, instead of
+   summarizing recall. And when a run trips over an engine bug, the beat
+   can end with a de-identified defect filed as a public engine-repo
+   issue — the mesh reporting its own tooling upstream.
 4. **Any time** — the principal answers with `/direct …` in the same DM.
    Seconds later a direction drain runs agentically, commits its evidence
    (`direction: 1 processed`), and replies.
@@ -96,8 +108,9 @@ deliberate human commits interleaved, every one attributable.
 ## What transfers, what doesn't
 
 Everything structural on this page — the bundle conventions, the roster
-mechanics, the ladder, the gates, the two-writer model — ships in the
-engine and transfers to any company. What doesn't transfer is everything
+mechanics, the ladder, the gates, the two-writer model, the interactive
+tier (`export-local` compiles the same concept files into terminal
+personas) — ships in the engine and transfers to any company. What doesn't transfer is everything
 that made this instance *itself*: its facts, decisions, persona, and
 coordinates, which stay private forever. Standing up your own copy of this
 shape takes an afternoon: [starting-a-company.md](starting-a-company.md),

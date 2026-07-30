@@ -13,11 +13,18 @@ ones above it).
 - `bundle.ts` — walk a bundle dir into `{root, concepts[]}`. Tolerant loader:
   parse problems are *recorded* on the concept (`missingFrontmatter`,
   `parseError`) so conformance can report them all at once.
+- `bundle-core.ts` — the bundle types + pure helpers (`getConcept`,
+  `conceptsByType`), Workers-safe: the okf/ instance of the core/node split
+  (disk walking stays in `bundle.ts`; remote loading in
+  `instance/store-github.ts`).
 - `conformance.ts` — the validator. Profile `okf` = reserved `index.md` +
   `log.md`, every concept parses and has a `type`. Profile `animamesh` adds:
   constitution present and `immutable: true`, decisions/events dated, agent
   concepts declare `model`/`harness`/`level`. Broken relative links are
   warnings, not errors.
+- `conformance-fs.ts` — `diskLinkChecker`, the Node-only link checker the CLI
+  passes into `checkConformance`: disk fidelity, resolved against the
+  concept's absolute path.
 
 ## ledger/ — the audit seam
 
@@ -47,6 +54,13 @@ assertions verifiers build on.
 - `instance/config.ts` — resolve an instance root (config + bundle + ledger +
   approvals + reports + drafts paths). Shape/defaults live in `config-core.ts`
   (Workers-safe).
+- `instance/env.ts` / `env-core.ts` — the env-injection primitive every
+  provider, source, channel, and the defect filer read through: `getEnv`
+  (injected env first, `process.env` fallback, guarded for Workers) in core;
+  `loadInstanceEnv` — the dependency-free `.env`/`.env.local` reader — in the
+  Node half. It is what makes `run --instance github:…` work from a laptop
+  checkout, and values never leave the process: callers read what they need
+  by name and nothing logs them.
 - **`instance/store.ts` — the storage seam.** Everything the harness touches
   at run time (`loadConfig`/`loadBundle`/reports/ledger/approvals/`flush`)
   behind one async interface, with read-your-writes semantics. Two
@@ -66,9 +80,20 @@ assertions verifiers build on.
 
 ## providers/ — the chokepoint
 
-`AgentWorkerProvider` = `{name, assertConfigured(), run(opts)}`. Everything
-model-related crosses this seam and nothing else does.
+`AgentWorkerProvider` = `{name, capabilities?, assertConfigured(), run(opts)}`.
+Everything model-related crosses this seam and nothing else does.
 
+- `types.ts` — the contract, including the v0.12 capability seam:
+  `ProviderCapabilities` (`fileReads`, `webSearch`) declared per provider,
+  read through `providerCapabilities()` — an undeclared provider is
+  `NO_CAPABILITIES`, nothing claimed, nothing offered. The harness states
+  the capabilities to the agent in its prompt AFTER the job description and
+  says they win — a job is written once, capabilities change with every
+  harness swap and override (engine issue #4: an agent told to "budget ~8
+  web fetches" on a tool-less harness reported a tool failure that had never
+  been a tool). `web: <n>` in an agent's frontmatter budgets searches per
+  run; the harness grants it only when the effective harness declares
+  `webSearch`, and refuses it OUT LOUD in the prompt otherwise.
 - `index.ts` — the registry **core** (Workers-safe): only fetch-based
   providers imported here. Exports `CLOUD_HARNESSES` — the single definition
   of what a cloud beat may run — and `resolveProvider(harness, ctx?)`, where
@@ -77,7 +102,10 @@ model-related crosses this seam and nothing else does.
 - `moonshot-api.ts` — OpenAI-compatible chat completions by pure fetch.
   `MOONSHOT_BASE_URL` overrides the endpoint (subscription keys are
   endpoint-scoped); 429/5xx backoff; no `temperature` (some models
-  hard-reject non-defaults); tokens surfaced to the ledger.
+  hard-reject non-defaults); tokens surfaced to the ledger. Declares zero
+  capabilities (`fileReads: false, webSearch: false`) — deliberately, until
+  Moonshot's `$web_search` builtin is wired: claiming web here would
+  recreate issue #4 on this harness.
 - `anthropic-api.ts` — Claude Messages API by pure fetch on a subscription
   OAuth token (`CLAUDE_CODE_OAUTH_TOKEN`): Workers-capable Claude cognition,
   no SDK, no subprocess, no metered key. **The system prompt shape is
@@ -85,16 +113,33 @@ model-related crosses this seam and nothing else does.
   rejects large requests (docs/learnings/2026-07-12). Error paths
   distinguish quota 429s (window status + reset time appended) from
   request-shape 429s, and name HTML block pages instead of spraying markup.
+  Web search is server-side (`web_search_20250305` in the SAME Messages call
+  — no client tool loop, so it runs unchanged on Workers), with `pause_turn`
+  continuation up to MAX_TURNS=6 and a never-converging sweep returned as
+  partial output, flagged `degraded`. A gateway that refuses the tool
+  degrades the run instead of failing the beat: retry without tools, a
+  capability correction appended mid-prompt ("say which checks could not
+  run"), `degraded` on the result. A thinking-only `max_tokens` response
+  retries once with thinking disabled
+  ([docs/learnings/2026-07-18-adaptive-thinking-output-budget.md](../docs/learnings/2026-07-18-adaptive-thinking-output-budget.md)).
 - `node-providers.ts` — the subprocess providers, registered as an import
   side effect by Node entrypoints only (never by `workers/`):
-  - `claude-code.ts` — spawns `claude -p … --output-format text`.
+  - `claude-code.ts` — spawns `claude -p … --output-format text`. Declares
+    `{fileReads: true, webSearch: false}`.
   - `claude-agent-sdk.ts` — Claude via `@anthropic-ai/claude-agent-sdk`
     (lazy import; subscription auth via `CLAUDE_CODE_OAUTH_TOKEN`; read-only
     tools, no settings bleed). Laptop-only by architecture: the SDK spawns a
-    bundled CLI.
+    bundled CLI. Declares `{fileReads: true, webSearch: true}` — it
+    whitelists its own tools, so both answers are facts, not guesses.
   - `opencode.ts` — long-lived `opencode serve` **per working directory**
     (the session's relative reads must resolve against the instance), REST
     session + message, SSE `/event` tap for live tool-firing progress.
+    Declares `{fileReads: true, webSearch: false}`.
+
+  The two CLI harnesses under-claim web deliberately: they run with the
+  local install's default permissions, so web access varies by machine and
+  is not something this seam can promise. Under-claiming costs a sentence
+  of prompt; over-claiming costs a fabricated research week.
 - `fake.ts` — deterministic, records calls; the regression suite's provider.
 
 ## harness/ — one heartbeat
@@ -117,6 +162,16 @@ default the store to the local directory and register subprocess providers.
   cron drift; spokes first, hub last; **one spoke's failure never aborts the
   beat**; commercial agents skip while dual-gated; `cloudTier: true` skips
   any harness not in `CLOUD_HARNESSES`, with reason.
+- `schedule.ts` — the `ops/schedule.md` surface (`SCHEDULE_RELPATH`): `wake:`
+  (run at the next beat regardless of cadence, consumed in the beat's own
+  commit), `pause:` (skipped until removed — pause beats wake, and the
+  contradiction stays on file), `cadence:` (per-agent overrides of declared
+  `heartbeat:` — declared vs. effective, the cognition-overrides pattern).
+  `scheduleFromBundle` reads it tolerantly; `effectiveCadence` feeds the due
+  decision; `mutateSchedule` applies edits through the store; and
+  `parseScheduleRequest` is the gated path — a hub with `schedule-update`
+  whitelisted may end its report with a `schedule-request` block that wakes
+  other agents (model proposes, code disposes, ledgered).
 - `direction-core.ts` — `runDirectionCore`: the second entry point beside the
   heartbeat. An inbound principal message (Discord interaction, polled email)
   becomes ONE agentic run with full bundle context; the model decides the
@@ -154,6 +209,10 @@ default the store to the local directory and register subprocess providers.
 - `channels/registry.ts` (Workers-safe) — channel registry (discord bot-DM /
   webhook, notion, gmail, console; all pure fetch with injected env) +
   `deliverLatestReportFromStore`. `channels/index.ts` adds the fs wrapper.
+  Discord delivery never truncates a long report: it splits into sequential
+  messages at paragraph boundaries (`CONTENT_LIMIT` 1900, with a runaway cap
+  that clips only a pathological tail), so a brief arrives whole and in
+  reading order.
 - `a2a/card-core.ts` — the mesh's Agent Card assembled from a loaded bundle
   (`streaming: false` — short connections by design; dual-gated commercial
   agents are not advertised). `a2a/card.ts` is the fs wrapper.
@@ -231,8 +290,9 @@ re-checked per request, narrow env) — see `workers/web/README.md`.
 
 - `report-core.ts` (Workers-safe) — `defect-report` block parsing, the
   draft artifact format (`defect-draft` frontmatter), the identity-leak
-  guard, and the GitHub Issues client (UA header set — the Workers 403
-  learning; title-dedup against open `defect` issues). Harness wiring in
+  guard, and the GitHub Issues client (UA header set —
+  [docs/learnings/2026-07-18-github-ua-less-403.md](../docs/learnings/2026-07-18-github-ua-less-403.md);
+  title-dedup against open `defect` issues). Harness wiring in
   `harness/defects.ts`.
 - `file.ts` (Node) — the deliberate promotion step: `listDefectDrafts` +
   `fileDefectDrafts` (leak guard re-run on current content; URL written
@@ -243,3 +303,11 @@ re-checked per request, narrow env) — see `workers/web/README.md`.
 `main(argv) → exit code`, so tests drive it in-process. Commands:
 `init · validate · run · gate · report · deliver · heartbeat · card ·
 export-local · defect · templates`.
+
+## index.ts
+
+The package's public API (`main`/`types` in package.json): one curated
+re-export of every engine surface an embedder needs — `runAgent`,
+`heartbeat`, `scaffoldBrain`, `exportLocalAgents`, `applyDefectReports`, the
+stores, providers, channels, and gates. New public surface lands here or it
+is not public.

@@ -9,7 +9,8 @@ specifics (those live in each instance's own repo — see the boundary doc).
 
 1. [../README.md](../README.md) — what AnimaMesh is and the design rules
 2. [architecture.md](architecture.md) — the whole system on one page, with
-   the cloud diagram, read-source boundary, and principal message flows
+   the cloud diagram, read-source boundary, the capability/web-search
+   contract, and principal message flows
 3. [heartbeat-anatomy.md](heartbeat-anatomy.md) — one beat, step by step:
    the DO alarm, the due decision, spokes-first/hub-last, and why a long
    beat fits a serverless platform (sequence diagram)
@@ -33,6 +34,10 @@ specifics (those live in each instance's own repo — see the boundary doc).
    trust-bearing step (gate, leak guard, dedup, ledger)
 10. [learnings/](learnings/README.md) — hard-won platform knowledge with
     evidence; **check here first when a vendor edge misbehaves**
+
+Upgrading, or wondering when a behavior changed? [../CHANGELOG.md](../CHANGELOG.md)
+is the only place upgrade boundaries are narrated release by release —
+including the issue-#4 story behind the capability contract.
 
 Working on the code itself? [../CLAUDE.md](../CLAUDE.md) has the working
 agreements and invariants; [../src/README.md](../src/README.md) the module

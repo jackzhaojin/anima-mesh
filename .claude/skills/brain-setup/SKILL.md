@@ -97,7 +97,11 @@ Walk the user through, in order (each exists for a reason — say the reason):
    corrupt append-only files).
 2. **Secrets stay outside git.** `.env.local` (git-ignored, mode 600) holds
    model/channel tokens, referenced by variable name only. Setup itself
-   needs none; the first `run` needs a model key.
+   needs none; a real-model `run` needs a model key — but a credential-free
+   dry run works today: scaffold with `"defaultHarness": "fake"` (or
+   `--harness fake`) and the deterministic provider completes the full
+   loop — report, ledger, verifiers — offline. Switch an agent to real
+   cognition later by editing its `model:`/`harness:` frontmatter.
 3. **First run, locally:**
    ```bash
    pnpm cli run <agent> --instance <target-dir>

@@ -29,7 +29,8 @@ replaced with the Agent Client Protocol; `acp/` is the ported form. See
 
 ## poc/codex — Codex CLI studies
 
-- `hello-world/`, `streaming-tools-poc/` — streaming + tool-call handling.
+- `hello-world/`, `streaming-tools-poc/` — streaming + tool-call handling;
+  see [poc/codex/README.md](poc/codex/README.md).
 
 ## Hygiene
 

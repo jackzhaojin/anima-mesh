@@ -62,12 +62,13 @@
   <text x="510" y="150" font-size="12.5" fill="#33445c">Nine markdown files. Each one is an agent: its duties in</text>
   <text x="510" y="167" font-size="12.5" fill="#33445c">prose, its wiring in frontmatter. Edit a file, change the mesh.</text>
 
-  <rect x="510" y="184" width="340" height="74" rx="8" fill="#ffffff" stroke="#54aeff" stroke-width="1.4"/>
-  <text x="526" y="207" font-size="13" font-weight="700" fill="#0a5bd3">chief-of-staff — the hub</text>
-  <rect x="782" y="194" width="56" height="20" rx="10" fill="#ddf4ff"/>
-  <text x="810" y="208" font-size="10.5" fill="#0a5bd3" text-anchor="middle" font-weight="600">daily</text>
-  <text x="526" y="227" font-size="12" fill="#33445c">reads every spoke report → ONE brief;</text>
-  <text x="526" y="244" font-size="12" fill="#33445c">wakes spokes via gated schedule-requests</text>
+  <rect x="510" y="184" width="340" height="80" rx="8" fill="#ffffff" stroke="#54aeff" stroke-width="1.4"/>
+  <text x="526" y="205" font-size="13" font-weight="700" fill="#0a5bd3">chief-of-staff — the hub</text>
+  <rect x="782" y="192" width="56" height="20" rx="10" fill="#ddf4ff"/>
+  <text x="810" y="206" font-size="10.5" fill="#0a5bd3" text-anchor="middle" font-weight="600">daily</text>
+  <text x="526" y="224" font-size="12" fill="#33445c">reads every spoke report → ONE brief; wakes</text>
+  <text x="526" y="240" font-size="12" fill="#33445c">spokes, maintains prep packs, files engine</text>
+  <text x="526" y="256" font-size="12" fill="#33445c">defects — all via gated L3 write paths</text>
 
   <rect x="510" y="270" width="340" height="44" rx="8" fill="#ffffff" stroke="#a3c7e8" stroke-width="1.1"/>
   <text x="526" y="288" font-size="12.5" font-weight="700" fill="#1f2328">compliance-ops</text>
@@ -130,7 +131,7 @@
 
   <rect x="910" y="278" width="310" height="56" rx="8" fill="#ffffff" stroke="#d0d7de" stroke-width="1.1"/>
   <text x="926" y="300" font-size="12.5" font-weight="700" fill="#1f2328">reports/ · drafts/ <tspan font-weight="400" font-size="11.5" fill="#57606a">— run artifacts</tspan></text>
-  <text x="926" y="320" font-size="11.5" fill="#57606a">daily briefs land here; L2 drafts wait here</text>
+  <text x="926" y="320" font-size="11.5" fill="#57606a">daily briefs · prep packs · defect fallbacks</text>
 
   <text x="910" y="362" font-size="11.5" fill="#57606a" font-style="italic">three audit seams: the repo diff, the gate, the ledger</text>
 

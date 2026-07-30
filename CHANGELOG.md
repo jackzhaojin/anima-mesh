@@ -23,7 +23,7 @@ Upgrade one private instance at a time:
    authenticated `POST /beat`, and confirm the mesh-authored commit and brief
    delivery before considering the upgrade complete.
 
-No release through v0.9 requires an existing bundle or ledger to be rewritten.
+No release through v0.12 requires an existing bundle or ledger to be rewritten.
 The ledger remains append-only; never "migrate" it by editing old entries.
 
 ## [Unreleased]
@@ -582,8 +582,9 @@ initial local cognition options.
 - Scaffold with `pnpm cli init`, validate the result, and continue through the
   later minor upgrade notes before choosing a production tag.
 
-[Unreleased]: https://github.com/jackzhaojin/anima-mesh/compare/v0.11.1...HEAD
-[v0.11.x]: https://github.com/jackzhaojin/anima-mesh/tree/v0.11.1
+[Unreleased]: https://github.com/jackzhaojin/anima-mesh/compare/v0.12.0...HEAD
+[v0.12.x]: https://github.com/jackzhaojin/anima-mesh/tree/v0.12.0
+[v0.11.x]: https://github.com/jackzhaojin/anima-mesh/tree/v0.11.5
 [v0.10.x]: https://github.com/jackzhaojin/anima-mesh/tree/v0.10.1
 [v0.9.x]: https://github.com/jackzhaojin/anima-mesh/tree/v0.9.3
 [v0.8.x]: https://github.com/jackzhaojin/anima-mesh/tree/v0.8.0

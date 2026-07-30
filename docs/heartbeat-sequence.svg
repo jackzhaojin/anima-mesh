@@ -28,7 +28,7 @@
 
   <rect x="770" y="96" width="170" height="56" rx="9" fill="#faf5ff" stroke="#8250df" stroke-width="1.4"/>
   <text x="855" y="119" font-size="13.5" font-weight="700" fill="#6639ba" text-anchor="middle">model vendors</text>
-  <text x="855" y="138" font-size="11" fill="#4a3f63" text-anchor="middle">pure fetch, no SDKs</text>
+  <text x="855" y="138" font-size="11" fill="#4a3f63" text-anchor="middle">pure fetch · web search</text>
 
   <rect x="1000" y="96" width="200" height="56" rx="9" fill="#eef1fe" stroke="#5865f2" stroke-width="1.4"/>
   <text x="1100" y="119" font-size="13.5" font-weight="700" fill="#3b45b0" text-anchor="middle">the principal</text>
@@ -89,9 +89,9 @@
   <!-- 7: model call -->
   <path d="M 183 516 L 851 516" stroke="#57606a" stroke-width="1.3" fill="none" marker-end="url(#hs-ar)"/>
   <circle cx="205" cy="516" r="9" fill="#0a5bd3"/><text x="205" y="520" font-size="11" fill="#ffffff" text-anchor="middle" font-weight="700">7</text>
-  <text x="224" y="509" font-size="11.5" fill="#414a55">one fetch: prompt = agent's job + bundle excerpts + freshest reports + approvals + source listings</text>
+  <text x="224" y="509" font-size="11.5" fill="#414a55">prompt = job + bundle excerpts + fresh reports + approvals + source listings + capability truth</text>
   <path d="M 851 544 L 187 544" stroke="#8c959f" stroke-width="1.2" fill="none" stroke-dasharray="5 4" marker-end="url(#hs-ar-d)"/>
-  <text x="224" y="537" font-size="11" fill="#8c959f" font-style="italic">report text + token usage &#160;·&#160; ≤10 min per run; 429/5xx backoff 2 s → 8 s</text>
+  <text x="224" y="537" font-size="11" fill="#8c959f" font-style="italic">report + tokens · ≤10 min; backoff 2 s → 8 s · a web: budget loops search turns in-call</text>
 
   <!-- 8: buffer (self) -->
   <circle cx="212" cy="580" r="9" fill="#0a5bd3"/><text x="212" y="584" font-size="11" fill="#ffffff" text-anchor="middle" font-weight="700">8</text>

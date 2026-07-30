@@ -46,11 +46,19 @@ Ask in order — first "yes" decides:
 | Worker hostnames, daily direction caps, allowlisted sender ids | instance (its `wrangler.jsonc` vars + config) | deploy coordinates |
 | Agent roster archetypes (bookkeeper, chief-of-staff, …) | engine (`templates/agents/` with `{{PLACEHOLDER}}` identity) | roles are generic; identity is config |
 | Which human approves what, boundary maps, activation gates' *state* | instance | legal/organizational reality |
+| The engine-repo Issues PAT value (`GITHUB_DEFECTS_TOKEN`) | instance (Worker secret / env) | one org's credential; every brain that files issues mints its own |
+| The leak-guard rules gating what may be filed publicly | engine (`src/defects/report-core.ts` + tests) | what counts as an identity leak is enforced generically, for every instance |
+| Which agents get `web: <n>` and how much | instance (agent frontmatter) | one org's appetite for external checks |
+| Which providers can grant web search | engine (provider `capabilities` declarations) | vendor capability, org-independent |
 
 ## Why the boundary is strict
 
 - **The engine is public.** One leaked name or key is unrecoverable history.
   Scan every diff for instance names, real emails, and secrets before commit.
+  Exactly one code path deliberately crosses the boundary outward — the
+  defect loop, which files instance-discovered engine bugs as public
+  issues — and it crosses leak-guarded: a report that names the org, a
+  person, or an email is denied, never rewritten.
 - **Reusability is the product.** Every instance-specific literal that sneaks
   in makes the next instance's scaffold dirtier.
 - **The instance stays portable too**: because all logic lives engine-side,

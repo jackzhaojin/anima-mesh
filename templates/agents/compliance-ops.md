@@ -7,6 +7,12 @@ model: "{{DEFAULT_MODEL}}"
 harness: "{{DEFAULT_HARNESS}}"
 heartbeat: daily
 whitelist: []
+# Web searches this agent may spend per run — enough to confirm the standing
+# external status checks the calendar names (registry lookups, agency
+# notices), not open-ended browsing. Without a budget, an agent asked to
+# verify external state has no way to do it and must report the check as a
+# gap every cycle (see architecture.md on capability truth).
+web: 4
 commercial: false
 ---
 

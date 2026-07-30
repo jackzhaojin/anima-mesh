@@ -32,7 +32,9 @@ to understand before you start — the sorting checklist is in
 | `src/ledger/` + `src/okf/` | append-only audit + the bundle format |
 | `src/instance/` | the storage seam — read a brain from disk *or* GitHub |
 | `src/channels/` + `src/a2a/` | Discord/Gmail/Notion delivery + agent card |
-| `src/init/` + `src/cli.ts` | scaffold a brain · run · gate · report |
+| `src/local/` | compile agent concepts into interactive terminal artifacts (`export-local`) |
+| `src/defects/` | de-identified engine-issue filing: leak guard, title dedup, per-run cap |
+| `src/init/` + `src/cli.ts` | the command surface: scaffold · validate · run · heartbeat · gate · report · deliver · card · export-local · defect · templates |
 | `workers/heartbeat/` + `workers/web/` | the cloud tier (beat + directions + dashboard) |
 | `templates/agents/` | the shipped roster, with `{{PLACEHOLDER}}` identity |
 | `docs/` | this shelf |
@@ -46,11 +48,11 @@ git-tracked plain files:
 
 | Path | What it holds |
 |---|---|
-| `animamesh.config.json` | the pairing: `engine.ref` pin, `cognition.overrides`, delivery, direction agent, identity/persona, activation gates |
+| `animamesh.config.json` | the pairing: `engine.ref` pin + `engine.repo` (defect filing target), `cognition.overrides`, delivery, direction agent, identity/persona, activation gates, `localAgents` (interactive export selection/model mapping) |
 | `bundle/constitution.md` | immutable hard limits (machine-read by the gates) |
 | `bundle/facts/ decisions/ events/` | stable / dated-immutable / append-only knowledge |
-| `bundle/agents/*.md` | each agent as a concept file (level · model · harness · optional `sources:`) |
-| `bundle/ops/calendar.md` + `ops/nags.md` | what agents wake to check + reminders that repeat |
+| `bundle/agents/*.md` | each agent as a concept file (level · model · harness · optional `sources:` · optional `web:`) |
+| `bundle/ops/` | scaffolded by init: `calendar.md` (what agents wake to check), `watch-list.md` (research focus), `schedule.md` (overrides and one-shot wakes); `nags.md` is opt-in afterwards — read into every prompt when present, reminders that repeat until done |
 | `bundle/index.md` + `log.md` | reserved (log is append-only) |
 | `ledger/actions.jsonl` | the append-only action ledger (audit seam) |
 | `approvals/` `reports/` `drafts/` | the "needs you" gate + run artifacts |
@@ -92,11 +94,22 @@ pnpm cli init ../acme-brain --org "Acme Co" --principal "Ada" \
 pnpm cli validate ../acme-brain        # must PASS before anything runs
 ```
 
+No model credentials yet? Add `--harness fake` to the init: the
+deterministic provider completes the whole loop — prompt assembly, report,
+ledger append, verifiers — with zero external calls, so you can watch a
+full agent run before choosing a vendor. Switching to real cognition later
+is a frontmatter edit (`model:` / `harness:`) in `bundle/agents/*.md`, per
+agent.
+
 The init interviews you (or takes flags / an answers file), fills the agent
 templates, and emits a conformant bundle: `constitution.md` (the immutable
 hard limits), `facts/`, `decisions/`, `events/`, `ops/calendar.md`,
-`agents/*.md`. Make it a **private** git repo immediately — the brain will
-hold real corporate facts. Never let it live inside a cloud-synced folder.
+`ops/watch-list.md`, `ops/schedule.md`, `agents/*.md`. When the roster has
+a hub, init also compiles the local interactive surfaces
+(`.claude/agents/` + `.opencode/agents/`) so a new instance can be talked
+to from the first commit. Make it a **private** git repo immediately — the
+brain will hold real corporate facts. Never let it live inside a
+cloud-synced folder.
 
 Working in an AI session over this repo? The
 [brain-setup skill](../.claude/skills/brain-setup/SKILL.md) runs this whole
@@ -120,6 +133,7 @@ House rules that keep the bundle trustworthy as it grows:
 
 ```bash
 pnpm cli run compliance-ops --instance ../acme-brain
+pnpm cli heartbeat --instance ../acme-brain     # run everything due, hub last
 pnpm cli report --instance ../acme-brain
 pnpm cli gate list --instance ../acme-brain
 ```
@@ -133,7 +147,8 @@ edit with git history: trust as an operational dial with a paper trail.
 You can also just **talk to the mesh**: init compiled the hub into local
 interactive surfaces — `claude --agent <persona>` (Claude Code) or
 Tab-switch to it in opencode, from the brain repo. Same concept file, same
-personality, conversation instead of a heartbeat; see
+personality, conversation instead of a heartbeat; regenerate the surfaces
+any time with `pnpm cli export-local` after tuning a concept. See
 [local-agents.md](local-agents.md).
 
 ## 3. Choose cognition
@@ -148,6 +163,11 @@ the hard way:
 - Route around vendor trouble with `animamesh.config.json →
   cognition.overrides` (declared harness → actually-executed harness) —
   a config edit, not an agent rewrite, and reversible by deleting the block.
+- An agent that must check the outside world needs both halves: `web: <n>`
+  in its frontmatter *and* an effective harness that declares `webSearch`
+  (on the cloud tier that's `anthropic-api` only; `moonshot-api` declares
+  none). A refused budget is stated in the agent's own prompt, so it
+  reports the gap instead of imagining fetches.
 
 For live document context, add `sources: [onedrive]`,
 `sources: [github-docs]`, or both to only the agents that need it. The harness
@@ -165,6 +185,11 @@ current prompt surface includes listing metadata, not document bodies.
   agent decides the disposition, no keyword commands to memorize.
 - **Nags**: `ops/nags.md` entries repeat in every brief, with age, until
   done — the mesh politely refuses to let you forget your own blockers.
+- **The defect loop** — standard posture for a new instance: grant
+  `defect-report` in the hub's whitelist at its L3 promotion and set the
+  `GITHUB_DEFECTS_TOKEN` secret, so leak-clean engine bugs file directly
+  as public engine-repo issues. Details in
+  [local-agents.md](local-agents.md#defect-reports--the-feedback-loop-into-the-engine).
 
 ## 5. Go to the cloud
 

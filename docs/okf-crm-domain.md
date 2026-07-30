@@ -103,8 +103,9 @@ The autonomy ladder governs the CRM exactly like everything else: the
 principal edits records directly; an L1 hub **proposes** new records,
 stage moves, and hygiene fixes in its report (stale warm relationships,
 engagements with an empty `next-action`, screen violations); L2 makes
-those proposals as drafts; L3 can be whitelisted to apply reversible
-record edits itself. Interactions stay append-only at every level.
+those proposals as drafts — concretely, gated `draft-request` blocks under
+the `draft-write` whitelist entry, landing in the run's own commit; L3 can
+be whitelisted to apply reversible record edits itself. Interactions stay append-only at every level.
 
 ## Adopting it
 
