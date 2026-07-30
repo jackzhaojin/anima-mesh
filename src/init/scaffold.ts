@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, readdirSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import * as path from "node:path";
 import { loadBundle } from "../okf/bundle.js";
 import { checkConformance, type ConformanceReport } from "../okf/conformance.js";
@@ -40,6 +40,16 @@ export interface ScaffoldResult {
 
 const DEFAULT_AGENTS = ["compliance-ops"];
 
+/** Instances pin the engine by tag; default the pin to the version this scaffolder shipped in. */
+function engineVersionTag(): string {
+  try {
+    const pkg = JSON.parse(readFileSync(new URL("../../package.json", import.meta.url), "utf8"));
+    return typeof pkg.version === "string" && pkg.version ? `v${pkg.version}` : "main";
+  } catch {
+    return "main";
+  }
+}
+
 export async function scaffoldBrain(targetDir: string, answers: InitAnswers): Promise<ScaffoldResult> {
   const root = path.resolve(targetDir);
   if (existsSync(root) && readdirSync(root).length > 0) {
@@ -67,7 +77,7 @@ export async function scaffoldBrain(targetDir: string, answers: InitAnswers): Pr
     approvals: "approvals",
     reports: "reports",
     drafts: "drafts",
-    engine: { repo: answers.engineRepo ?? "github.com/jackzhaojin/anima-mesh", ref: answers.engineRef ?? "main" },
+    engine: { repo: answers.engineRepo ?? "github.com/jackzhaojin/anima-mesh", ref: answers.engineRef ?? engineVersionTag() },
     identity: {
       principal: { name: answers.principalName, ...(answers.principalEmail ? { email: answers.principalEmail } : {}) },
       ...(persona
@@ -91,7 +101,10 @@ export async function scaffoldBrain(targetDir: string, answers: InitAnswers): Pr
       `- Engine: ${config.engine!.repo} @ ${config.engine!.ref}\n` +
       `- Principal: ${answers.principalName} (the approval gate)\n` +
       (persona ? `- Mesh persona: ${persona}\n` : "") +
-      `\nValidate: \`anima-mesh validate .\` · Run an agent: \`anima-mesh run <name>\`\n`,
+      `\nOperate from an engine checkout (github.com/jackzhaojin/anima-mesh) until\n` +
+      `the npm package ships:\n\n` +
+      `    pnpm cli validate <path-to-this-repo>\n` +
+      `    pnpm cli run <agent> --instance <path-to-this-repo>\n`,
   );
 
   // ── the bundle ───────────────────────────────────────────────────────────
