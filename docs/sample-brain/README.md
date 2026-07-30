@@ -1,5 +1,9 @@
 # sample-brain — a scrubbed production instance
 
+> 🎤 **Here for the AI Tinkerers talk?**
+> [2026-08-04-ai-tinkerers-talk.md](2026-08-04-ai-tinkerers-talk.md) is the
+> talk itself — diagram → code, five stops, all links public.
+
 This folder is a complete AnimaMesh **instance** ("brain"), scrubbed from a
 real one that runs a real one-person company every day. The structure, file
 shapes, agent roster, and working rhythms are production-real; **every name,
@@ -65,6 +69,18 @@ run **writes real files** here (`reports/`, `ledger/`);
   founder saying "bug me daily until this is done" — and
   [drafts/nag-prep/](drafts/nag-prep/) is the hub keeping a ready-to-work
   prep pack per nag so the founder's next session starts warm.
+- **The filing cabinet stays where the company's files already live.**
+  Originals sit in SharePoint/OneDrive; the engine's sources seam reads the
+  library over Microsoft Graph (read-only, delegated consent) and inlines
+  the listing into prompts each beat. The bundle holds only extracted
+  knowledge — see [bundle/cabinet/2025-09-22-ein-letter.md](bundle/cabinet/2025-09-22-ein-letter.md)
+  for the pattern at its sharpest.
+- **The mesh reaches across repos.** The cloud tier runs the brain straight
+  from its GitHub-hosted copy (`github:owner/repo#ref` works on the CLI
+  too), reads sibling repos as sources (`github-docs`), commits its beats
+  back as its own identity, and files de-identified defect issues on this
+  public engine repo — one brain, actions across many repos, every write
+  gated and ledgered.
 - **Commercial capability is dual-gated.**
   [bundle/agents/sales-qualification.md](bundle/agents/sales-qualification.md)
   is designed capable but cannot activate until the boundary map is verified

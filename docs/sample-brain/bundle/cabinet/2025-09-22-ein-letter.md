@@ -7,7 +7,9 @@ date: 2025-09-22
 
 # EIN assignment letter
 
-The IRS EIN assignment letter. Original in the document store.
+The IRS EIN assignment letter. Original in the company's SharePoint
+library — readable to the mesh over Microsoft Graph, never copied into
+this repo.
 
 **The EIN itself is deliberately not recorded in this bundle.** A filing
 that needs it must be prepared from the original letter, freshly read —

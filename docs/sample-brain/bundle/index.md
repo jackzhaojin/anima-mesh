@@ -81,8 +81,12 @@ librarian verifies against cabinet originals.
 ## Cabinet (document memory)
 
 One concept per key document: extracted facts + why it matters. **Originals
-never enter this repo** — they stay in the founder's document store; only
-knowledge comes in.
+never enter this repo** — they stay in the company's SharePoint/OneDrive
+library; only knowledge comes in. The engine's sources seam reads that
+library **read-only over Microsoft Graph** and inlines the live folder
+listing into agents' prompts each beat, so even an L1 agent with no tools
+sees what documents exist; the librarian crawls it and keeps these
+concepts true.
 
 | Concept | The memory it holds |
 |---|---|

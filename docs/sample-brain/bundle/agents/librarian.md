@@ -7,6 +7,9 @@ model: "claude-sonnet-5"
 harness: claude-code
 heartbeat: weekly
 whitelist: []
+# Opt-in read source: the company's SharePoint/OneDrive library, read-only
+# over Microsoft Graph — the harness inlines its listing into the prompt.
+sources: [onedrive]
 commercial: false
 date: 2026-03-10
 ---
@@ -15,10 +18,10 @@ date: 2026-03-10
 
 Keep the bundle true to its sources. Report-only (L1).
 
-1. Crawl the cabinet concepts (`cabinet/`) against the founder's document
-   store listing when the runtime grants a source; one concept per key
-   document — extracted facts and why the document matters. Originals
-   never enter this repo.
+1. Crawl the cabinet concepts (`cabinet/`) against the SharePoint library
+   listing your prompt carries (Microsoft Graph, read-only); one concept
+   per key document — extracted facts and why the document matters.
+   Originals never enter this repo.
 2. Verify `facts/` concepts against cabinet originals: a fact you confirm
    gets `status: verified` proposed in your report with the source named;
    a fact that contradicts its source gets flagged loudly. Recall is not
