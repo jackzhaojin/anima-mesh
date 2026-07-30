@@ -62,17 +62,23 @@ the report, a whitelist gate in code, a ledger line.
 - [../../src/harness/schedule.ts](../../src/harness/schedule.ts) — the
   gate that decides: model judgment asks, deterministic code disposes.
 
-## 4 · Reach: the company's files, and other repos
+## 4 · Reach: files, mail, and other repos
 
-![Cloud architecture](../cloud-architecture.svg)
+![Resource reach — the brain goes to where the company's truth already lives](../resource-reach.svg)
 
-*Say:* the company's documents never move — they live in SharePoint/
-OneDrive, and the mesh reads the library **over Microsoft Graph**,
-read-only, inlining the live folder listing into every prompt. And the
-mesh isn't confined to its own repo: the cloud tier runs the brain
-straight from GitHub, reads sibling repos as sources, commits its beats
-back, and **files de-identified issues on this repo when the engine
-misbehaves** — the agent is user #1 of its own bug tracker.
+*Say:* the company's resources never move — the brain goes to them.
+Documents stay in SharePoint/OneDrive, read **over Microsoft Graph**,
+read-only, the live folder listing inlined into every prompt. The CRM
+was **bootstrapped from the mailbox's sent items** — one-off `Mail.Read`
+device consent, token never persisted — because your outbox is the
+ground truth of your real relationships. And the mesh isn't confined to
+its own repo: the cloud tier runs the brain straight from GitHub, reads
+sibling repos as sources, commits its beats back, and **files
+de-identified issues on this repo when the engine misbehaves** — the
+agent is user #1 of its own bug tracker. Deliberately absent: direct
+bank access — designed, not wired; money stays behind constitution
+gates. (Workers/Durable-Object internals:
+[cloud-architecture.svg](../cloud-architecture.svg).)
 
 *Code:*
 
@@ -82,6 +88,10 @@ misbehaves** — the agent is user #1 of its own bug tracker.
 - [../../src/sources/github-docs.ts](../../src/sources/github-docs.ts) —
   a second repo as a read source (local tree on a laptop, GitHub API on
   Workers).
+- [bundle/crm/taxonomy.md](bundle/crm/taxonomy.md) +
+  [bundle/crm/engagements/2026-harborlight-content-audit.md](bundle/crm/engagements/2026-harborlight-content-audit.md)
+  — the CRM the sent-mail sweep feeds: typed concepts, boundary screens
+  in the data, hub proposes / founder disposes.
 - [../../src/harness/defects.ts](../../src/harness/defects.ts) — the
   defect loop: leak guard, dedup, cap, ledger — then a public issue.
   Exhibit A: [issue #4](https://github.com/jackzhaojin/anima-mesh/issues/4),

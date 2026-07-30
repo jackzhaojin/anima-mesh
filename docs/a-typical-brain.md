@@ -107,6 +107,24 @@ What the principal actually experiences, on a day the laptop stays closed:
 The git history reads like a company diary — beats, direction drains, and
 deliberate human commits interleaved, every one attributable.
 
+## The reach — resources stay where they are
+
+![Resource reach — the brain goes to where the company's truth already lives](resource-reach.svg)
+
+Nothing migrates into the mesh. Documents (contracts, tax letters,
+receipts, statements) stay in SharePoint/OneDrive and are read over
+Microsoft Graph — delegated, read-only, the live folder listing inlined
+into every prompt. The CRM was bootstrapped from the company mailbox's
+**sent items** (a one-off `Mail.Read` device consent, token never
+persisted): your outbox is the ground truth of your real relationships,
+so a single screened sweep seeded orgs, people, and engagements as typed
+concepts. GitHub is both home and workbench — the cloud tier runs the
+brain from its hosted copy, reads sibling planning repos as sources, and
+files de-identified defect issues on the public engine repo. And one
+absence is deliberate: no direct bank read. It is designed, gated, and
+unwired until the principal builds it — money stays behind the
+constitution.
+
 ## What transfers, what doesn't
 
 Everything structural on this page — the bundle conventions, the roster

@@ -1,0 +1,130 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 880" font-family="ui-sans-serif, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif">
+  <defs>
+    <marker id="rr-ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#57606a"/>
+    </marker>
+  </defs>
+
+  <rect x="0" y="0" width="1280" height="880" fill="#ffffff"/>
+
+  <text x="40" y="46" font-size="21" font-weight="700" fill="#1f2328">Resource reach — the brain goes to where the company's truth already lives</text>
+  <text x="40" y="70" font-size="13" fill="#57606a">Drawn from production, de-identified. Nothing migrates into the mesh: reads are consented and read-only; every write is gated and ledgered.</text>
+
+  <!-- ==================== LEFT: CORPORATE RESOURCES ==================== -->
+  <rect x="40" y="98" width="370" height="656" rx="14" fill="#ddf4ff" stroke="#0969da" stroke-width="1.5"/>
+  <text x="60" y="128" font-size="16" font-weight="700" fill="#0550ae">Corporate resources</text>
+  <text x="60" y="150" font-size="12.5" fill="#33455a">Where the truth already lives. The brain comes</text>
+  <text x="60" y="167" font-size="12.5" fill="#33455a">to the files — the files never move.</text>
+
+  <rect x="60" y="184" width="330" height="118" rx="8" fill="#ffffff" stroke="#8cc4e8" stroke-width="1.1"/>
+  <text x="76" y="208" font-size="13" font-weight="700" fill="#1f2328">SharePoint / OneDrive — the cabinet</text>
+  <text x="76" y="228" font-size="12" fill="#33455a">contracts · board resolutions · tax letters ·</text>
+  <text x="76" y="245" font-size="12" fill="#33455a">receipts · bank statements (PDFs)</text>
+  <text x="76" y="266" font-size="11.5" fill="#0969da">Microsoft Graph · delegated Files.Read.All</text>
+  <text x="76" y="283" font-size="11.5" fill="#0969da">read-only · listing inlined into every prompt</text>
+
+  <rect x="60" y="318" width="330" height="118" rx="8" fill="#ffffff" stroke="#8cc4e8" stroke-width="1.1"/>
+  <text x="76" y="342" font-size="13" font-weight="700" fill="#1f2328">Company mailbox</text>
+  <text x="76" y="362" font-size="12" fill="#33455a">founder directions — polled from the inbox</text>
+  <text x="76" y="379" font-size="12" fill="#33455a">sent-items sweep → seeded the CRM</text>
+  <text x="76" y="400" font-size="11.5" fill="#0969da">Graph Mail.Read · one-off device consent ·</text>
+  <text x="76" y="417" font-size="11.5" fill="#0969da">token held in memory, never persisted</text>
+
+  <rect x="60" y="452" width="330" height="101" rx="8" fill="#ffffff" stroke="#8cc4e8" stroke-width="1.1"/>
+  <text x="76" y="476" font-size="13" font-weight="700" fill="#1f2328">GitHub repos</text>
+  <text x="76" y="496" font-size="12" fill="#33455a">the brain's own hosted copy — the cloud tier</text>
+  <text x="76" y="513" font-size="12" fill="#33455a">runs straight from it · sibling planning/docs</text>
+  <text x="76" y="530" font-size="12" fill="#33455a">repos read as sources over the GitHub API</text>
+
+  <rect x="60" y="569" width="330" height="84" rx="8" fill="#f6f8fa" stroke="#8c959f" stroke-width="1.2" stroke-dasharray="6 4"/>
+  <text x="76" y="593" font-size="13" font-weight="700" fill="#57606a">Bank (direct read) — not wired, on purpose</text>
+  <text x="76" y="613" font-size="12" fill="#57606a">designed as a future, founder-built session;</text>
+  <text x="76" y="630" font-size="12" fill="#57606a">money stays behind constitution gates</text>
+
+  <text x="60" y="690" font-size="12" font-style="italic" fill="#33455a">Consent is per-scope and revocable; the mesh</text>
+  <text x="60" y="707" font-size="12" font-style="italic" fill="#33455a">holds the narrowest credential each job needs.</text>
+
+  <!-- ==================== CENTER: THE BRAIN ==================== -->
+  <rect x="470" y="98" width="360" height="656" rx="14" fill="#e9f5ee" stroke="#1a7f37" stroke-width="1.5"/>
+  <text x="490" y="128" font-size="16" font-weight="700" fill="#116329">The brain — one private repo</text>
+  <text x="490" y="150" font-size="12.5" fill="#2f4a3a">Extracted knowledge, never originals. Agents</text>
+  <text x="490" y="167" font-size="12.5" fill="#2f4a3a">read and write it on a daily heartbeat.</text>
+
+  <rect x="490" y="184" width="320" height="101" rx="8" fill="#ffffff" stroke="#a9d6bb" stroke-width="1.1"/>
+  <text x="506" y="208" font-size="13" font-weight="700" fill="#1f2328">cabinet/ — document memory</text>
+  <text x="506" y="228" font-size="12" fill="#33513f">one concept per original: what it says, why it</text>
+  <text x="506" y="245" font-size="12" fill="#33513f">matters, where truth lives — the EIN stays in</text>
+  <text x="506" y="262" font-size="12" fill="#33513f">the letter, deliberately unrecorded here</text>
+
+  <rect x="490" y="301" width="320" height="84" rx="8" fill="#ffffff" stroke="#a9d6bb" stroke-width="1.1"/>
+  <text x="506" y="325" font-size="13" font-weight="700" fill="#1f2328">facts/ · ops/ — expenses &amp; taxes</text>
+  <text x="506" y="345" font-size="12" fill="#33513f">compliance calendar: franchise tax, Form 1120</text>
+  <text x="506" y="362" font-size="12" fill="#33513f">chain · capital events await reconciliation</text>
+
+  <rect x="490" y="401" width="320" height="118" rx="8" fill="#ffffff" stroke="#a9d6bb" stroke-width="1.1"/>
+  <text x="506" y="425" font-size="13" font-weight="700" fill="#1f2328">crm/ — commercial system of record</text>
+  <text x="506" y="445" font-size="12" fill="#33513f">orgs · people · engagements, typed concepts;</text>
+  <text x="506" y="462" font-size="12" fill="#33513f">employment-boundary screens live IN the data</text>
+  <text x="506" y="483" font-size="11.5" fill="#116329">bootstrapped from the sent-mail sweep —</text>
+  <text x="506" y="500" font-size="11.5" fill="#116329">the outbox is the truth of your relationships</text>
+
+  <rect x="490" y="535" width="320" height="101" rx="8" fill="#ffffff" stroke="#a9d6bb" stroke-width="1.1"/>
+  <text x="506" y="559" font-size="13" font-weight="700" fill="#1f2328">agents/ — the roster on a heartbeat</text>
+  <text x="506" y="579" font-size="12" fill="#33513f">librarian verifies against originals · bookkeeper</text>
+  <text x="506" y="596" font-size="12" fill="#33513f">reconciles · compliance-ops watches deadlines ·</text>
+  <text x="506" y="613" font-size="12" fill="#33513f">the hub reads everything, briefs the founder</text>
+
+  <text x="490" y="690" font-size="12" font-style="italic" fill="#2f4a3a">The bundle is the only state — any machine</text>
+  <text x="490" y="707" font-size="12" font-style="italic" fill="#2f4a3a">with the repo resumes the company.</text>
+
+  <!-- ==================== RIGHT: ACTIONS ==================== -->
+  <rect x="890" y="98" width="350" height="656" rx="14" fill="#fff8c5" stroke="#9a6700" stroke-width="1.5"/>
+  <text x="910" y="128" font-size="16" font-weight="700" fill="#7d4e00">Actions — gated &amp; ledgered</text>
+  <text x="910" y="150" font-size="12.5" fill="#5c4a1f">Model judgment proposes; deterministic</text>
+  <text x="910" y="167" font-size="12.5" fill="#5c4a1f">code disposes. Every action is a ledger line.</text>
+
+  <rect x="910" y="184" width="310" height="84" rx="8" fill="#ffffff" stroke="#d4bb6c" stroke-width="1.1"/>
+  <text x="926" y="208" font-size="13" font-weight="700" fill="#1f2328">Daily brief → chat / email</text>
+  <text x="926" y="228" font-size="12" fill="#5c4a1f">nags first — the ONE thing the founder</text>
+  <text x="926" y="245" font-size="12" fill="#5c4a1f">reads; replies become directions</text>
+
+  <rect x="910" y="284" width="310" height="84" rx="8" fill="#ffffff" stroke="#d4bb6c" stroke-width="1.1"/>
+  <text x="926" y="308" font-size="13" font-weight="700" fill="#1f2328">Beat commits, its own identity</text>
+  <text x="926" y="328" font-size="12" fill="#5c4a1f">reports + ledger appended to the brain repo;</text>
+  <text x="926" y="345" font-size="12" fill="#5c4a1f">git log is the proof of life</text>
+
+  <rect x="910" y="384" width="310" height="84" rx="8" fill="#ffffff" stroke="#d4bb6c" stroke-width="1.1"/>
+  <text x="926" y="408" font-size="13" font-weight="700" fill="#1f2328">Public issues on the engine repo</text>
+  <text x="926" y="428" font-size="12" fill="#5c4a1f">defect loop: leak-scanned, deduped, capped —</text>
+  <text x="926" y="445" font-size="12" fill="#5c4a1f">the agent is user #1 of its own bug tracker</text>
+
+  <rect x="910" y="484" width="310" height="118" rx="8" fill="#ffebe9" stroke="#cf222e" stroke-width="1.2"/>
+  <text x="926" y="508" font-size="13" font-weight="700" fill="#a40e26">approvals/ — the human gate</text>
+  <text x="926" y="528" font-size="12" fill="#6e2830">money · government filings · publishing ·</text>
+  <text x="926" y="545" font-size="12" fill="#6e2830">credentials · access expansion:</text>
+  <text x="926" y="566" font-size="12" font-weight="700" fill="#a40e26">ALWAYS end at the human,</text>
+  <text x="926" y="583" font-size="12" font-weight="700" fill="#a40e26">at every autonomy level</text>
+
+  <text x="910" y="690" font-size="12" font-style="italic" fill="#5c4a1f">Capability never outruns permission —</text>
+  <text x="910" y="707" font-size="12" font-style="italic" fill="#5c4a1f">commercial agents stay dual-gated.</text>
+
+  <!-- ==================== ARROWS ==================== -->
+  <line x1="410" y1="243" x2="466" y2="243" stroke="#57606a" stroke-width="1.6" marker-end="url(#rr-ar)"/>
+  <text x="415" y="233" font-size="10.5" fill="#57606a">read</text>
+  <line x1="410" y1="377" x2="466" y2="377" stroke="#57606a" stroke-width="1.6" marker-end="url(#rr-ar)"/>
+  <text x="415" y="367" font-size="10.5" fill="#57606a">read</text>
+  <line x1="410" y1="502" x2="466" y2="502" stroke="#57606a" stroke-width="1.6" marker-end="url(#rr-ar)"/>
+  <text x="415" y="492" font-size="10.5" fill="#57606a">read</text>
+
+  <line x1="830" y1="226" x2="886" y2="226" stroke="#57606a" stroke-width="1.6" marker-end="url(#rr-ar)"/>
+  <line x1="830" y1="326" x2="886" y2="326" stroke="#57606a" stroke-width="1.6" marker-end="url(#rr-ar)"/>
+  <line x1="830" y1="426" x2="886" y2="426" stroke="#57606a" stroke-width="1.6" marker-end="url(#rr-ar)"/>
+  <text x="833" y="216" font-size="10.5" fill="#57606a">propose</text>
+  <text x="833" y="316" font-size="10.5" fill="#57606a">gated</text>
+  <text x="833" y="416" font-size="10.5" fill="#57606a">gated</text>
+
+  <!-- ==================== BOTTOM BAND ==================== -->
+  <rect x="40" y="778" width="1200" height="64" rx="10" fill="#f6f8fa" stroke="#d0d7de" stroke-width="1.2"/>
+  <text x="640" y="805" font-size="13" font-weight="700" fill="#1f2328" text-anchor="middle">The standing rule: reads are consented, scoped, and read-only — writes pass a whitelist gate or a human approval, and every action lands in the append-only ledger.</text>
+  <text x="640" y="826" font-size="12" fill="#57606a" text-anchor="middle">Expenses, taxes, commercial CRM, email, documents — one brain reaches all of it without any of it moving.</text>
+</svg>

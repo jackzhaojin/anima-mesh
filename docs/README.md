@@ -17,8 +17,9 @@ specifics (those live in each instance's own repo — see the boundary doc).
 4. [engine-vs-instance.md](engine-vs-instance.md) — the sorting rule for
    where knowledge and code belong (run its checklist whenever unsure)
 5. [a-typical-brain.md](a-typical-brain.md) — show-and-tell: a real
-   production instance de-identified, with the brain-anatomy and
-   dynamic-roster diagrams (start here for a talk or demo)
+   production instance de-identified, with the brain-anatomy,
+   dynamic-roster, and resource-reach diagrams (start here for a talk
+   or demo)
 6. [sample-brain/](sample-brain/README.md) — that instance **as files**:
    a complete scrubbed brain that validates and runs credential-free
    (`pnpm cli run chief-of-staff --instance docs/sample-brain`); its
