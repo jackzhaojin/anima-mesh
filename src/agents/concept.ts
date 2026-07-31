@@ -19,6 +19,15 @@ export interface AgentConcept {
   /** Read sources inlined into this agent's prompt context (e.g. "onedrive"). */
   sources: string[];
   /**
+   * Role-declared required reading (frontmatter `reads:`): instance paths —
+   * files or directories, bundle-relative first — this agent must see EVERY
+   * run, beyond the standard excerpts. The harness inlines each one or marks
+   * its absence out loud; a declared path is never silently dropped
+   * (issue #5: prose-declared paths vanished without a trace on no-tool
+   * harnesses, and the agent couldn't tell "empty" from "not given").
+   */
+  reads: string[];
+  /**
    * Web searches this agent may spend per run (frontmatter `web:`). 0 = none.
    * A budget here is a REQUEST, not a guarantee: the harness reconciles it
    * against the provider's capabilities and tells the agent, in the prompt,
@@ -47,6 +56,9 @@ export function agentFromConcept(concept: Concept): AgentConcept {
     heartbeat: typeof fm.heartbeat === "string" ? fm.heartbeat : undefined,
     whitelist: Array.isArray(fm.whitelist) ? fm.whitelist.filter((x): x is string => typeof x === "string") : [],
     sources: Array.isArray(fm.sources) ? fm.sources.filter((x): x is string => typeof x === "string") : [],
+    reads: Array.isArray(fm.reads)
+      ? fm.reads.filter((x): x is string => typeof x === "string" && x.trim().length > 0).map((x) => x.trim())
+      : [],
     web: typeof fm.web === "number" && Number.isFinite(fm.web) && fm.web > 0 ? Math.floor(fm.web) : 0,
     commercial: fm.commercial === true,
     job: concept.body.trim(),

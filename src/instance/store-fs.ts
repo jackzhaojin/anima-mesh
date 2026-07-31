@@ -42,6 +42,17 @@ export class FsInstanceStore implements InstanceStore {
     }
   }
 
+  async listFiles(relDir: string): Promise<string[]> {
+    try {
+      return readdirSync(path.join(this.root, relDir), { recursive: true, encoding: "utf8" })
+        .filter((f) => f.endsWith(".md"))
+        .map((f) => f.split(path.sep).join("/"))
+        .sort();
+    } catch {
+      return [];
+    }
+  }
+
   async listReports(): Promise<string[]> {
     try {
       return readdirSync(this.instance.reportsDir)

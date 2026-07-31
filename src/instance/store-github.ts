@@ -188,6 +188,19 @@ export class GitHubInstanceStore implements InstanceStore {
     return this.readComposed(relPath);
   }
 
+  async listFiles(relDir: string): Promise<string[]> {
+    const { files } = await this.load();
+    const prefix = relDir.endsWith("/") ? relDir : `${relDir}/`;
+    const names = new Set<string>();
+    for (const p of files.keys()) {
+      if (p.startsWith(prefix) && p.endsWith(".md")) names.add(p.slice(prefix.length));
+    }
+    for (const p of this.pendingWrites.keys()) {
+      if (p.startsWith(prefix) && p.endsWith(".md")) names.add(p.slice(prefix.length));
+    }
+    return [...names].sort();
+  }
+
   async listReports(): Promise<string[]> {
     const config = await this.loadConfigOnce();
     const { files } = await this.load();

@@ -85,6 +85,18 @@ current prompt surface includes listing metadata, not document bodies.
 Operators can validate the cloud adapters through the bearer-gated
 `GET /graph/check` and `GET /docs/check` routes.
 
+**Role-declared reads** close the loop inside the instance itself: `reads:` in
+concept frontmatter names the files and directories (bundle-relative first,
+instance-root fallback — drafts live beside the bundle) an agent must see every
+run beyond the standard excerpts. Prompt assembly inlines each one, and a path
+it cannot serve becomes an explicit NOT AVAILABLE marker, never a silent
+omission. Before this seam existed, a hub whose role prose required a pipeline
+view, a CRM directory, and a drafts subdirectory got none of them on a no-tool
+harness and could only infer the gap by diffing its own job description against
+its context ([issue #5](https://github.com/jackzhaojin/anima-mesh/issues/5)) —
+"nothing to report" and "wasn't given the data" must stay distinguishable
+facts, stated in the prompt.
+
 ## How Discord messages flow (both directions)
 
 **Inbound — a direction (flows ① and ② on the diagram):**

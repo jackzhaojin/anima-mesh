@@ -31,6 +31,14 @@ export interface InstanceStore {
   /** Instance-root-relative read; null when absent (tolerant reads in buildPrompt). */
   readOptional(relPath: string): Promise<string | null>;
 
+  /**
+   * Markdown files under an instance-root-relative directory, recursive,
+   * as dir-relative POSIX paths, sorted. Empty when the dir is absent —
+   * callers that need "absent" to be loud must say so themselves
+   * (declared-reads assembly does; see run-core.ts).
+   */
+  listFiles(relDir: string): Promise<string[]>;
+
   /** Report filenames, sorted ascending. */
   listReports(): Promise<string[]>;
   readReport(name: string): Promise<string>;

@@ -398,6 +398,7 @@ async function buildPrompt(
   return [
     sections.join("\n"),
     await bundleContext(store, config),
+    await declaredReadsContext(store, config, agent),
     await instanceContext(store),
     ...external,
     "\n## Output\nReturn ONLY the markdown body of your report (no code fences around the whole thing).",
@@ -471,6 +472,13 @@ export function capabilityLines(
       ? `- **External context: the source sections below (${agent.sources.join(", ")})** — read them as this run's live listing, and nothing beyond them.`
       : "- **External context: none declared** beyond the bundle excerpts below.",
   );
+  if (agent.reads.length > 0) {
+    lines.push(
+      `- **Declared reads: ${agent.reads.length} path(s)** from your concept's \`reads:\` frontmatter, inlined in the`,
+      '  "Role-declared context" section below. Every declared path appears there — content, an EMPTY',
+      "  marker, or a NOT AVAILABLE marker — never silently dropped.",
+    );
+  }
   return lines;
 }
 
@@ -492,6 +500,81 @@ export async function bundleContext(store: InstanceStore, config: InstanceConfig
   for (const rel of ["index.md", "ops/calendar.md", "ops/watch-list.md", "ops/nags.md"]) {
     const raw = await store.readOptional(`${config.bundle}/${rel}`);
     if (raw !== null) parts.push(`\n### ${rel}\n\n${raw}`);
+  }
+  return parts.join("\n");
+}
+
+const MAX_READ_CHARS = 6000;
+const MAX_DIR_FILES = 20;
+
+/**
+ * Role-declared required reading (issue #5). An agent's job prose used to
+ * name paths as "read these every run" — and on a no-tool harness the
+ * assembled context simply lacked them: no placeholder, no signal,
+ * indistinguishable from the paths not existing. The chief-of-staff only
+ * caught it by diffing its own role text against what it was given.
+ *
+ * The contract now: every path in frontmatter `reads:` produces a section
+ * below — content, an explicit EMPTY marker, or an explicit NOT-AVAILABLE
+ * marker. "Nothing to report" and "wasn't given the data" are different
+ * facts, and the prompt keeps them distinguishable. Paths resolve
+ * bundle-relative first (the job prose speaks bundle paths), then
+ * instance-root-relative (drafts live beside the bundle, not in it).
+ */
+export async function declaredReadsContext(
+  store: InstanceStore,
+  config: InstanceConfig,
+  agent: AgentConcept,
+): Promise<string> {
+  if (agent.reads.length === 0) return "";
+  const parts: string[] = [
+    "\n## Role-declared context (your `reads:` paths, inlined by the harness)",
+    "Every path your concept declares appears below — as content, an explicit EMPTY marker, or an",
+    "explicit NOT AVAILABLE marker. A path marked NOT AVAILABLE was not given to you this run:",
+    'treat it as a data gap and say so; never let it read as "nothing to report".',
+  ];
+  const clip = (raw: string): string =>
+    raw.length > MAX_READ_CHARS ? raw.slice(0, MAX_READ_CHARS) + "\n…(truncated by the harness)" : raw;
+
+  for (const decl of agent.reads) {
+    // Same jail as every declared surface: instance-relative, no escapes.
+    if (decl.startsWith("/") || decl.split("/").includes("..")) {
+      parts.push(`\n### ${decl} — INVALID PATH (absolute or escaping the instance); not read`);
+      continue;
+    }
+    const rel = decl.replace(/\/+$/, "");
+    const candidates = [`${config.bundle}/${rel}`, rel];
+
+    let resolved = false;
+    for (const candidate of candidates) {
+      const raw = await store.readOptional(candidate);
+      if (raw === null) continue;
+      parts.push(`\n### ${decl}\n\n${raw.trim() ? clip(raw) : "(file exists and is EMPTY)"}`);
+      resolved = true;
+      break;
+    }
+    if (resolved) continue;
+
+    for (const candidate of candidates) {
+      const names = await store.listFiles(candidate);
+      if (names.length === 0) continue;
+      const shown = names.slice(0, MAX_DIR_FILES);
+      parts.push(`\n### ${decl} (directory — ${names.length} file(s))`);
+      for (const name of shown) {
+        const raw = (await store.readOptional(`${candidate}/${name}`)) ?? "";
+        parts.push(`\n#### ${decl.replace(/\/+$/, "")}/${name}\n\n${raw.trim() ? clip(raw) : "(file exists and is EMPTY)"}`);
+      }
+      if (names.length > shown.length) {
+        // No silent caps: what was dropped is named, so the agent knows the
+        // directory is larger than what it was shown.
+        parts.push(`\n(${names.length - shown.length} more file(s) NOT inlined: ${names.slice(MAX_DIR_FILES).join(", ")})`);
+      }
+      resolved = true;
+      break;
+    }
+    if (!resolved) {
+      parts.push(`\n### ${decl} — DECLARED IN YOUR ROLE BUT NOT AVAILABLE THIS RUN (missing, empty directory, or unreadable)`);
+    }
   }
   return parts.join("\n");
 }

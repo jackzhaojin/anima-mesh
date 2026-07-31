@@ -180,6 +180,15 @@ describe("GitHubInstanceStore reads", () => {
     expect(await store.readOptional("bundle/nope.md")).toBeNull();
   });
 
+  it("listFiles lists markdown under a dir prefix, pending writes included — declared reads on the cloud tier", async () => {
+    const store = makeStore(githubMock());
+    expect(await store.listFiles("bundle/ops")).toEqual(["calendar.md"]);
+    expect(await store.listFiles("bundle/ops/")).toEqual(["calendar.md"]);
+    expect(await store.listFiles("bundle/nope")).toEqual([]);
+    await store.writeFile("bundle/ops/pipeline.md", "# Pipeline\n");
+    expect(await store.listFiles("bundle/ops")).toEqual(["calendar.md", "pipeline.md"]);
+  });
+
   it("lists and reads reports and approvals from the snapshot", async () => {
     const store = makeStore(githubMock());
     expect(await store.listReports()).toEqual(["2026-01-01-scout-old00000.md"]);

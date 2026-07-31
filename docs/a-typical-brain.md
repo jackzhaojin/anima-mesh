@@ -70,9 +70,12 @@ instance config's `cognition.overrides` can reroute a harness at runtime —
 this instance once redirected its default vendor to another provider
 during an outage with a two-line config edit, no agent files touched. The
 same frontmatter carries the agent's reach: `sources:` opts into read-only
-external listings (a document cabinet, a docs repo), and `web: <n>`
-budgets that many web searches per run — granted or refused out loud
-depending on what the effective harness can actually do.
+external listings (a document cabinet, a docs repo), `web: <n>` budgets
+that many web searches per run — granted or refused out loud depending on
+what the effective harness can actually do — and `reads:` names the
+instance paths (a pipeline view, a CRM directory, a drafts folder) the
+agent must see every run, inlined by the harness with any unavailable path
+marked out loud rather than silently dropped.
 
 ## A day in the life
 

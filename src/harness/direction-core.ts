@@ -5,6 +5,7 @@ import type { InstanceStore } from "../instance/store.js";
 import {
   dateStampFor,
   bundleContext,
+  declaredReadsContext,
   instanceContext,
   levelMeaning,
 } from "./run-core.js";
@@ -292,6 +293,10 @@ async function buildDirectionPrompt(
   return [
     preamble,
     await bundleContext(store, config),
+    // Issue #5: direction runs edit the same working artifacts scheduled runs
+    // read (e.g. prep packs via draft-request) — they need the same declared
+    // reads, or a "refresh that pack" direction runs blind on the current one.
+    await declaredReadsContext(store, config, agent),
     await instanceContext(store),
     directionSection,
     "\n## Output\nReturn ONLY your reply text as markdown (no code fences around the whole thing).",

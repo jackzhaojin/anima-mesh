@@ -10,6 +10,10 @@ whitelist: [schedule-update, draft-write, defect-report]
 # Web searches per run — a small budget for the concrete lookups a brief
 # gets blocked on, not for research sweeps; that is research-watch's job.
 web: 3
+# Required reading every run (issue #5): the harness inlines these — file,
+# directory, or an out-loud NOT AVAILABLE marker — so a no-tool harness can
+# never silently drop the working set this role's rules below depend on.
+reads: [ops/schedule.md, crm/taxonomy.md, crm/, drafts/nag-prep/]
 commercial: false
 date: 2026-03-10
 ---
