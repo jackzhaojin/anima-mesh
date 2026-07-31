@@ -12,10 +12,12 @@ production instance is private, so the code stops here are
 
 ![Engine and instance — the two-repo topology](../engine-and-instance.svg)
 
-*Say:* the public **engine** (this repo) holds every mechanism; a private
-**brain** holds everything that makes it one particular company. The
-dependency is one-way — the brain pins the engine by tag; the engine never
-knows the company exists.
+*Themes:* the public **engine** (this repo) holds every mechanism; a
+private **brain** holds everything that makes it one particular company.
+The dependency is one-way — the brain pins the engine by tag; the engine
+never knows the company exists. And the roster is the company's choice:
+agents are data in the brain, picked from shipped archetypes or written
+fresh — we'll come back to that at stop 5.
 
 *Code:*
 
@@ -24,12 +26,17 @@ knows the company exists.
 - [bundle/index.md](bundle/index.md) — the brain's own map: "How a day
   works" in six steps.
 
-## 2 · The brain is markdown
+## 2 · The brain is markdown — OKF, one concept per file
 
 ![Anatomy of a brain](../brain-anatomy.svg)
 
-*Say:* no database, no orchestration state — the repo **is** the company's
-memory, and every agent is a markdown file with frontmatter. Restart
+*Themes:* the bundle follows **OKF**: one concept per markdown file, YAML
+frontmatter with a required `type`, two reserved files (`index.md` the
+map, `log.md` the story). Why we chose it: the same file is equally
+legible to a human, an agent, and a validator — no database, no admin UI,
+no export problem; one concept per file makes every git diff a meaningful
+unit of change; and typed frontmatter makes the whole brain
+machine-checkable (`pnpm cli validate`) without giving up prose. Restart
 anywhere; resume from git.
 
 *Code (have these open in tabs):*
@@ -46,10 +53,16 @@ anywhere; resume from git.
 
 ![One heartbeat, step by step](../heartbeat-sequence.svg)
 
-*Say:* once a day, every due agent gets ONE prompt — job + bundle + fresh
-reports + what its runtime actually grants — writes one report, and the
-repo diff is the audit. Writes are propose → dispose: a fenced block in
-the report, a whitelist gate in code, a ledger line.
+*Themes:* agents are decoupled the way human coworkers are — each works
+its own tasks on its own rhythm, nobody blocks anybody — but they share
+one workspace: the repo. Once a day, every due agent gets ONE prompt —
+job + bundle + fresh reports + what its runtime actually grants — writes
+one report, and the repo diff is the audit. Everything is mediated by
+files, which is exactly what puts the human in the loop at **fractional
+time**: the founder spends minutes a day disposing (writes are propose →
+dispose — a fenced block in the report, a whitelist gate in code, a
+ledger line), not hours supervising. It runs on the cloud by default, and
+the same brain runs on a laptop — the bundle is the only state.
 
 *Code:*
 
@@ -66,16 +79,20 @@ the report, a whitelist gate in code, a ledger line.
 
 ![Resource reach — the brain goes to where the company's truth already lives](../resource-reach.svg)
 
-*Say:* the company's resources never move — the brain goes to them.
-Documents stay in SharePoint/OneDrive, read **over Microsoft Graph**,
-read-only, the live folder listing inlined into every prompt. The CRM
-was **bootstrapped from the mailbox's sent items** — one-off `Mail.Read`
-device consent, token never persisted — because your outbox is the
-ground truth of your real relationships. And the mesh isn't confined to
-its own repo: the cloud tier runs the brain straight from GitHub, reads
-sibling repos as sources, commits its beats back, and **files
-de-identified issues on this repo when the engine misbehaves** — the
-agent is user #1 of its own bug tracker. Deliberately absent: direct
+*Themes:* AI memory and human memory are more alike than different — you
+don't remember every line of a tax return from years past, you remember
+**where you put it**. The brain is no different: the cabinet records
+where truth lives and what it means, never a copy (the EIN stays in the
+letter). So the company's resources never move — the brain goes to them:
+documents stay in SharePoint/OneDrive, read **over Microsoft Graph**,
+read-only, the live folder listing inlined into every prompt. Graph now
+reads the mailbox too — the CRM was **bootstrapped from sent items**
+(one-off `Mail.Read` device consent, token never persisted), because
+your outbox is the ground truth of your real relationships. And the mesh
+isn't confined to its own repo: the cloud tier runs the brain straight
+from GitHub, reads sibling repos as sources, commits its beats back, and
+**files de-identified issues on this repo when the engine misbehaves** —
+the agent is user #1 of its own bug tracker. Deliberately absent: direct
 bank access — designed, not wired; money stays behind constitution
 gates. (Workers/Durable-Object internals:
 [cloud-architecture.svg](../cloud-architecture.svg).)
@@ -98,14 +115,17 @@ gates. (Workers/Durable-Object internals:
   filed by the agent, which became the v0.12 capability-truth release
   ([CHANGELOG](../../CHANGELOG.md)).
 
-## 5 · Make your own
+## 5 · One engine, many companies
 
 ![The agent roster](../agent-roster.svg)
 
-*Say:* nine agent archetypes ship as templates; a scaffolder interviews
-you; the same validator checks a hand-built brain and the scaffolder's
-output. And it runs with zero credentials — the fake provider does the
-whole loop offline.
+*Themes:* everything you've just seen is generic — a second company is a
+new private repo, not a fork. Scaffold it, choose its roster (the choice
+from stop 1: nine shipped archetypes, or write your own agent as one
+markdown file), pin the engine by tag, upgrade deliberately. The same
+validator checks a hand-built brain and the scaffolder's output. And it
+runs with zero credentials — the fake provider does the whole loop
+offline.
 
 *Code:*
 
