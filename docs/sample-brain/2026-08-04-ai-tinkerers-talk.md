@@ -2,7 +2,7 @@
 
 **A company of zero: markdown files, a heartbeat, and an agent mesh that
 runs a real business.** This page is the talk — diagram, then the code
-behind it, five times. Every link is in this public repo; the running
+behind it, six times. Every link is in this public repo; the running
 production instance is private, so the code stops here are
 [sample-brain](README.md), a scrubbed copy of it that validates and runs.
 
@@ -90,11 +90,10 @@ reads the mailbox too — the CRM was **bootstrapped from sent items**
 (one-off `Mail.Read` device consent, token never persisted), because
 your outbox is the ground truth of your real relationships. And the mesh
 isn't confined to its own repo: the cloud tier runs the brain straight
-from GitHub, reads sibling repos as sources, commits its beats back, and
-**files de-identified issues on this repo when the engine misbehaves** —
-the agent is user #1 of its own bug tracker. Deliberately absent: direct
-bank access — designed, not wired; money stays behind constitution
-gates. (Workers/Durable-Object internals:
+from GitHub, reads sibling repos as sources, and commits its beats back
+(what happens when the engine itself misbehaves gets its own stop — #6).
+Deliberately absent: direct bank access — designed, not wired; money
+stays behind constitution gates. (Workers/Durable-Object internals:
 [cloud-architecture.svg](../cloud-architecture.svg).)
 
 *Code:*
@@ -109,11 +108,6 @@ gates. (Workers/Durable-Object internals:
   [bundle/crm/engagements/2026-harborlight-content-audit.md](bundle/crm/engagements/2026-harborlight-content-audit.md)
   — the CRM the sent-mail sweep feeds: typed concepts, boundary screens
   in the data, hub proposes / founder disposes.
-- [../../src/harness/defects.ts](../../src/harness/defects.ts) — the
-  defect loop: leak guard, dedup, cap, ledger — then a public issue.
-  Exhibit A: [issue #4](https://github.com/jackzhaojin/anima-mesh/issues/4),
-  filed by the agent, which became the v0.12 capability-truth release
-  ([CHANGELOG](../../CHANGELOG.md)).
 
 ## 5 · One engine, many companies
 
@@ -142,6 +136,41 @@ pnpm cli run chief-of-staff --instance docs/sample-brain
 
 - [../starting-a-company.md](../starting-a-company.md) — empty directory →
   a mesh running a real company.
+
+## 6 · The brain debugs its own engine
+
+![The defect loop — the brain opens issues on its own engine](../defect-loop.svg)
+
+*Themes:* the two-repo dependency is one-way, and that's load-bearing
+here: **the brain can't change the engine — it can only use it.** So
+anything an agent notices mid-run — a defect, or an enhancement it has
+no way to make itself — has exactly one path upstream: **file an issue,
+to be looked at later.** Judgment notices; deterministic code decides
+what may leave — whitelist gate, identity-leak guard (the hard stop:
+firm, founder, persona, or bundle strings never leave), title dedup
+against open issues, a per-run cap, a ledger line. Clean reports file
+directly, no draft kept; anything that can't file falls back to a
+private draft. Then the flywheel closes: the fix ships, the engine tags
+a release, every brain re-pins by tag — every company running the
+engine inherits the fix. The exhibits are live: [issue #4](https://github.com/jackzhaojin/anima-mesh/issues/4)
+(the phantom web tool) became the v0.12 capability-truth release;
+[#5](https://github.com/jackzhaojin/anima-mesh/issues/5) is being fixed
+right now; [#6](https://github.com/jackzhaojin/anima-mesh/issues/6) was
+filed by the cloud beat this week, unprompted. The agent is user #1 of
+its own bug tracker.
+
+*Code:*
+
+- [../../src/harness/defects.ts](../../src/harness/defects.ts) — the
+  whole trust pipeline in one module: gate, leak guard, dedup, cap,
+  ledger, fallback.
+- [bundle/decisions/2026-06-08-defects-file-as-issues.md](bundle/decisions/2026-06-08-defects-file-as-issues.md)
+  — the trust decision as a bundle concept: drafts-first until the leak
+  guard earned issue-first.
+- [drafts/defects/README.md](drafts/defects/README.md) — the fallback
+  directory, empty in the healthy state.
+- [The live issue tracker](https://github.com/jackzhaojin/anima-mesh/issues?q=is%3Aissue)
+  — agent-filed issues among the human ones; see for yourself.
 
 ---
 

@@ -2,7 +2,7 @@
 
 > 🎤 **Here for the AI Tinkerers talk?**
 > [2026-08-04-ai-tinkerers-talk.md](2026-08-04-ai-tinkerers-talk.md) is the
-> talk itself — diagram → code, five stops, all links public.
+> talk itself — diagram → code, six stops, all links public.
 
 This folder is a complete AnimaMesh **instance** ("brain"), scrubbed from a
 real one that runs a real one-person company every day. The structure, file

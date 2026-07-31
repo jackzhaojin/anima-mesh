@@ -1,0 +1,96 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 760" font-family="ui-sans-serif, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif">
+  <defs>
+    <marker id="dl-ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#57606a"/>
+    </marker>
+    <marker id="dl-ar-g" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#1a7f37"/>
+    </marker>
+  </defs>
+
+  <rect x="0" y="0" width="1280" height="760" fill="#ffffff"/>
+
+  <text x="40" y="46" font-size="21" font-weight="700" fill="#1f2328">The defect loop — the brain opens issues on its own engine</text>
+  <text x="40" y="70" font-size="13" fill="#57606a">The brain can't change the engine — it can only use it. What it notices, defect or enhancement, it can only file as an issue; code decides what may leave, and the fix returns by tag.</text>
+
+  <!-- ==================== LEFT: THE BRAIN, MID-RUN ==================== -->
+  <rect x="40" y="110" width="310" height="220" rx="14" fill="#e9f5ee" stroke="#1a7f37" stroke-width="1.5"/>
+  <text x="60" y="140" font-size="16" font-weight="700" fill="#116329">A brain, mid-run</text>
+  <text x="60" y="164" font-size="12.5" fill="#2f4a3a">An agent hits ENGINE misbehavior — or an</text>
+  <text x="60" y="181" font-size="12.5" fill="#2f4a3a">enhancement it cannot make itself: the</text>
+  <text x="60" y="198" font-size="12.5" fill="#2f4a3a">brain uses the engine, never edits it.</text>
+
+  <rect x="60" y="216" width="270" height="94" rx="8" fill="#ffffff" stroke="#a9d6bb" stroke-width="1.1"/>
+  <text x="76" y="240" font-size="12.5" font-weight="700" fill="#1f2328">The report ends with a fenced block:</text>
+  <text x="76" y="262" font-size="12" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" fill="#116329">```defect-report</text>
+  <text x="76" y="279" font-size="12" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" fill="#116329">title: … evidence: …</text>
+  <text x="76" y="296" font-size="12" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" fill="#116329">```</text>
+
+  <!-- ==================== CENTER: DETERMINISTIC PIPELINE ==================== -->
+  <rect x="410" y="110" width="430" height="360" rx="14" fill="#ddf4ff" stroke="#0969da" stroke-width="1.5"/>
+  <text x="430" y="140" font-size="16" font-weight="700" fill="#0550ae">The trust pipeline — code, not discretion</text>
+  <text x="430" y="162" font-size="12.5" fill="#33455a">Four checks between judgment and the public internet:</text>
+
+  <rect x="430" y="178" width="390" height="52" rx="8" fill="#ffffff" stroke="#8cc4e8" stroke-width="1.1"/>
+  <text x="446" y="200" font-size="13" font-weight="700" fill="#1f2328">1 · Whitelist gate</text>
+  <text x="446" y="218" font-size="12" fill="#33455a">only an L3 agent granted `defect-report` may ask</text>
+
+  <rect x="430" y="242" width="390" height="52" rx="8" fill="#ffebe9" stroke="#cf222e" stroke-width="1.2"/>
+  <text x="446" y="264" font-size="13" font-weight="700" fill="#a40e26">2 · Identity-leak guard — the hard stop</text>
+  <text x="446" y="282" font-size="12" fill="#6e2830">firm, founder, persona, or bundle strings ⇒ never filed</text>
+
+  <rect x="430" y="306" width="390" height="52" rx="8" fill="#ffffff" stroke="#8cc4e8" stroke-width="1.1"/>
+  <text x="446" y="328" font-size="13" font-weight="700" fill="#1f2328">3 · Title dedup</text>
+  <text x="446" y="346" font-size="12" fill="#33455a">checked against the engine's open issues first</text>
+
+  <rect x="430" y="370" width="390" height="52" rx="8" fill="#ffffff" stroke="#8cc4e8" stroke-width="1.1"/>
+  <text x="446" y="392" font-size="13" font-weight="700" fill="#1f2328">4 · Per-run cap + ledger line</text>
+  <text x="446" y="410" font-size="12" fill="#33455a">bounded egress; `defect-filed` in the append-only ledger</text>
+
+  <text x="430" y="450" font-size="12" font-style="italic" fill="#33455a">Can't file? (leak hit · API failure · no token) — fall back ↓</text>
+
+  <!-- fallback card -->
+  <rect x="410" y="490" width="430" height="74" rx="10" fill="#f6f8fa" stroke="#8c959f" stroke-width="1.2" stroke-dasharray="6 4"/>
+  <text x="430" y="514" font-size="13" font-weight="700" fill="#57606a">drafts/defects/ — private fallback, founder promotes</text>
+  <text x="430" y="534" font-size="12" fill="#57606a">empty in the healthy state; a leaky report stays a draft</text>
+  <text x="430" y="551" font-size="12" fill="#57606a">forever — de-identification is not negotiable</text>
+
+  <!-- ==================== RIGHT: THE PUBLIC ISSUE ==================== -->
+  <rect x="900" y="110" width="340" height="360" rx="14" fill="#fff8c5" stroke="#9a6700" stroke-width="1.5"/>
+  <text x="920" y="140" font-size="16" font-weight="700" fill="#7d4e00">A public issue on the engine</text>
+  <text x="920" y="162" font-size="12.5" fill="#5c4a1f">No draft kept — the tracker is the record.</text>
+  <text x="920" y="179" font-size="12.5" fill="#5c4a1f">Real exhibits, all agent-filed:</text>
+
+  <rect x="920" y="196" width="300" height="76" rx="8" fill="#ffffff" stroke="#d4bb6c" stroke-width="1.1"/>
+  <text x="936" y="218" font-size="13" font-weight="700" fill="#1f2328">#4 · the phantom web tool</text>
+  <text x="936" y="237" font-size="12" fill="#5c4a1f">"no usable content" — there was no tool.</text>
+  <text x="936" y="254" font-size="12" fill="#5c4a1f">Root-caused → v0.12 capability truth</text>
+
+  <rect x="920" y="284" width="300" height="59" rx="8" fill="#ffffff" stroke="#d4bb6c" stroke-width="1.1"/>
+  <text x="936" y="306" font-size="13" font-weight="700" fill="#1f2328">#5 · context-assembly gaps</text>
+  <text x="936" y="325" font-size="12" fill="#5c4a1f">reported by the hub; fix in flight</text>
+
+  <rect x="920" y="355" width="300" height="59" rx="8" fill="#ffffff" stroke="#d4bb6c" stroke-width="1.1"/>
+  <text x="936" y="377" font-size="13" font-weight="700" fill="#1f2328">#6 · filed this week, unprompted</text>
+  <text x="936" y="396" font-size="12" fill="#5c4a1f">the cloud beat reported it on its own</text>
+
+  <text x="920" y="446" font-size="12" font-style="italic" fill="#5c4a1f">The agent is user #1 of its own bug tracker.</text>
+
+  <!-- ==================== ARROWS ==================== -->
+  <line x1="350" y1="220" x2="406" y2="220" stroke="#57606a" stroke-width="1.6" marker-end="url(#dl-ar)"/>
+  <text x="356" y="210" font-size="10.5" fill="#57606a">propose</text>
+
+  <line x1="840" y1="220" x2="896" y2="220" stroke="#57606a" stroke-width="1.6" marker-end="url(#dl-ar)"/>
+  <text x="846" y="210" font-size="10.5" fill="#57606a">file</text>
+
+  <!-- return flywheel: issue -> fix -> tag -> re-pin -> brain -->
+  <path d="M 1070 470 L 1070 620 L 195 620 L 195 334" fill="none" stroke="#1a7f37" stroke-width="1.8" marker-end="url(#dl-ar-g)"/>
+  <rect x="330" y="588" width="620" height="64" rx="10" fill="#e9f5ee" stroke="#1a7f37" stroke-width="1.3"/>
+  <text x="640" y="614" font-size="13" font-weight="700" fill="#116329" text-anchor="middle">the flywheel: maintainer fixes → engine tags a release → every brain re-pins by tag</text>
+  <text x="640" y="634" font-size="12" fill="#2f4a3a" text-anchor="middle">upgrades are deliberate ref bumps — the fix reaches every company that runs the engine</text>
+
+  <!-- ==================== BOTTOM BAND ==================== -->
+  <rect x="40" y="676" width="1200" height="52" rx="10" fill="#f6f8fa" stroke="#d0d7de" stroke-width="1.2"/>
+  <text x="640" y="698" font-size="13" font-weight="700" fill="#1f2328" text-anchor="middle">The product files its own bugs — and every trust-bearing step is deterministic code: gate, leak guard, dedup, cap, ledger.</text>
+  <text x="640" y="717" font-size="12" fill="#57606a" text-anchor="middle">One secret (a repo-scoped token) makes any brain issue-capable; no token just means drafts instead.</text>
+</svg>
