@@ -75,7 +75,15 @@ Frontmatter cadence is the *standing* rhythm; `ops/schedule.md` is the
   mid-beat** — the hub runs last and may re-wake a spoke that already ran,
   having just read its report — is a request about the *next* beat and
   survives consumption (renewals are recognized from the beat's own
-  `schedule-updated` ledger entries).
+  `schedule-updated` ledger entries). And a kept wake — or any DUE agent
+  the cloud tier cannot run — is never a *silent* keep: the beat computes
+  what the blocked agent's due decision would have been and hands the hub
+  a scheduler note ("DUE but laptop-tier harness — needs a manual local
+  run") in its own prompt, so the brief nags the principal instead of
+  letting a missing report read as a quiet day. Once every scheduled tier
+  is the cloud, "run this one locally" is a fact only the scheduler knows,
+  and a scheduler fact that never reaches a prompt effectively never
+  happened.
 - **`pause:`** — skip these agents until removed. Pause beats wake: an
   explicit stop outranks an explicit go, and the contradiction stays
   visible in the file instead of resolving silently.

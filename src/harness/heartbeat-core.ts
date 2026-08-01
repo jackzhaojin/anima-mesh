@@ -1,8 +1,9 @@
 import { agentsFromBundle, assertActivatable, effectiveCognition, type AgentConcept } from "../agents/concept.js";
 import { CLOUD_HARNESSES, type ApiProviderContext } from "../providers/index.js";
 import type { InstanceStore } from "../instance/store.js";
+import type { LedgerEntry } from "../ledger/ledger.js";
 import { runAgentCore, dateStampFor, type RunReport } from "./run-core.js";
-import { scheduleFromBundle, effectiveCadence, mutateSchedule } from "./schedule.js";
+import { scheduleFromBundle, effectiveCadence, mutateSchedule, type Schedule } from "./schedule.js";
 import type { SourceFs } from "../sources/types.js";
 
 /**
@@ -65,6 +66,13 @@ export interface HeartbeatFailure {
 export interface HeartbeatResult {
   due: HeartbeatDecision[];
   skipped: HeartbeatDecision[];
+  /**
+   * DUE agents this tier could not run (laptop-tier harness on a cloud
+   * beat). Also present in `skipped`; broken out because a due agent that
+   * silently skips is indistinguishable from a quiet day — the hub's prompt
+   * gets these as beat notes so the principal hears "run this locally".
+   */
+  tierBlocked: HeartbeatDecision[];
   runs: RunReport[];
   /** Agents whose run threw (provider/auth/etc.) — the beat continues past them. */
   failures: HeartbeatFailure[];
@@ -80,6 +88,69 @@ function localDay(epochMs: number, timeZone?: string): number {
   return d.getFullYear() * 10_000 + (d.getMonth() + 1) * 100 + d.getDate();
 }
 
+/**
+ * Would this agent run right now (wake or cadence)? One vocabulary for both
+ * callers: the run decision itself, and the cloud tier's due-but-unrunnable
+ * accounting. Pause is checked by the caller — its precedence differs by
+ * branch (pause beats wake everywhere, but a paused laptop-tier agent must
+ * not read as "blocked", just as paused).
+ */
+function dueVerdict(
+  agent: AgentConcept,
+  schedule: Schedule,
+  ledgerEntries: LedgerEntry[],
+  now: Date,
+  timeZone?: string,
+): { due: boolean; reason: string } {
+  if (schedule.wake.includes(agent.name)) {
+    // One-shot wake: due regardless of cadence — even agents with no
+    // heartbeat at all can be woken on demand. Consumed after the attempt.
+    return { due: true, reason: "wake requested (ops/schedule.md)" };
+  }
+  const cadence = effectiveCadence(agent, schedule);
+  const overridden = agent.name in schedule.cadence ? " (cadence override)" : "";
+  if (!cadence) return { due: false, reason: "no heartbeat declared (manual runs only)" };
+  const hours = PERIOD_HOURS[cadence];
+  if (hours === undefined) return { due: false, reason: `unknown cadence '${cadence}'${overridden}` };
+  const lastCompleted = ledgerEntries
+    .filter((e) => e.agent === agent.name && e.action === "run-completed")
+    .map((e) => Date.parse(e.ts))
+    .reduce((max, t) => Math.max(max, t), 0);
+
+  if (lastCompleted === 0) return { due: true, reason: "never run" };
+  if (cadence === "daily") {
+    // Daily means "not yet today" (local calendar), not "20h elapsed" —
+    // a late-night manual run must never eat the next morning's brief.
+    // (Lesson from the first scheduled morning: 1am debug runs silenced
+    // the 8am beat and the principal's daily DM.)
+    return localDay(lastCompleted, timeZone) < localDay(now.getTime(), timeZone)
+      ? { due: true, reason: `daily: not yet run today${overridden}` }
+      : { due: false, reason: `daily: already ran today${overridden}` };
+  }
+  const elapsedHours = (now.getTime() - lastCompleted) / 3_600_000;
+  return elapsedHours >= hours
+    ? { due: true, reason: `${cadence}: ${Math.floor(elapsedHours)}h since last run${overridden}` }
+    : { due: false, reason: `${cadence}: ran ${Math.floor(elapsedHours)}h ago (< ${hours}h)${overridden}` };
+}
+
+/**
+ * Stated to the hub's own prompt, not just logged: the brief is the only
+ * surface the principal reads, so a scheduler fact that never reaches a
+ * prompt effectively never happened (the lesson of issues #4 and #5,
+ * applied to the scheduler itself).
+ */
+function tierBlockedNotes(blocked: HeartbeatDecision[]): string[] {
+  return [
+    "## Scheduler notes for this beat (surface these in your brief)",
+    "This beat runs on the cloud tier. The agents below were DUE this beat but could not run",
+    "here — their harness exists only on the laptop tier. No report from them exists today,",
+    "and nothing else will tell the principal. Treat each as an active nag in your brief until",
+    "the principal either runs the agent locally (`pnpm cli run <agent> --instance <path>` on",
+    "the laptop) or changes its harness or cadence:",
+    ...blocked.map((b) => `- ${b.agent} — ${b.reason}`),
+  ];
+}
+
 export async function heartbeatCore(options: HeartbeatCoreOptions): Promise<HeartbeatResult> {
   const store = options.store;
   const config = await store.loadConfig();
@@ -92,6 +163,7 @@ export async function heartbeatCore(options: HeartbeatCoreOptions): Promise<Hear
   const schedule = scheduleFromBundle(bundle);
   const due: Array<{ agent: AgentConcept; reason: string }> = [];
   const skipped: HeartbeatDecision[] = [];
+  const tierBlocked: HeartbeatDecision[] = [];
 
   for (const agent of agents) {
     if (agent.commercial) {
@@ -105,8 +177,20 @@ export async function heartbeatCore(options: HeartbeatCoreOptions): Promise<Hear
     const cognition = effectiveCognition(agent, config);
     if (options.cloudTier && !CLOUD_HARNESSES.has(cognition.harness)) {
       // A pending wake for a laptop-tier agent is deliberately KEPT — it
-      // belongs to whichever tier can honor it, not to this beat.
-      skipped.push({ agent: agent.name, reason: `laptop-tier harness (${cognition.harness}) — not run in cloud` });
+      // belongs to whichever tier can honor it, not to this beat. But when
+      // the agent is DUE, the skip must not be silent: the hub is told
+      // (beat notes) so the brief nags "run this locally" instead of
+      // letting a missing report read as a quiet day.
+      const verdict = schedule.pause.includes(agent.name)
+        ? { due: false, reason: "paused" }
+        : dueVerdict(agent, schedule, ledgerEntries, now, options.timeZone);
+      if (verdict.due) {
+        const reason = `DUE (${verdict.reason}) but laptop-tier harness (${cognition.harness}) — needs a manual local run`;
+        tierBlocked.push({ agent: agent.name, reason });
+        skipped.push({ agent: agent.name, reason });
+      } else {
+        skipped.push({ agent: agent.name, reason: `laptop-tier harness (${cognition.harness}) — not run in cloud` });
+      }
       continue;
     }
     if (schedule.pause.includes(agent.name)) {
@@ -115,51 +199,9 @@ export async function heartbeatCore(options: HeartbeatCoreOptions): Promise<Hear
       skipped.push({ agent: agent.name, reason: "paused (ops/schedule.md)" });
       continue;
     }
-    if (schedule.wake.includes(agent.name)) {
-      // One-shot wake: due regardless of cadence — even agents with no
-      // heartbeat at all can be woken on demand. Consumed after the attempt.
-      due.push({ agent, reason: "wake requested (ops/schedule.md)" });
-      continue;
-    }
-    const cadence = effectiveCadence(agent, schedule);
-    const overridden = agent.name in schedule.cadence ? " (cadence override)" : "";
-    if (!cadence) {
-      skipped.push({ agent: agent.name, reason: "no heartbeat declared (manual runs only)" });
-      continue;
-    }
-    const hours = PERIOD_HOURS[cadence];
-    if (hours === undefined) {
-      skipped.push({ agent: agent.name, reason: `unknown cadence '${cadence}'${overridden}` });
-      continue;
-    }
-    const lastCompleted = ledgerEntries
-      .filter((e) => e.agent === agent.name && e.action === "run-completed")
-      .map((e) => Date.parse(e.ts))
-      .reduce((max, t) => Math.max(max, t), 0);
-
-    if (lastCompleted === 0) {
-      due.push({ agent, reason: "never run" });
-    } else if (cadence === "daily") {
-      // Daily means "not yet today" (local calendar), not "20h elapsed" —
-      // a late-night manual run must never eat the next morning's brief.
-      // (Lesson from the first scheduled morning: 1am debug runs silenced
-      // the 8am beat and the principal's daily DM.)
-      if (localDay(lastCompleted, options.timeZone) < localDay(now.getTime(), options.timeZone)) {
-        due.push({ agent, reason: `daily: not yet run today${overridden}` });
-      } else {
-        skipped.push({ agent: agent.name, reason: `daily: already ran today${overridden}` });
-      }
-    } else {
-      const elapsedHours = (now.getTime() - lastCompleted) / 3_600_000;
-      if (elapsedHours >= hours) {
-        due.push({ agent, reason: `${cadence}: ${Math.floor(elapsedHours)}h since last run${overridden}` });
-      } else {
-        skipped.push({
-          agent: agent.name,
-          reason: `${cadence}: ran ${Math.floor(elapsedHours)}h ago (< ${hours}h)${overridden}`,
-        });
-      }
-    }
+    const verdict = dueVerdict(agent, schedule, ledgerEntries, now, options.timeZone);
+    if (verdict.due) due.push({ agent, reason: verdict.reason });
+    else skipped.push({ agent: agent.name, reason: verdict.reason });
   }
 
   // Spokes alphabetically, the hub last — the brief reads the day's work.
@@ -171,12 +213,13 @@ export async function heartbeatCore(options: HeartbeatCoreOptions): Promise<Hear
 
   const dueDecisions: HeartbeatDecision[] = due.map((d) => ({ agent: d.agent.name, reason: d.reason }));
   if (options.dryRun) {
-    return { due: dueDecisions, skipped, runs: [], failures: [], ok: true };
+    return { due: dueDecisions, skipped, tierBlocked, runs: [], failures: [], ok: true };
   }
 
   // One spoke's failure never aborts the beat — an unattended mesh must
   // degrade agent-by-agent, not collapse. (Lesson from the first launchd
   // beat: an auth error in one provider killed the remaining runs.)
+  const hubName = config.delivery?.deliverAgent ?? "chief-of-staff";
   const runs: RunReport[] = [];
   const failures: HeartbeatFailure[] = [];
   for (const { agent } of due) {
@@ -192,6 +235,9 @@ export async function heartbeatCore(options: HeartbeatCoreOptions): Promise<Hear
           flushPolicy: options.flushPolicy,
           timeZone: options.timeZone,
           onProgress: progress,
+          // The hub speaks for the beat: due-but-unrunnable agents ride into
+          // its prompt so the brief can nag the principal to run them locally.
+          beatNotes: agent.name === hubName && tierBlocked.length > 0 ? tierBlockedNotes(tierBlocked) : undefined,
         }),
       );
     } catch (err) {
@@ -240,6 +286,7 @@ export async function heartbeatCore(options: HeartbeatCoreOptions): Promise<Hear
   return {
     due: dueDecisions,
     skipped,
+    tierBlocked,
     runs,
     failures,
     ok: failures.length === 0 && runs.every((r) => r.ok),

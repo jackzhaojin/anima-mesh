@@ -7,7 +7,7 @@ import { runAgent } from "../src/harness/run.js";
 import { FsInstanceStore } from "../src/instance/store-fs.js";
 import { parseScheduleRequest } from "../src/harness/schedule.js";
 import { FakeProvider } from "../src/providers/fake.js";
-import { registerProvider } from "../src/providers/index.js";
+import { registerProvider, registerContextualFactory } from "../src/providers/index.js";
 import { Ledger } from "../src/ledger/ledger.js";
 import { loadBundle } from "../src/okf/bundle.js";
 import { checkConformance } from "../src/okf/conformance.js";
@@ -224,6 +224,74 @@ describe("wake consumption respects request time", () => {
     // Nothing was consumable: the only attempted wake was renewed mid-beat.
     expect(entries.find((e) => e.action === "wake-consumed")).toBeUndefined();
     expect(entries.some((e) => e.action === "schedule-updated")).toBe(true);
+  });
+});
+
+describe("tier-blocked accounting — a DUE agent the cloud cannot run is never a silent skip", () => {
+  it("reports a woken laptop-tier agent as tier-blocked, wake kept", async () => {
+    const root = await makeInstance({
+      "bundle/agents/local.md": agentFile("local"), // harness "fake" is not in CLOUD_HARNESSES
+      "bundle/ops/schedule.md": concept("schedule", { wake: ["local"] }, "# Schedule\n"),
+    });
+    const result = await heartbeatCore({ store: new FsInstanceStore(root), cloudTier: true, dryRun: true });
+
+    expect(result.tierBlocked).toHaveLength(1);
+    expect(result.tierBlocked[0]?.agent).toBe("local");
+    expect(result.tierBlocked[0]?.reason).toContain("DUE (wake requested");
+    expect(result.tierBlocked[0]?.reason).toContain("needs a manual local run");
+    expect(result.skipped).toContainEqual(result.tierBlocked[0]); // also visible in the plain skip list
+    expect(await readSchedule(root)).toContain('wake: ["local"]'); // still kept for the tier that can run it
+  });
+
+  it("reports a cadence-due laptop-tier agent as tier-blocked; a fresh one stays a plain skip", async () => {
+    const now = new Date("2026-08-01T12:00:00Z");
+    const hourAgo = new Date(now.getTime() - 3_600_000).toISOString();
+    const root = await makeInstance({
+      "bundle/agents/stale.md": agentFile("stale", { heartbeat: "daily" }), // never run → due
+      "bundle/agents/fresh.md": agentFile("fresh", { heartbeat: "daily" }),
+      "ledger/actions.jsonl":
+        JSON.stringify({ ts: hourAgo, runId: "r0", agent: "fresh", action: "run-completed", type: "report" }) + "\n",
+    });
+    const result = await heartbeatCore({ store: new FsInstanceStore(root), cloudTier: true, dryRun: true, now });
+
+    expect(result.tierBlocked.map((t) => t.agent)).toEqual(["stale"]);
+    expect(result.tierBlocked[0]?.reason).toContain("DUE (never run)");
+    const fresh = result.skipped.find((s) => s.agent === "fresh");
+    expect(fresh?.reason).toBe("laptop-tier harness (fake) — not run in cloud"); // not due → the old quiet reason
+  });
+
+  it("pause outranks the blocked accounting — a paused laptop-tier agent is not a nag", async () => {
+    const root = await makeInstance({
+      "bundle/agents/local.md": agentFile("local", { heartbeat: "daily" }),
+      "bundle/ops/schedule.md": concept("schedule", { wake: ["local"], pause: ["local"] }, "# Schedule\n"),
+    });
+    const result = await heartbeatCore({ store: new FsInstanceStore(root), cloudTier: true, dryRun: true });
+
+    expect(result.tierBlocked).toHaveLength(0);
+    expect(result.skipped[0]?.reason).toContain("laptop-tier harness");
+  });
+
+  it("the hub's prompt carries the scheduler notes; spokes' prompts do not", async () => {
+    // FakeProvider bound to a CLOUD_HARNESSES name so a cloud beat actually
+    // runs agents through the seam the real Worker uses. The contextual
+    // factory outranks the plain registry, so it is the thing to override.
+    const fake = new FakeProvider(() => ({ text: "## Brief\n\nQuiet day otherwise.\n" }));
+    registerContextualFactory("anthropic-api", () => fake);
+    const root = await makeInstance({
+      "bundle/agents/local.md": agentFile("local", { heartbeat: "daily" }), // never run → DUE, tier-blocked
+      "bundle/agents/scout.md": agentFile("scout", { heartbeat: "daily", harness: "anthropic-api" }),
+      "bundle/agents/chief-of-staff.md": agentFile("chief-of-staff", { heartbeat: "daily", harness: "anthropic-api" }),
+    });
+    const result = await heartbeatCore({ store: new FsInstanceStore(root), cloudTier: true });
+
+    expect(result.runs.map((r) => r.agent)).toEqual(["scout", "chief-of-staff"]); // hub last
+    expect(result.tierBlocked.map((t) => t.agent)).toEqual(["local"]);
+
+    const prompts = fake.calls.map((c) => c.prompt);
+    expect(prompts).toHaveLength(2);
+    expect(prompts[0]).not.toContain("Scheduler notes for this beat"); // the spoke is not the beat's voice
+    expect(prompts[1]).toContain("Scheduler notes for this beat");
+    expect(prompts[1]).toContain("- local — DUE (never run) but laptop-tier harness (fake) — needs a manual local run");
   });
 });
 

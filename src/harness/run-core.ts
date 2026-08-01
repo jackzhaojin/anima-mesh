@@ -69,6 +69,14 @@ export interface RunCoreOptions {
   runId?: string;
   now?: Date;
   onProgress?: (note: string) => void;
+  /**
+   * Lines from the triggering beat, appended to the prompt as their own
+   * section (e.g. the cloud scheduler's "these DUE agents could not run on
+   * this tier — surface it"). The hub's brief is the only surface the
+   * principal reads; a scheduler fact that never reaches a prompt
+   * effectively never happened.
+   */
+  beatNotes?: string[];
 }
 
 /** yyyy-mm-dd of an instant — in an IANA timezone when given, else runtime-local. */
@@ -179,6 +187,7 @@ export async function runAgentCore(options: RunCoreOptions): Promise<RunReport> 
     providerCtx,
     progress,
     options.sourceFs,
+    options.beatNotes,
   );
   progress(`run ${runId.slice(0, 8)}: ${agent.name} via ${provider.name} (${cognition.model})`);
 
@@ -352,6 +361,7 @@ async function buildPrompt(
   providerCtx?: ApiProviderContext,
   log?: (note: string) => void,
   sourceFs?: SourceFs,
+  beatNotes?: string[],
 ): Promise<string> {
   const sections: string[] = [];
   sections.push(
@@ -387,6 +397,11 @@ async function buildPrompt(
   }
   if (agent.whitelist.includes("defect-report")) {
     sections.push(...defectCapabilityLines(config.drafts));
+  }
+  // Beat notes come from the deterministic scheduler, not the model — they
+  // outrank recall the same way capability lines do.
+  if (beatNotes && beatNotes.length > 0) {
+    sections.push("", ...beatNotes);
   }
   // Declared read sources (agent frontmatter opt-in) — live external context
   // inlined so L1 runs still need no tool access. Failures become honest

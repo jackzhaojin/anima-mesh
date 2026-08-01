@@ -167,16 +167,20 @@ describe("the golden day — a scripted mesh day, replayed deterministically", (
     expect(await readFile(path.join(root, "ledger/actions.jsonl"), "utf8")).toBe(ledgerBefore);
   });
 
-  it("the cloud view of the same day skips fake-harness agents with reason", async () => {
+  it("the cloud view of the same day skips fake-harness agents — loudly, because they were due", async () => {
     const root = await goldenInstance();
     registerProvider(scriptedProvider(), "fake");
     const result = await heartbeat({ instanceRoot: root, now: NOW, timeZone: TZ, cloudTier: true });
     expect(result.due).toEqual([]);
     expect(result.runs).toEqual([]);
+    // These agents ARE due on the golden morning; the cloud can't run them,
+    // and since the cutover to cloud-only scheduling that fact must surface
+    // as a nag, never a quiet skip.
     expect(result.skipped.map((s) => s.reason)).toEqual([
-      "laptop-tier harness (fake) — not run in cloud",
-      "laptop-tier harness (fake) — not run in cloud",
-      "laptop-tier harness (fake) — not run in cloud",
+      "DUE (daily: not yet run today) but laptop-tier harness (fake) — needs a manual local run",
+      "DUE (daily: not yet run today) but laptop-tier harness (fake) — needs a manual local run",
+      "DUE (daily: not yet run today) but laptop-tier harness (fake) — needs a manual local run",
     ]);
+    expect(result.tierBlocked).toHaveLength(3);
   });
 });

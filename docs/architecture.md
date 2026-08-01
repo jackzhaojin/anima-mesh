@@ -97,6 +97,12 @@ its context ([issue #5](https://github.com/jackzhaojin/anima-mesh/issues/5)) —
 "nothing to report" and "wasn't given the data" must stay distinguishable
 facts, stated in the prompt.
 
+The same honesty applies to the scheduler: a cloud beat that skips a DUE
+laptop-tier agent computes what its due decision would have been and hands
+the hub **beat notes** — a prompt section naming each blocked agent and the
+manual local run that unblocks it — so the brief nags the principal instead
+of letting the missing report pass as a quiet day.
+
 ## How Discord messages flow (both directions)
 
 **Inbound — a direction (flows ① and ② on the diagram):**
