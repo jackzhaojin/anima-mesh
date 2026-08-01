@@ -3,7 +3,7 @@
 AnimaMesh is pre-1.0, so this history is organized by **minor release line**:
 the capability boundary operators actually adopt. Patch tags are deliberately
 rolled into the value and maturity of their minor rather than narrated one by
-one. The latest tag is **v0.15.0**.
+one. The latest tag is **v0.15.1**.
 
 ## Upgrade procedure
 
@@ -32,7 +32,20 @@ The ledger remains append-only; never "migrate" it by editing old entries.
 
 ## [v0.15.x] — streamed cloud cognition: the 100-second ceiling removed
 
-**Latest tag: v0.15.0 · 2026-08-01**
+**Latest tag: v0.15.1 · 2026-08-01**
+
+**v0.15.1 (fixes, found by v0.15.0's own live test):** the woken manual
+beat that proved streaming exposed two delivery defects. (1) "Latest
+report" was chosen by filename sort, and report names end in a random
+run-id — so when an agent runs twice in one day, newest is a coin flip;
+the beat re-delivered the morning's stale brief instead of the run it had
+just completed. Delivery now trusts the agent's last `report-written`
+ledger entry, with name order as the ledgerless fallback. (2) The Discord
+channel sent chunk bursts with no rate-limit handling; Discord's
+per-channel limit (~5 msgs/5s) tripped mid-burst, failing the whole
+delivery after a partial DM. A 429 is now paced (wait `retry_after`,
+resend the same chunk, bounded retries) — every other failure still
+throws immediately.
 
 **The defect that forced it.** A scheduled cloud beat failed with
 `anthropic-api → HTTP 524` — three attempts of ~100 seconds each.

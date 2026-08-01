@@ -91,8 +91,25 @@ export async function deliverLatestReportFromStore(
   const channelNames = options.channels ?? config.delivery?.channels ?? ["console"];
 
   const candidates = (await store.listReports()).filter((f) => f.includes(`-${agent}-`));
-  const newest = candidates[candidates.length - 1];
-  if (!newest) throw new Error(`no reports found for agent '${agent}'`);
+  if (candidates.length === 0) throw new Error(`no reports found for agent '${agent}'`);
+
+  // "Newest" comes from the ledger, not the filename: report names end in a
+  // random run-id, so when an agent runs twice in one day the lexicographic
+  // tail is a coin flip (2026-08-01: a manual beat re-delivered the
+  // morning's stale brief instead of the run it had just completed). The
+  // agent's last report-written entry is the recency record; name order
+  // stays as the fallback for ledgerless instances.
+  let newest: string | undefined;
+  try {
+    for (const entry of await store.readLedger()) {
+      if (entry.agent !== agent || entry.action !== "report-written") continue;
+      const name = (entry.detail as { path?: string } | undefined)?.path?.split("/").pop();
+      if (name && candidates.includes(name)) newest = name;
+    }
+  } catch {
+    // an unreadable ledger must not block delivery — fall back to name order
+  }
+  newest ??= candidates[candidates.length - 1]!;
 
   const raw = await store.readReport(newest);
   const msg = reportToMessage(raw, newest.replace(/\.md$/, ""), config);

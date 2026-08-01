@@ -91,6 +91,33 @@ describe("discord channel", () => {
     for (const content of contents) expect(content.endsWith("y")).toBe(true);
   });
 
+  it("waits out a 429 mid-burst and resends the same chunk — a partial DM is not a delivery", async () => {
+    // Discord's per-channel limit (~5 msgs/5s) WILL fire during a long
+    // brief's burst; the 2026-08-01 beat died on message 6 of 8.
+    const { impl, calls } = fakeFetch(
+      { status: 204 },
+      { status: 429, json: { retry_after: 0.01 } },
+      { status: 204 },
+    );
+    const result = await discordChannel.deliver(
+      { title: "T", body: "x".repeat(2500) }, // 2 chunks
+      { env, fetchImpl: impl },
+    );
+    expect(result.ok).toBe(true);
+    expect(calls.length).toBe(3); // chunk1, chunk2 rate-limited, chunk2 again
+    const second = JSON.parse(String(calls[1]!.init.body)).content;
+    const third = JSON.parse(String(calls[2]!.init.body)).content;
+    expect(third).toBe(second); // the SAME chunk resent, nothing skipped
+  });
+
+  it("a hard rate limit still fails loud after bounded retries", async () => {
+    const { impl, calls } = fakeFetch({ status: 429, json: { retry_after: 0.001 } });
+    await expect(
+      discordChannel.deliver({ title: "T", body: "short" }, { env, fetchImpl: impl }),
+    ).rejects.toThrow(/429/);
+    expect(calls.length).toBe(6); // initial + 5 bounded retries, then loud
+  });
+
   it("caps a runaway report at 8 messages with a repo pointer", async () => {
     const { impl, calls } = fakeFetch({ status: 204 });
     await discordChannel.deliver({ title: "T", body: "z".repeat(40000) }, { env, fetchImpl: impl });
@@ -115,10 +142,12 @@ describe("discord channel", () => {
   });
 
   it("surfaces webhook failures", async () => {
-    const { impl } = fakeFetch({ status: 429, text: "rate limited" });
+    // 403, not 429: rate limits are paced-and-retried now (tests above);
+    // every other failure still throws immediately.
+    const { impl } = fakeFetch({ status: 403, text: "forbidden" });
     await expect(
       discordChannel.deliver({ title: "T", body: "b" }, { env, fetchImpl: impl }),
-    ).rejects.toThrow(/HTTP 429/);
+    ).rejects.toThrow(/HTTP 403/);
   });
 
   it("bot-DM mode: accepts token+user config, opens the DM channel, sends as the bot", async () => {
@@ -241,6 +270,35 @@ describe("registry + deliverLatestReport", () => {
     expect(payload.content).toContain("New brief");
     expect(payload.content).not.toContain("Wrong agent");
     expect(payload.username).toBe("Vesper");
+  });
+
+  it("same-day reruns: the ledger's last report-written wins over filename order", async () => {
+    // Report names end in a random run-id, so two same-day runs sort by
+    // coin flip — the 2026-08-01 manual beat re-delivered the morning's
+    // stale brief. The ledger knows which run was actually last.
+    const root = await makeTree({
+      "animamesh.config.json": JSON.stringify({
+        bundle: "bundle",
+        delivery: { channels: ["discord"], deliverAgent: "scout" },
+      }),
+      "bundle/index.md": concept("index", {}, "# I"),
+      "bundle/log.md": concept("log", {}, "# L"),
+      // zzz sorts LAST but the ledger says aaa was written later
+      "reports/2026-08-01-scout-zzz11111.md": "---\ntype: report\n---\n\n# Stale morning brief\n\nold",
+      "reports/2026-08-01-scout-aaa22222.md": "---\ntype: report\n---\n\n# Fresh evening brief\n\nnew",
+      "ledger/actions.jsonl":
+        JSON.stringify({ ts: "2026-08-01T10:00:00Z", agent: "scout", action: "report-written", type: "report", detail: { path: "reports/2026-08-01-scout-zzz11111.md" } }) +
+        "\n" +
+        JSON.stringify({ ts: "2026-08-01T16:30:00Z", agent: "scout", action: "report-written", type: "report", detail: { path: "reports/2026-08-01-scout-aaa22222.md" } }) +
+        "\n",
+      ".env.local": "DISCORD_WEBHOOK_URL=https://discord.example/hook\n",
+    });
+    roots.push(root);
+    const { impl, calls } = fakeFetch({ status: 204 });
+    await deliverLatestReport(root, { fetchImpl: impl });
+    const payload = JSON.parse(String(calls[0]!.init.body));
+    expect(payload.content).toContain("Fresh evening brief");
+    expect(payload.content).not.toContain("Stale");
   });
 
   it("throws clearly when the agent has no reports", async () => {
