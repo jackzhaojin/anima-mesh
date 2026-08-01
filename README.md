@@ -143,7 +143,11 @@ generalizes to any relationship-shaped domain (vendors, candidates, press).
   `web: <n>` frontmatter budgets web searches per run; `anthropic-api`
   grants them via Anthropic's server-side web-search tool in the same
   Messages call, Workers-safe. A refused budget is stated out loud in the
-  prompt — silent empty research is not a reachable state.
+  prompt — silent empty research is not a reachable state. The same
+  contract covers knowledge: `reads:` frontmatter declares the concept
+  files a role requires, and the harness inlines them every run — or says
+  `EMPTY` / `NOT AVAILABLE` in the prompt — so no-tool harnesses never run
+  blind on files the job text names.
 - **Cloud-first execution, one engine.** The primary runtime is a
   **Cloudflare Worker + Durable Object alarm** (`workers/heartbeat/`) over a
   GitHub-hosted brain. The laptop CLI runs the same heartbeat over a local
@@ -162,7 +166,9 @@ generalizes to any relationship-shaped domain (vendors, candidates, press).
   optional `ops/nags.md` rides in every prompt so opted-into reminders repeat
   every heartbeat — with age — until done. Heartbeats are resilient (a failed
   spoke never kills the beat) and daily means *daily*: local-calendar
-  semantics, immune to odd-hour manual runs.
+  semantics, immune to odd-hour manual runs. A due agent the cloud *cannot*
+  run (subprocess-tier harness) is never a silent skip: the hub's prompt
+  carries a scheduler note and the brief nags for the manual run owed.
 - **The principal reaches the mesh, too — agentically.** A **direction** is
   the second entry point beside the heartbeat: an inbound message (Discord
   slash command via Ed25519-verified interactions, or a polled Gmail inbox)
@@ -253,21 +259,21 @@ conformance and complete a full agent run against the fake provider.
 
 ## Status
 
-v0.12.0 — pre-release. Package name on npm to be confirmed; pinned consumers
+v0.15.0 — pre-release. Package name on npm to be confirmed; pinned consumers
 should reference the repo by tag. The cloud tier introduced in v0.3 is the
 primary execution path; the CLI remains the bootstrap, operator, and
-subprocess-harness path. v0.12 makes **capability truth** part of the prompt
-contract: providers declare what they grant (file reads, web search), the
-prompt states it to the agent over the job description, `web: <n>` frontmatter
-budgets searches, and `anthropic-api` runs real server-side web search on
-Workers. v0.11 added the **third tier** — `export-local` compiles agent
-concepts into Claude Code/opencode interactive artifacts — and the
-`defect-report` loop, the mesh's first feedback path INTO the engine
-(issue-first, deterministic leak guard). v0.10 added the draft surface (gated
-`draft-request` blocks: prep packs the principal reshapes by replying in
-chat); v0.9 the schedule surface (`ops/schedule.md`: wakes, pauses, cadence
-overrides) and the gated `schedule-request` path; v0.8 replaced PAT auth with
-GitHub App installation tokens and guaranteed the failure DM. See
+subprocess-harness path. The recent lines extend one theme — **nothing the
+mesh cannot do is ever silent**: v0.13 added role-declared required reading
+(`reads:` frontmatter inlined every run, absences stated in the prompt —
+closed the mesh's own issues #5/#6, filed by its hub through the defect
+loop); v0.14 made due-but-cloud-unrunnable agents first-class (the hub's
+brief nags for the manual run owed instead of a journal-only skip); v0.15
+streamed all `anthropic-api` cognition, removing the ~100s edge-timeout
+ceiling (HTTP 524) that non-streaming calls silently imposed on long
+generations. Before that: v0.12 capability truth + real server-side web
+search on Workers; v0.11 the interactive tier (`export-local`) and the
+`defect-report` loop; v0.10 the draft surface; v0.9 the schedule surface;
+v0.8 GitHub App auth and the guaranteed failure DM. See
 [CHANGELOG.md](CHANGELOG.md) for the value and upgrade boundary of each minor
 line, and [docs/learnings/](docs/learnings/README.md) for evidence-backed
 platform lessons.

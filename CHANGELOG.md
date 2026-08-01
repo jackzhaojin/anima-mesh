@@ -3,7 +3,7 @@
 AnimaMesh is pre-1.0, so this history is organized by **minor release line**:
 the capability boundary operators actually adopt. Patch tags are deliberately
 rolled into the value and maturity of their minor rather than narrated one by
-one. The latest tag is **v0.12.0**.
+one. The latest tag is **v0.15.0**.
 
 ## Upgrade procedure
 
@@ -23,15 +23,123 @@ Upgrade one private instance at a time:
    authenticated `POST /beat`, and confirm the mesh-authored commit and brief
    delivery before considering the upgrade complete.
 
-No release through v0.12 requires an existing bundle or ledger to be rewritten.
+No release through v0.15 requires an existing bundle or ledger to be rewritten.
 The ledger remains append-only; never "migrate" it by editing old entries.
 
 ## [Unreleased]
 
-- **docs: `docs/sample-brain/`** — a complete scrubbed production instance
+- Nothing yet.
+
+## [v0.15.x] — streamed cloud cognition: the 100-second ceiling removed
+
+**Latest tag: v0.15.0 · 2026-08-01**
+
+**The defect that forced it.** A scheduled cloud beat failed with
+`anthropic-api → HTTP 524` — three attempts of ~100 seconds each.
+`api.anthropic.com` sits behind Cloudflare, and Cloudflare's edge returns
+524 when the origin has not *completed* a response within ~100s. The
+provider's Messages calls were non-streaming, so the API buffered the whole
+generation before the first response byte and the edge's clock covered the
+entire generation — an invisible hard cap on generation time that no client
+`timeoutMs` could lift, and that retries only made more expensive (each
+burned a full generation against quota into the same wall). It surfaced the
+day v0.13 made prompts bigger: a hub agent with ~50K chars of declared
+reads, adaptive thinking, and a 16K output budget pushed generation past
+100s deterministically.
+
+**Every `anthropic-api` call now streams.** `stream: true` always; the SSE
+events are reassembled into the exact message shape the non-streaming path
+returned, so pause_turn continuation, the thinking-budget fallback, and
+honest degradation are unchanged. Reassembly is replay-faithful:
+`server_tool_use` inputs are rebuilt from `input_json_delta` frames and
+thinking signatures from `signature_delta`, because a pause_turn
+continuation replays assistant content verbatim and a lossy rebuild would
+silently restart a web sweep from nothing. A stream cut before
+`message_stop` is a CUT generation, not a short one — it retries like a
+5xx, then fails loud; a fragment never returns as a clean report.
+Mid-stream `error` events get the same treatment. Plain JSON bodies still
+parse when the response is not `text/event-stream` (the test seam, and
+graceful behavior against a gateway that ignores `stream`). Evidence:
+[docs/learnings/2026-08-01-cloudflare-524-stream-messages.md](docs/learnings/2026-08-01-cloudflare-524-stream-messages.md).
+
+**Upgrade notes.** Pin to v0.15.0 and redeploy the heartbeat Worker. No
+bundle, ledger, config, or agent-concept change; the wire change is
+invisible to agents and operators except that long generations now finish.
+
+## [v0.14.x] — no silent scheduling gaps: tier-blocked agents become nags
+
+**Latest tag: v0.14.0 · 2026-08-01**
+
+**The gap.** A cloud beat has always skipped agents whose harness cannot
+run on Workers (subprocess tiers), with an honest reason string — in the
+journal. But a journal line the principal never reads is not a signal: when
+an instance retires its laptop's scheduled job and goes cloud-only (the
+intended end state), a *due* laptop-tier agent would simply never run and
+nobody would be told. A scheduler fact that never reaches a prompt
+effectively never happened.
+
+**Due-but-unrunnable is now first-class.** The due decision is extracted
+into a single vocabulary (`dueVerdict`: wake, cadence override, daily
+local-calendar, elapsed-hours — one implementation for both tiers), and a
+cloud beat now distinguishes three states per skipped agent: paused (quiet,
+by design), not due (quiet), and **due but tier-blocked** — the agent is
+DUE, the reason says so, and it lands in `HeartbeatResult.tierBlocked`.
+When any agent is tier-blocked, the hub's own prompt gains a
+**"Scheduler notes for this beat"** section instructing it to surface each
+one in the brief as an active nag naming the manual run the principal owes
+(`pnpm cli run <agent> --instance <brain>`). Wakes for laptop-tier agents
+stay on file rather than being consumed by a beat that cannot honor them —
+unchanged v0.9 behavior, now visible.
+
+**Upgrade notes.** Pin and redeploy; purely additive. Instances whose
+roster mixes cloud and subprocess harnesses get the nag behavior
+automatically through their hub's next beat. `HeartbeatResult.tierBlocked`
+is new API surface for anyone consuming beat results programmatically.
+
+## [v0.13.x] — role-declared required reading: agents stop running blind
+
+**Latest tag: v0.13.0 · 2026-07-31**
+
+**The defect that forced it ([issue #5](https://github.com/jackzhaojin/anima-mesh/issues/5),
+[issue #6](https://github.com/jackzhaojin/anima-mesh/issues/6) — both filed
+by a mesh's own hub through the v0.11 defect loop).** Prompt assembly
+inlined a hardcoded four-file excerpt list (constitution, calendar,
+watch-list, nags). Any *other* concept file an agent's role prose named —
+a pipeline, a CRM taxonomy, a status-expectations fact — was omitted
+deterministically on the no-tool API harnesses, where the agent cannot go
+read the file itself. The failure read as intermittent across runs, but the
+omission was structural: the role said "check X against `facts/y.md`" and
+`facts/y.md` was simply never in context.
+
+**Agents now declare their required reading.** `reads:` in agent concept
+frontmatter lists bundle-relative paths (instance-root fallback) the
+harness must inline every run — single files or directories (recursive,
+`.md` only, lexicographic). What cannot be served is stated in the prompt
+rather than dropped: an empty file reads `EMPTY`, a missing path
+`NOT AVAILABLE`, an unparseable one `INVALID`; oversized files are clipped
+at 6K chars with the clip named, and a directory past the per-dir file cap
+names the files it left out. The contract matches v0.12's capability truth:
+**a file the role requires is either in context or its absence is said out
+loud — silent omission is not a reachable state.**
+
+Also in the line:
+
+- **`docs/sample-brain/`** — a complete scrubbed production instance
   (27 concepts, curated reports, prep pack, ledger) that passes `validate`
   and runs credential-free via a `cognition.overrides` remap to the `fake`
   provider. Reference shapes for new brains; demo-safe by construction.
+- `init` scaffolds pin the engine by **version tag**, not `main` — upgrades
+  are deliberate ref bumps from birth.
+- All seven `references/` proof-of-concept integrations restored to a
+  runnable state.
+
+**Upgrade notes.** No bundle or ledger migration; agents without `reads:`
+behave exactly as before. Adopt it by auditing each agent's role prose for
+named files and directories and declaring them — the four standard excerpts
+are still always included and need no declaration. Order directory
+declarations after any single file the role critically depends on, so a
+per-dir cap can never push the critical file into the named-not-inlined
+overflow.
 
 ## [v0.12.x] — capability truth, and real web search on the cloud tier
 
@@ -585,7 +693,10 @@ initial local cognition options.
 - Scaffold with `pnpm cli init`, validate the result, and continue through the
   later minor upgrade notes before choosing a production tag.
 
-[Unreleased]: https://github.com/jackzhaojin/anima-mesh/compare/v0.12.0...HEAD
+[Unreleased]: https://github.com/jackzhaojin/anima-mesh/compare/v0.15.0...HEAD
+[v0.15.x]: https://github.com/jackzhaojin/anima-mesh/tree/v0.15.0
+[v0.14.x]: https://github.com/jackzhaojin/anima-mesh/tree/v0.14.0
+[v0.13.x]: https://github.com/jackzhaojin/anima-mesh/tree/v0.13.0
 [v0.12.x]: https://github.com/jackzhaojin/anima-mesh/tree/v0.12.0
 [v0.11.x]: https://github.com/jackzhaojin/anima-mesh/tree/v0.11.5
 [v0.10.x]: https://github.com/jackzhaojin/anima-mesh/tree/v0.10.1
