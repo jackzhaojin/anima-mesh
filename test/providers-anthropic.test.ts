@@ -32,6 +32,9 @@ describe("anthropic-api provider (subscription OAuth over plain fetch)", () => {
     // thinking (on by default on claude-sonnet-5) can eat a small budget
     // whole on hard prompts (the 2026-07-18 librarian lesson).
     expect(body.max_tokens).toBe(16384);
+    // Streamed, always: a non-streaming call caps generation at the edge's
+    // ~100s completion timeout — the 2026-08-01 HTTP 524 beat failure.
+    expect(body.stream).toBe(true);
     expect(body.thinking).toBeUndefined(); // adaptive by default — never sent unless the fallback fires
     // The OAuth gateway validates the FIRST system block is EXACTLY the
     // Claude Code identity sentence — its own array entry, nothing appended.
@@ -285,6 +288,94 @@ describe("anthropic-api — server-side web search", () => {
     expect(result.text).toContain("partial");
   });
 
+});
+
+/**
+ * The streamed (SSE) response path — the PRODUCTION path since the 2026-08-01
+ * HTTP 524 beat failure. api.anthropic.com's edge kills any response that
+ * has not COMPLETED within ~100s; only a streamed response can outlive that.
+ * The JSON fixtures above exercise the fallback seam; these exercise the
+ * reassembly the real API path runs through.
+ */
+describe("anthropic-api — streamed responses", () => {
+  const sse = (events: Array<Record<string, unknown>>) =>
+    new Response(
+      events.map((e) => `event: ${e.type}\ndata: ${JSON.stringify(e)}\n\n`).join(""),
+      { status: 200, headers: { "content-type": "text/event-stream" } },
+    );
+  const okStream = (chunks: string[]) =>
+    sse([
+      { type: "message_start", message: { role: "assistant", content: [], usage: { input_tokens: 10, output_tokens: 1 } } },
+      { type: "content_block_start", index: 0, content_block: { type: "text", text: "" } },
+      ...chunks.map((text) => ({ type: "content_block_delta", index: 0, delta: { type: "text_delta", text } })),
+      { type: "content_block_stop", index: 0 },
+      { type: "message_delta", delta: { stop_reason: "end_turn" }, usage: { output_tokens: 20 } },
+      { type: "message_stop" },
+    ]);
+
+  it("reassembles text deltas and merges usage from message_start + message_delta", async () => {
+    const fetchImpl = vi.fn().mockResolvedValue(okStream(["the re", "port"]));
+    const provider = createAnthropicApiProvider({ env: ENV, fetchImpl });
+    const result = await provider.run({ prompt: "p", cwd: "/" });
+    expect(result.text).toBe("the report");
+    expect(result.tokens).toEqual({ input_tokens: 10, output_tokens: 20 });
+  });
+
+  it("reconstructs a paused turn's blocks — server_tool_use input included — for the replay", async () => {
+    // The continuation replays assistant content verbatim; a tool input lost
+    // in reassembly would restart the sweep from nothing.
+    const pausedStream = sse([
+      { type: "message_start", message: { role: "assistant", content: [], usage: { input_tokens: 5 } } },
+      { type: "content_block_start", index: 0, content_block: { type: "text", text: "" } },
+      { type: "content_block_delta", index: 0, delta: { type: "text_delta", text: "checked Adobe:" } },
+      { type: "content_block_stop", index: 0 },
+      { type: "content_block_start", index: 1, content_block: { type: "server_tool_use", id: "srv_1", name: "web_search", input: {} } },
+      { type: "content_block_delta", index: 1, delta: { type: "input_json_delta", partial_json: '{"query":' } },
+      { type: "content_block_delta", index: 1, delta: { type: "input_json_delta", partial_json: '"adobe releases"}' } },
+      { type: "content_block_stop", index: 1 },
+      { type: "message_delta", delta: { stop_reason: "pause_turn" } },
+      { type: "message_stop" },
+    ]);
+    const fetchImpl = vi.fn().mockResolvedValueOnce(pausedStream).mockResolvedValueOnce(okStream(["no releases"]));
+    const provider = createAnthropicApiProvider({ env: ENV, fetchImpl });
+
+    const result = await provider.run({ prompt: "sweep", cwd: "/", webSearchMaxUses: 5 });
+
+    expect(fetchImpl).toHaveBeenCalledTimes(2);
+    const second = JSON.parse(fetchImpl.mock.calls[1]![1].body);
+    expect(second.messages[1].role).toBe("assistant");
+    expect(second.messages[1].content[1].name).toBe("web_search");
+    expect(second.messages[1].content[1].input).toEqual({ query: "adobe releases" });
+    expect(result.text).toBe("checked Adobe:\nno releases");
+  });
+
+  it("a mid-stream error event retries like a 5xx, then succeeds", async () => {
+    const errored = sse([
+      { type: "message_start", message: { role: "assistant", content: [] } },
+      { type: "error", error: { type: "overloaded_error", message: "Overloaded" } },
+    ]);
+    const fetchImpl = vi.fn().mockResolvedValueOnce(errored).mockResolvedValueOnce(okStream(["after retry"]));
+    const provider = createAnthropicApiProvider({ env: ENV, fetchImpl, retryDelaysMs: [0, 0] });
+    const result = await provider.run({ prompt: "p", cwd: "/" });
+    expect(result.text).toBe("after retry");
+    expect(fetchImpl).toHaveBeenCalledTimes(2);
+  });
+
+  it("a stream cut before message_stop never returns as a silent half-report", async () => {
+    const cut = () =>
+      sse([
+        { type: "message_start", message: { role: "assistant", content: [] } },
+        { type: "content_block_start", index: 0, content_block: { type: "text", text: "" } },
+        { type: "content_block_delta", index: 0, delta: { type: "text_delta", text: "half a brie" } },
+      ]);
+    const fetchImpl = vi.fn().mockImplementation(async () => cut());
+    const provider = createAnthropicApiProvider({ env: ENV, fetchImpl, retryDelaysMs: [0] });
+    await expect(provider.run({ prompt: "p", cwd: "/" })).rejects.toThrow(/cut mid-generation/);
+    expect(fetchImpl).toHaveBeenCalledTimes(2); // the cut is retried before failing loud
+  });
+});
+
+describe("anthropic-api — retry budget shape (JSON seam)", () => {
   it("keeps the HTTP retry budget per request, not per turn", async () => {
     // A paused turn followed by a transient 529 must still get its retries —
     // otherwise a long sweep spends the retry budget on its own progress.

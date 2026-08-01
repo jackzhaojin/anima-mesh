@@ -34,3 +34,4 @@ that instance's own repo, not here (see
 | 2026-07-18 | [GitHub 403s UA-less calls — Workers' fetch sends no User-Agent](2026-07-18-github-ua-less-403.md) |
 | 2026-07-22 | [An acknowledged-but-unapplied order is the worst state](2026-07-22-acknowledged-but-unapplied.md) |
 | 2026-07-22 | [Every mutable surface a beat writes must ride the beat's own commit](2026-07-22-beat-writes-own-commit.md) |
+| 2026-08-01 | [Non-streaming Messages calls hard-cap generation at ~100s (HTTP 524)](2026-08-01-cloudflare-524-stream-messages.md) |

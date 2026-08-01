@@ -22,6 +22,18 @@ import type { ApiProviderContext } from "./moonshot-api.js";
  *
  * Proven from real Workers egress before this was written: api.anthropic.com
  * answers Workers fetch cleanly (unlike the Kimi edge, which WAF-blocks it).
+ *
+ * Requests are STREAMED (SSE), not buffered. api.anthropic.com sits behind
+ * Cloudflare, whose edge returns HTTP 524 when the origin has not COMPLETED
+ * a response within ~100s — a non-streaming call therefore hard-caps
+ * generation time at 100s regardless of any client timeout. A long prompt
+ * plus adaptive thinking blew through that on 2026-08-01 (three ~100s
+ * attempts, three 524s, a failed beat). Streaming starts bytes flowing at
+ * message_start, so the edge never sees a silent connection; the events are
+ * reassembled below into the same message shape the non-streaming path
+ * returned, and every downstream behavior (pause_turn, thinking fallback,
+ * degradation) is unchanged. Non-SSE JSON responses are still accepted as a
+ * fallback seam (fakes/tests, or a gateway that ignores `stream`).
  */
 
 const DEFAULT_BASE_URL = "https://api.anthropic.com";
@@ -56,6 +68,145 @@ const CAPABILITY_CORRECTION = (reason: string) =>
   `Do not describe any subject you meant to check as unchanged or clear — say plainly which checks could not run.`;
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+/** The message shape both response paths (SSE, JSON) reduce to. */
+type MessageJson = {
+  content?: Array<Record<string, unknown> & { type: string; text?: string }>;
+  stop_reason?: string | null;
+  usage?: Record<string, unknown>;
+};
+
+/** A failure that arrived AFTER HTTP 200 (mid-stream) — retryable like a 5xx. */
+class StreamError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "StreamError";
+  }
+}
+
+/**
+ * Reassemble a streamed Messages response into the complete message JSON.
+ * Fidelity matters beyond the text blocks: a pause_turn continuation replays
+ * the assistant content verbatim, so server_tool_use inputs (input_json_delta)
+ * and thinking signatures (signature_delta) must survive reconstruction.
+ */
+async function consumeSse(res: Response): Promise<MessageJson> {
+  const reader = res.body?.getReader();
+  if (!reader) throw new StreamError("response had no body");
+  const decoder = new TextDecoder();
+  let buf = "";
+  let message: MessageJson | undefined;
+  const partialJson = new Map<number, string>();
+  let sawStop = false;
+
+  const handle = (evt: Record<string, any>): void => {
+    switch (evt.type) {
+      case "message_start": {
+        const m = evt.message ?? {};
+        message = { ...m, content: Array.isArray(m.content) ? [...m.content] : [] };
+        break;
+      }
+      case "content_block_start": {
+        if (!message) break;
+        const block = { ...(evt.content_block ?? {}) };
+        if (block.type === "text" && typeof block.text !== "string") block.text = "";
+        message.content![Number(evt.index)] = block;
+        break;
+      }
+      case "content_block_delta": {
+        const idx = Number(evt.index);
+        const block = message?.content?.[idx] as Record<string, any> | undefined;
+        const delta = evt.delta ?? {};
+        if (!block) break;
+        if (delta.type === "text_delta") block.text = (block.text ?? "") + delta.text;
+        else if (delta.type === "thinking_delta") block.thinking = (block.thinking ?? "") + delta.thinking;
+        else if (delta.type === "signature_delta") block.signature = (block.signature ?? "") + delta.signature;
+        else if (delta.type === "input_json_delta")
+          partialJson.set(idx, (partialJson.get(idx) ?? "") + delta.partial_json);
+        else if (delta.type === "citations_delta" && delta.citation)
+          block.citations = [...(block.citations ?? []), delta.citation];
+        break;
+      }
+      case "content_block_stop": {
+        const idx = Number(evt.index);
+        const partial = partialJson.get(idx);
+        if (partial !== undefined) {
+          partialJson.delete(idx);
+          try {
+            (message?.content?.[idx] as Record<string, unknown>).input = JSON.parse(partial || "{}");
+          } catch {
+            // keep the start block's input rather than corrupt the replay
+          }
+        }
+        break;
+      }
+      case "message_delta": {
+        if (!message) break;
+        Object.assign(message, evt.delta ?? {});
+        if (evt.usage) message.usage = { ...(message.usage ?? {}), ...evt.usage };
+        break;
+      }
+      case "message_stop":
+        sawStop = true;
+        break;
+      case "error": {
+        const e = evt.error ?? {};
+        throw new StreamError(`${e.type ?? "error"}: ${e.message ?? "(no message)"}`);
+      }
+      default:
+        break; // ping and future event types
+    }
+  };
+
+  const feed = (text: string): void => {
+    // Events are blank-line-separated; normalizing CRLF over the whole buffer
+    // also heals a \r\n split across chunk boundaries (buf stays small —
+    // complete events are consumed out of it immediately).
+    buf = (buf + text).replace(/\r\n/g, "\n");
+    for (;;) {
+      const sep = buf.indexOf("\n\n");
+      if (sep === -1) return;
+      const rawEvt = buf.slice(0, sep);
+      buf = buf.slice(sep + 2);
+      let data = "";
+      for (const line of rawEvt.split("\n")) {
+        if (line.startsWith("data:")) data += line.slice(5).trim();
+      }
+      if (!data) continue;
+      let parsed: Record<string, unknown>;
+      try {
+        parsed = JSON.parse(data);
+      } catch {
+        continue; // a malformed frame is dropped, not fatal — message_stop still gates completeness
+      }
+      handle(parsed);
+    }
+  };
+
+  try {
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      feed(decoder.decode(value, { stream: true }));
+      if (sawStop) break;
+    }
+    feed(decoder.decode());
+  } finally {
+    await reader.cancel().catch(() => {});
+  }
+
+  if (!message) throw new StreamError("stream ended before message_start");
+  if (!sawStop)
+    throw new StreamError("stream ended before message_stop — the connection was cut mid-generation");
+  return message;
+}
+
+/** SSE when the API streams (the production path); plain JSON otherwise. */
+async function readMessage(res: Response): Promise<MessageJson> {
+  const ctype = (res.headers.get("content-type") ?? "").toLowerCase();
+  if (ctype.includes("text/event-stream")) return consumeSse(res);
+  return (await res.json()) as MessageJson;
+}
 
 /** A 400 that names the tool = this credential/gateway won't run server tools. */
 function isToolRejection(status: number, body: string): boolean {
@@ -103,7 +254,9 @@ export function createAnthropicApiProvider(ctx: ApiProviderContext = {}): AgentW
       // thinking on by default (claude-sonnet-5) can spend a whole 8192
       // budget thinking on a hard prompt and return ZERO text (stop_reason
       // max_tokens, blocks: thinking — the 2026-07-18 librarian run). 16K
-      // leaves room to think AND write while staying non-streaming-safe.
+      // leaves room to think AND write; the streamed response (see header)
+      // is what makes a generation that long survive the edge's ~100s
+      // completion timeout (the 2026-08-01 HTTP 524 beat failure).
       let disableThinking = false;
       // Server-tool state. `webUses > 0` is the agent concept's `web:` budget,
       // already reconciled against this provider's capabilities by the harness.
@@ -122,6 +275,9 @@ export function createAnthropicApiProvider(ctx: ApiProviderContext = {}): AgentW
         const body = JSON.stringify({
           model,
           max_tokens: 16384,
+          // Streaming is a 524 fix, not a UX feature: without it the edge
+          // caps COMPLETION time at ~100s no matter what timeoutMs says.
+          stream: true,
           ...(disableThinking ? { thinking: { type: "disabled" } } : {}),
           system: SYSTEM_BLOCKS,
           ...(webEnabled
@@ -150,11 +306,27 @@ export function createAnthropicApiProvider(ctx: ApiProviderContext = {}): AgentW
         }
 
         if (res.ok) {
-          const json = (await res.json()) as {
-            content?: Array<{ type: string; text?: string }>;
-            stop_reason?: string;
-            usage?: unknown;
-          };
+          let json: MessageJson;
+          try {
+            json = await readMessage(res);
+          } catch (err) {
+            if (err instanceof DOMException && err.name === "TimeoutError") {
+              throw new Error(`anthropic-api run timed out after ${timeoutMs}ms`);
+            }
+            // A cut or errored stream is transient the same way a 5xx is —
+            // nothing was committed (messages state only advances on a fully
+            // parsed response), so the whole request retries cleanly.
+            const msg = err instanceof Error ? err.message : String(err);
+            if (attempt < retryDelays.length) {
+              const delay = retryDelays[attempt]!;
+              progress(
+                `anthropic-api: stream failed (${msg}) — retry ${attempt + 1}/${retryDelays.length} in ${delay}ms`,
+              );
+              await sleep(delay);
+              continue;
+            }
+            throw new Error(`anthropic-api → stream failed after retries: ${msg}`);
+          }
           const text = (json.content ?? [])
             .filter((b) => b.type === "text" && typeof b.text === "string")
             .map((b) => b.text)
