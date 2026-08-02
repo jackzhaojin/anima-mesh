@@ -5,6 +5,10 @@ import {
   listCabinet,
   readCabinetFile,
   cabinetListingMarkdown,
+  selectFilesToInline,
+  inlineCabinetFiles,
+  cabinetContentsMarkdown,
+  type CabinetListing,
 } from "../src/sources/msgraph.js";
 import { sourceSections } from "../src/sources/registry.js";
 
@@ -162,6 +166,89 @@ describe("readCabinetFile", () => {
   });
 });
 
+function fileEntry(path: string, over: Partial<CabinetListing["entries"][number]> = {}) {
+  const name = path.split("/").pop()!;
+  return { path, name, isFolder: false, size: 100, driveId: "d-me", itemId: `id-${name}`, ...over };
+}
+
+describe("selectFilesToInline", () => {
+  const listing: CabinetListing = {
+    root: "Cabinet",
+    truncated: false,
+    entries: [
+      { path: "Finance", name: "Finance", isFolder: true, driveId: "d", itemId: "f" },
+      fileEntry("Finance/old.csv", { lastModified: "2025-01-01T00:00:00Z" }),
+      fileEntry("Finance/new.csv", { lastModified: "2026-07-15T00:00:00Z" }),
+      fileEntry("Finance/README.md", { lastModified: "2024-01-01T00:00:00Z" }),
+      fileEntry("Finance/scan.pdf", { lastModified: "2026-08-01T00:00:00Z" }),
+      fileEntry("Finance/huge.csv", { lastModified: "2026-08-01T00:00:00Z", size: 999_999_999 }),
+    ],
+  };
+
+  it("puts README/index files first even when older, then sorts by recency", () => {
+    const picked = selectFilesToInline(listing).map((e) => e.path);
+    expect(picked).toEqual(["Finance/README.md", "Finance/new.csv", "Finance/old.csv"]);
+  });
+
+  it("never selects non-text or oversized files, and respects maxFiles", () => {
+    const picked = selectFilesToInline(listing, { maxFiles: 2 }).map((e) => e.path);
+    expect(picked).toEqual(["Finance/README.md", "Finance/new.csv"]);
+    expect(selectFilesToInline(listing).map((e) => e.name)).not.toContain("scan.pdf");
+    expect(selectFilesToInline(listing).map((e) => e.name)).not.toContain("huge.csv");
+  });
+});
+
+describe("inlineCabinetFiles", () => {
+  it("reads the batch on ONE token refresh; a per-file failure becomes an error entry, not an aborted batch", async () => {
+    const mock = graphFetch(); // csv-1 has content; doc-1 (notes.md) 404s
+    const listing = await listCabinet({ env: ENV, fetchImpl: mock.fetchImpl });
+    const inlined = await inlineCabinetFiles({ env: ENV, fetchImpl: mock.fetchImpl }, listing);
+    const byPath = Object.fromEntries(inlined.map((f) => [f.path, f]));
+    expect(byPath["Finance/chase.csv"]!.content).toContain("date,amount");
+    expect(byPath["notes.md"]!.error).toMatch(/HTTP 404/);
+    // newest first: chase.csv (07-15) before notes.md (07-01)
+    expect(inlined.map((f) => f.path)).toEqual(["Finance/chase.csv", "notes.md"]);
+    // listCabinet refreshed once, inlineCabinetFiles once — never per file
+    const logins = mock.calls.filter((c) => c.url.includes("login.microsoftonline.com"));
+    expect(logins).toHaveLength(2);
+  });
+
+  it("stops reading when the total character budget is spent", async () => {
+    const mock = graphFetch({
+      "/content": () => new Response("x".repeat(50)),
+    });
+    const listing: CabinetListing = {
+      root: "Cabinet",
+      truncated: false,
+      entries: [
+        fileEntry("a.csv", { lastModified: "2026-03-01T00:00:00Z" }),
+        fileEntry("b.csv", { lastModified: "2026-02-01T00:00:00Z" }),
+        fileEntry("c.csv", { lastModified: "2026-01-01T00:00:00Z" }),
+      ],
+    };
+    const inlined = await inlineCabinetFiles({ env: ENV, fetchImpl: mock.fetchImpl }, listing, { charBudget: 80, perFileChars: 50 });
+    // a: 50 chars; b: room 30 → clipped read; c: no room left
+    expect(inlined.map((f) => f.path)).toEqual(["a.csv", "b.csv"]);
+    expect(inlined[1]!.content).toContain("…(truncated)");
+  });
+});
+
+describe("cabinetContentsMarkdown", () => {
+  it("renders fenced content with modified stamp, and failures as honest notes", () => {
+    const md = cabinetContentsMarkdown([
+      { path: "Finance/chase.csv", lastModified: "2026-07-15T12:00:00Z", content: "date,amount" },
+      { path: "notes.md", error: "HTTP 404" },
+    ]);
+    expect(md).toContain("#### Finance/chase.csv (modified 2026-07-15)");
+    expect(md).toContain("date,amount");
+    expect(md).toContain("_(read failed this run: HTTP 404)_");
+  });
+
+  it("says so when nothing qualified", () => {
+    expect(cabinetContentsMarkdown([])).toContain("no text-format files qualified");
+  });
+});
+
 describe("cabinetListingMarkdown", () => {
   it("renders one indented line per entry with size and modified date", () => {
     const md = cabinetListingMarkdown({
@@ -185,6 +272,14 @@ describe("sourceSections", () => {
     expect(sections).toHaveLength(1);
     expect(sections[0]).toContain("Filing cabinet (OneDrive via Microsoft Graph, read-only)");
     expect(sections[0]).toContain("chase.csv");
+  });
+
+  it("inlines budgeted file CONTENTS below the listing, with the not-read honesty rule stated", async () => {
+    const mock = graphFetch();
+    const sections = await sourceSections(["onedrive"], { env: ENV, fetchImpl: mock.fetchImpl });
+    expect(sections[0]).toContain("Inlined file contents (budgeted)");
+    expect(sections[0]).toContain("date,amount"); // actual CSV rows, not just the name
+    expect(sections[0]).toContain("NOT read this run");
   });
 
   it("says so honestly when declared but unconfigured — and does not throw", async () => {

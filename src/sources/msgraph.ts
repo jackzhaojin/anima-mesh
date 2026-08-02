@@ -196,13 +196,13 @@ const TEXT_EXTENSIONS = /\.(md|txt|csv|tsv|json|ya?ml|xml|html?|log)$/i;
 export async function readCabinetFile(
   ctx: SourceContext,
   entry: Pick<CabinetEntry, "driveId" | "itemId" | "name">,
-  opts: { maxChars?: number } = {},
+  opts: { maxChars?: number; token?: string } = {},
 ): Promise<string> {
   if (!TEXT_EXTENSIONS.test(entry.name)) {
     throw new Error(`msgraph source: '${entry.name}' is not a text format this source will inline`);
   }
   const maxChars = opts.maxChars ?? 20_000;
-  const token = await msGraphAccessToken(ctx);
+  const token = opts.token ?? (await msGraphAccessToken(ctx));
   const doFetch = ctx.fetchImpl ?? fetch;
   const base = entry.driveId === "me" ? `${GRAPH_BASE}/me/drive` : `${GRAPH_BASE}/drives/${entry.driveId}`;
   // /content 302s to a pre-authenticated download URL; fetch follows it.
@@ -214,6 +214,97 @@ export async function readCabinetFile(
   }
   const text = await res.text();
   return text.length > maxChars ? text.slice(0, maxChars) + "\n…(truncated)" : text;
+}
+
+// ---- content inlining: which files, in what order, within what budget ----
+
+const INLINE_FILE_LIMIT = 6;
+const INLINE_CHAR_BUDGET = 20_000;
+const INLINE_PER_FILE_CHARS = 8_000;
+const INLINE_MAX_BYTES = 256 * 1024;
+
+/** README/index files describe the rest of the cabinet — they go first. */
+const INDEX_FILE = /^(readme|index)\.(md|txt)$/i;
+
+export interface InlinedFile {
+  path: string;
+  lastModified?: string;
+  content?: string;
+  /** Per-file read failure, stated honestly — never shrinks the list silently. */
+  error?: string;
+}
+
+/**
+ * Which text files deserve prompt budget: index-like files first (they refer
+ * to the other files — the cabinet's own map), then most recently modified.
+ * Oversized and non-text entries never qualify.
+ */
+export function selectFilesToInline(
+  listing: CabinetListing,
+  opts: { maxFiles?: number; maxBytes?: number } = {},
+): CabinetEntry[] {
+  const maxFiles = opts.maxFiles ?? INLINE_FILE_LIMIT;
+  const maxBytes = opts.maxBytes ?? INLINE_MAX_BYTES;
+  const candidates = listing.entries.filter(
+    (e) => !e.isFolder && TEXT_EXTENSIONS.test(e.name) && (e.size === undefined || e.size <= maxBytes),
+  );
+  candidates.sort((a, b) => {
+    const rank = (e: CabinetEntry) => (INDEX_FILE.test(e.name) ? 0 : 1);
+    if (rank(a) !== rank(b)) return rank(a) - rank(b);
+    const am = a.lastModified ?? "";
+    const bm = b.lastModified ?? "";
+    if (am !== bm) return am > bm ? -1 : 1; // ISO strings — newest first
+    return a.path < b.path ? -1 : 1;
+  });
+  return candidates.slice(0, maxFiles);
+}
+
+/**
+ * Read the selected files' contents within a total character budget, one
+ * token refresh for the batch. A file that fails to read becomes an error
+ * entry — visible in the prompt, never an aborted run.
+ */
+export async function inlineCabinetFiles(
+  ctx: SourceContext,
+  listing: CabinetListing,
+  opts: { maxFiles?: number; maxBytes?: number; charBudget?: number; perFileChars?: number } = {},
+): Promise<InlinedFile[]> {
+  const charBudget = opts.charBudget ?? INLINE_CHAR_BUDGET;
+  const perFile = opts.perFileChars ?? INLINE_PER_FILE_CHARS;
+  const selected = selectFilesToInline(listing, opts);
+  if (selected.length === 0) return [];
+  const token = await msGraphAccessToken(ctx);
+  const out: InlinedFile[] = [];
+  let spent = 0;
+  for (const entry of selected) {
+    const room = Math.min(perFile, charBudget - spent);
+    if (room <= 0) break;
+    try {
+      const content = await readCabinetFile(ctx, entry, { maxChars: room, token });
+      spent += content.length;
+      out.push({ path: entry.path, lastModified: entry.lastModified, content });
+    } catch (err) {
+      out.push({
+        path: entry.path,
+        lastModified: entry.lastModified,
+        error: err instanceof Error ? err.message : String(err),
+      });
+    }
+  }
+  return out;
+}
+
+/** Inlined contents as markdown — one #### block per file, fenced. */
+export function cabinetContentsMarkdown(files: InlinedFile[]): string {
+  if (files.length === 0) return "_(no text-format files qualified for inlining)_";
+  return files
+    .map((f) => {
+      const stamp = f.lastModified ? ` (modified ${f.lastModified.slice(0, 10)})` : "";
+      return f.error !== undefined
+        ? `#### ${f.path}${stamp}\n\n_(read failed this run: ${f.error})_`
+        : `#### ${f.path}${stamp}\n\n\`\`\`\n${f.content}\n\`\`\``;
+    })
+    .join("\n\n");
 }
 
 const LISTING_CHAR_BUDGET = 12_000;

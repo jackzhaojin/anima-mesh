@@ -77,7 +77,10 @@ src/
                 frontmatter; inlined at prompt assembly; failures become
                 honest sections, never aborted runs) · msgraph.ts = the
                 'onedrive' cabinet source (refresh-token grant, bounded BFS
-                listing, shortcut/remoteItem traversal, text-only reads) ·
+                listing, shortcut/remoteItem traversal, budgeted text-content
+                inlining — README/index first then most-recent, per-file
+                failures honest, not-read files marked; github-docs stays
+                listing-only) ·
                 github-docs.ts = git-hosted corpus (REST on Workers,
                 local-files.ts working tree on Node) · registry.ts
   local/        the interactive tier: agents-core.ts composes any agent

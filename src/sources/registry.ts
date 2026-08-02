@@ -1,5 +1,5 @@
 import type { SourceContext } from "./types.js";
-import { listCabinet, cabinetListingMarkdown, msGraphConfigured } from "./msgraph.js";
+import { listCabinet, cabinetListingMarkdown, inlineCabinetFiles, cabinetContentsMarkdown, msGraphConfigured } from "./msgraph.js";
 import { listDocs, docsListingMarkdown, githubDocsConfigured } from "./github-docs.js";
 
 /**
@@ -34,7 +34,15 @@ async function onedriveSection(ctx: SourceContext): Promise<string> {
   }
   try {
     const listing = await listCabinet(ctx);
-    return `${heading}\n\nLive listing fetched this run. Folder and file names, sizes, and modified dates are current facts you may rely on; file CONTENTS are not shown here.\n\n${cabinetListingMarkdown(listing)}`;
+    let contents: string;
+    try {
+      contents = cabinetContentsMarkdown(await inlineCabinetFiles(ctx, listing));
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      ctx.log?.(`onedrive content inlining failed: ${message}`);
+      contents = `_(content inlining failed this run: ${message} — only the listing above is available)_`;
+    }
+    return `${heading}\n\nLive listing fetched this run. Folder and file names, sizes, and modified dates are current facts you may rely on.\n\n${cabinetListingMarkdown(listing)}\n\n### Inlined file contents (budgeted)\n\nText-format files inlined below, README/index files first, then most recently modified, within a read budget. A file NOT shown here was NOT read this run — say so rather than guessing its contents.\n\n${contents}`;
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     ctx.log?.(`onedrive source failed: ${message}`);

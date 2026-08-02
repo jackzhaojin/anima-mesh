@@ -3,7 +3,7 @@
 AnimaMesh is pre-1.0, so this history is organized by **minor release line**:
 the capability boundary operators actually adopt. Patch tags are deliberately
 rolled into the value and maturity of their minor rather than narrated one by
-one. The latest tag is **v0.16.0**.
+one. The latest tag is **v0.16.1**.
 
 ## Upgrade procedure
 
@@ -32,7 +32,18 @@ The ledger remains append-only; never "migrate" it by editing old entries.
 
 ## [v0.16.x] — recent events reach every run
 
-**Latest tag: v0.16.0 · 2026-08-02**
+**Latest tag: v0.16.1 · 2026-08-02**
+
+**v0.16.1 — the cabinet source inlines file contents, not just names.**
+A live agent run surfaced that the `onedrive` source's `readCabinetFile`
+was never called: prompts carried a listing only, and an instance had
+overclaimed CSV readability on the strength of the dead code. Now the
+source inlines budgeted text-file contents below the listing — README/index
+files first (the files that describe the other files), then most recently
+modified, one token refresh per batch, per-file failures rendered as honest
+notes. Files outside the budget are explicitly marked not-read. Bounded:
+6 files / 20K chars total / 8K per file / 256KB size cap. `github-docs`
+remains listing-only for now.
 
 **The defect that forced it.** OKF conventions route every correction and
 settled fact through an append-only `events/` concept — but no harness
