@@ -149,6 +149,15 @@ references/poc/     read-only PoC examples — NOT engine code, excluded from ts
 Release = git tag `vX.Y.Z`; instances pin by tag and upgrade by deliberate ref
 bump.
 
+**Versioning policy (operator direction, 2026-08-02): patch is the default.**
+Bug fixes AND incremental enhancements — including small capabilities that
+extend the current line — ship as patch tags (`vX.Y.Z+1`). A minor bump
+(`vX.Y+1.0`) is reserved for a truly new feature line, and it is **planned
+and explicitly agreed with the operator before the work starts** — never
+chosen opportunistically mid-session because a change feels feature-shaped.
+When in doubt, it's a patch.
+
 For every minor or major release, attempt to update [README.md](README.md) to
 explain what changed and remove deprecated or no-longer-applicable material,
-and update [CHANGELOG.md](CHANGELOG.md).
+and update [CHANGELOG.md](CHANGELOG.md). Patch releases roll into their
+minor's CHANGELOG section rather than getting their own.
