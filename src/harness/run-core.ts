@@ -507,6 +507,9 @@ export function levelMeaning(level: string): string {
   }
 }
 
+const RECENT_EVENTS = 5;
+const MAX_EVENT_CHARS = 3000;
+
 export async function bundleContext(store: InstanceStore, config: InstanceConfig): Promise<string> {
   // Tolerant reads — a missing ops file is context absence, not a crash.
   const parts: string[] = ["\n## Bundle context (source of truth excerpts)"];
@@ -515,6 +518,26 @@ export async function bundleContext(store: InstanceStore, config: InstanceConfig
   for (const rel of ["index.md", "ops/calendar.md", "ops/watch-list.md", "ops/nags.md"]) {
     const raw = await store.readOptional(`${config.bundle}/${rel}`);
     if (raw !== null) parts.push(`\n### ${rel}\n\n${raw}`);
+  }
+  // events/: the bundle's append-only "what changed" stream. Conventions route
+  // every correction and settled fact through an event — but no harness surface
+  // carried them, so on a no-tool harness a fresh event was invisible and
+  // agents re-derived questions the principal had already settled. The newest
+  // few are ambient context for every agent, every run; date-prefixed names
+  // make lexicographic order chronological.
+  const events = await store.listFiles(`${config.bundle}/events`);
+  if (events.length > 0) {
+    const recent = events.slice(-RECENT_EVENTS).reverse();
+    parts.push(
+      `\n### Recent events (${recent.length} of ${events.length}, newest first — the full stream stays in events/)`,
+      "Treat these as settled: an event supersedes older reports, watch items, and your own recall.",
+    );
+    for (const name of recent) {
+      const raw = (await store.readOptional(`${config.bundle}/events/${name}`)) ?? "";
+      const clipped =
+        raw.length > MAX_EVENT_CHARS ? raw.slice(0, MAX_EVENT_CHARS) + "\n…(truncated by the harness)" : raw;
+      parts.push(`\n#### events/${name}\n\n${raw.trim() ? clipped : "(file exists and is EMPTY)"}`);
+    }
   }
   return parts.join("\n");
 }

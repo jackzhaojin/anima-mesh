@@ -259,7 +259,7 @@ conformance and complete a full agent run against the fake provider.
 
 ## Status
 
-v0.15.0 — pre-release. Package name on npm to be confirmed; pinned consumers
+v0.16.0 — pre-release. Package name on npm to be confirmed; pinned consumers
 should reference the repo by tag. The cloud tier introduced in v0.3 is the
 primary execution path; the CLI remains the bootstrap, operator, and
 subprocess-harness path. The recent lines extend one theme — **nothing the
@@ -270,7 +270,10 @@ loop); v0.14 made due-but-cloud-unrunnable agents first-class (the hub's
 brief nags for the manual run owed instead of a journal-only skip); v0.15
 streamed all `anthropic-api` cognition, removing the ~100s edge-timeout
 ceiling (HTTP 524) that non-streaming calls silently imposed on long
-generations. Before that: v0.12 capability truth + real server-side web
+generations; v0.16 put the bundle's append-only `events/` stream in front
+of every agent every run (newest first, count out loud) — a settled fact
+recorded as an event can no longer be invisibly re-litigated by the
+scheduled tier. Before that: v0.12 capability truth + real server-side web
 search on Workers; v0.11 the interactive tier (`export-local`) and the
 `defect-report` loop; v0.10 the draft surface; v0.9 the schedule surface;
 v0.8 GitHub App auth and the guaranteed failure DM. See

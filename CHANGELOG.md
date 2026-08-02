@@ -3,7 +3,7 @@
 AnimaMesh is pre-1.0, so this history is organized by **minor release line**:
 the capability boundary operators actually adopt. Patch tags are deliberately
 rolled into the value and maturity of their minor rather than narrated one by
-one. The latest tag is **v0.15.1**.
+one. The latest tag is **v0.16.0**.
 
 ## Upgrade procedure
 
@@ -29,6 +29,38 @@ The ledger remains append-only; never "migrate" it by editing old entries.
 ## [Unreleased]
 
 - Nothing yet.
+
+## [v0.16.x] — recent events reach every run
+
+**Latest tag: v0.16.0 · 2026-08-02**
+
+**The defect that forced it.** OKF conventions route every correction and
+settled fact through an append-only `events/` concept — but no harness
+surface ever carried events into a prompt. Context assembly inlined
+`index.md`, the ops files, declared `reads:`, sources, and the latest
+reports; the one place the conventions say "record what changed HERE" was
+structurally invisible on a no-tool harness. The failure it produced: a
+principal settled a contested question in a supervised evening session,
+and the next morning's beat re-litigated it — one agent spent 6 of its 8
+web searches re-investigating the settled question, and the hub escalated
+it back to the principal as unresolved. The mesh burned budget re-deriving
+facts that were sitting in the bundle's own change stream.
+
+**What v0.16.0 does.** `bundleContext` now inlines the newest events for
+**every** agent, every run, on every harness — no `reads:` declaration
+needed. Date-prefixed filenames make lexicographic order chronological;
+the section shows the newest five, newest first, each clipped visibly,
+with the count out loud (`5 of 12, newest first — the full stream stays
+in events/`) so a capped listing never reads as complete. The framing
+line tells the agent what the section means: treat events as settled —
+an event supersedes older reports, watch items, and model recall.
+
+**Upgrade notes.** No config, bundle, or Worker changes — redeploy and the
+section appears on the next beat wherever `events/` is non-empty. The
+instance-side discipline that makes it pay: supervised sessions that
+settle a fact should end by promoting the settlement into `events/`
+(session notes in a drafts directory are invisible to every scheduled
+agent by design).
 
 ## [v0.15.x] — streamed cloud cognition: the 100-second ceiling removed
 
@@ -707,7 +739,8 @@ initial local cognition options.
   later minor upgrade notes before choosing a production tag.
 
 [Unreleased]: https://github.com/jackzhaojin/anima-mesh/compare/v0.15.0...HEAD
-[v0.15.x]: https://github.com/jackzhaojin/anima-mesh/tree/v0.15.0
+[v0.16.x]: https://github.com/jackzhaojin/anima-mesh/tree/v0.16.0
+[v0.15.x]: https://github.com/jackzhaojin/anima-mesh/tree/v0.15.1
 [v0.14.x]: https://github.com/jackzhaojin/anima-mesh/tree/v0.14.0
 [v0.13.x]: https://github.com/jackzhaojin/anima-mesh/tree/v0.13.0
 [v0.12.x]: https://github.com/jackzhaojin/anima-mesh/tree/v0.12.0
