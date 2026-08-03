@@ -22,7 +22,7 @@
 
   <rect x="60" y="228" width="215" height="88" rx="8" fill="#ffffff" stroke="#9ec5e8" stroke-width="1.1"/>
   <text x="76" y="252" font-size="12.5" font-weight="700" fill="#1f2328">Delivery is part of the beat</text>
-  <text x="76" y="272" font-size="12" fill="#57606a">not an afterthought: the run isn't</text>
+  <text x="76" y="272" font-size="12" fill="#57606a">not an afterthought: a run isn't</text>
   <text x="76" y="289" font-size="12" fill="#57606a">done until the human has been</text>
   <text x="76" y="306" font-size="12" fill="#57606a">told what it means for them.</text>
 
@@ -79,8 +79,8 @@
   <text x="678" y="420" font-size="13" font-weight="700" fill="#116329">The ticket</text>
   <text x="678" y="440" font-size="12" fill="#57606a">Engine misbehavior → an issue</text>
   <text x="678" y="457" font-size="12" fill="#57606a">filed in the maintainer's queue</text>
-  <text x="678" y="474" font-size="12" fill="#57606a">(stop 6's pipeline decides what</text>
-  <text x="678" y="491" font-size="12" fill="#57606a">may leave). Work comes to them too.</text>
+  <text x="678" y="474" font-size="12" fill="#57606a">— stop 6's pipeline decides what</text>
+  <text x="678" y="491" font-size="12" fill="#57606a">may leave. Work reaches them too.</text>
 
   <path d="M 952 315 L 1006 315" stroke="#57606a" stroke-width="1.6" marker-end="url(#acy-ar)"/>
 
@@ -101,6 +101,7 @@
 
   <!-- ==================== BOTTOM: THE PULL TAX ==================== -->
   <rect x="40" y="608" width="1200" height="76" rx="10" fill="#f6f8fa" stroke="#d0d7de" stroke-width="1.2" stroke-dasharray="5 4"/>
-  <text x="60" y="636" font-size="13" font-weight="700" fill="#57606a">Deliberately absent — the pull tax:</text>
-  <text x="60" y="660" font-size="12.5" fill="#57606a">✕ a dashboard to open&#160;&#160;&#160;✕ a status meeting&#160;&#160;&#160;✕ a backlog to groom&#160;&#160;&#160;✕ "go check the logs" — each one taxes the human to hold state and remember to look. Here, forgetting is the machine's problem.</text>
+  <text x="60" y="632" font-size="13" font-weight="700" fill="#57606a">Deliberately absent — the pull tax:</text>
+  <text x="60" y="654" font-size="12.5" fill="#57606a">✕ a dashboard to open&#160;&#160;&#160;✕ a status meeting&#160;&#160;&#160;✕ a backlog to groom&#160;&#160;&#160;✕ "go check the logs"</text>
+  <text x="60" y="673" font-size="12.5" fill="#57606a">Each one taxes the human to hold state and remember to look. Here, forgetting is the machine's problem.</text>
 </svg>
