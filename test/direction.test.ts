@@ -158,6 +158,35 @@ describe("runDirectionCore — an inbound message becomes one agentic run", () =
     expect(report.reply).toHaveLength(1900);
   });
 
+  it("inlines declared source sections — the cabinet reaches direction runs too (v0.16.2)", async () => {
+    // The gap: a principal's chat pull for cabinet material came back "I was
+    // never given that" — scheduled runs inlined `sources:`, directions didn't.
+    const root = await makeInstance({
+      "bundle/agents/chief-of-staff.md": concept(
+        "agent",
+        {
+          name: "chief-of-staff",
+          title: "Chief of Staff",
+          level: "L1",
+          model: "test-model",
+          harness: "fake",
+          heartbeat: "daily",
+          sources: ["mystery-cabinet"],
+        },
+        "Coordinate the mesh; answer the principal.",
+      ),
+    });
+    const fake = new FakeProvider(() => ({ text: "ok" }));
+    await runDirectionCore({ store: new FsInstanceStore(root), message: MESSAGE, provider: fake, now: NOW });
+
+    const prompt = fake.calls[0]!.prompt;
+    // The section renders (unknown source → the honest marker), and the
+    // operating rules announce it — same contract as a scheduled run.
+    expect(prompt).toContain("## Source 'mystery-cabinet'");
+    expect(prompt).toContain("unknown source");
+    expect(prompt).toContain("source section(s) below (mystery-cabinet)");
+  });
+
   it("keeps the safety model: commercial agents refuse directions without the dual gate", async () => {
     const root = await makeInstance(
       {

@@ -3,7 +3,7 @@
 AnimaMesh is pre-1.0, so this history is organized by **minor release line**:
 the capability boundary operators actually adopt. Patch tags are deliberately
 rolled into the value and maturity of their minor rather than narrated one by
-one. The latest tag is **v0.16.1**.
+one. The latest tag is **v0.16.2**.
 
 ## Upgrade procedure
 
@@ -32,7 +32,17 @@ The ledger remains append-only; never "migrate" it by editing old entries.
 
 ## [v0.16.x] — recent events reach every run
 
-**Latest tag: v0.16.1 · 2026-08-02**
+**Latest tag: v0.16.2 · 2026-08-03**
+
+**v0.16.2 — direction runs get the declared source sections too.** A
+principal's chat pull for cabinet material came back "I was never given
+that": scheduled runs inline `sources:` sections (the cabinet listing and,
+since v0.16.1, budgeted file contents), but the direction prompt never
+called the source registry — the same agent had the cabinet at 08:00 and
+lacked it when DM'd at noon. Direction prompts now carry the identical
+live source sections, announced in the operating rules, so a chat
+question about external context is answered from the same evidence a
+scheduled brief would use.
 
 **v0.16.1 — the cabinet source inlines file contents, not just names.**
 A live agent run surfaced that the `onedrive` source's `readCabinetFile`
@@ -750,7 +760,7 @@ initial local cognition options.
   later minor upgrade notes before choosing a production tag.
 
 [Unreleased]: https://github.com/jackzhaojin/anima-mesh/compare/v0.15.0...HEAD
-[v0.16.x]: https://github.com/jackzhaojin/anima-mesh/tree/v0.16.0
+[v0.16.x]: https://github.com/jackzhaojin/anima-mesh/tree/v0.16.2
 [v0.15.x]: https://github.com/jackzhaojin/anima-mesh/tree/v0.15.1
 [v0.14.x]: https://github.com/jackzhaojin/anima-mesh/tree/v0.14.0
 [v0.13.x]: https://github.com/jackzhaojin/anima-mesh/tree/v0.13.0

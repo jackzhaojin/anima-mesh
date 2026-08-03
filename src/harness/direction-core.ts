@@ -12,6 +12,8 @@ import {
 import { applyDraftRequests, stripDraftRequests, draftCapabilityLines } from "./drafts.js";
 import { applyDefectReports } from "./defects.js";
 import { defectCapabilityLines, stripDefectReports } from "../defects/report-core.js";
+import { sourceSections } from "../sources/registry.js";
+import type { SourceContext, SourceFs } from "../sources/types.js";
 import {
   verifyConformanceBundle,
   verifyExpectedOutputsStore,
@@ -64,6 +66,8 @@ export interface DirectionRunOptions {
   /** Test seam: inject a provider instead of resolving the harness. */
   provider?: AgentWorkerProvider;
   providerCtx?: ApiProviderContext;
+  /** Local-tree reads for sources that support them (Node callers). */
+  sourceFs?: SourceFs;
   /** "per-run" (default) flushes here; "caller" batches (the Worker). */
   flushPolicy?: "per-run" | "caller";
   timeZone?: string;
@@ -127,8 +131,13 @@ export async function runDirectionCore(options: DirectionRunOptions): Promise<Di
     detail: { channel: message.channel, sender: message.sender, messageId: message.messageId },
   });
 
-  const prompt = await buildDirectionPrompt(agent, store, config, dateStamp, message);
   const providerCtx = options.providerCtx ?? { env: store.instanceEnv?.() ?? {} };
+  const prompt = await buildDirectionPrompt(agent, store, config, dateStamp, message, {
+    env: providerCtx.env ?? {},
+    fetchImpl: providerCtx.fetchImpl,
+    log: progress,
+    sourceFs: options.sourceFs,
+  });
   const cognition = effectiveCognition(agent, config);
   const provider = options.provider ?? resolveProvider(cognition.harness, providerCtx);
   provider.assertConfigured();
@@ -241,9 +250,10 @@ export async function runDirectionCore(options: DirectionRunOptions): Promise<Di
 
 /**
  * The direction prompt: the persona's standing context (job, bundle,
- * latest mesh reports, pending approvals) plus the inbound message and the
- * disposition rules. The model decides what the message means and what to
- * do about it — within L1: words and recommendations, never side effects.
+ * declared reads, latest mesh reports, pending approvals, declared source
+ * sections) plus the inbound message and the disposition rules. The model
+ * decides what the message means and what to do about it — within L1:
+ * words and recommendations, never side effects.
  */
 async function buildDirectionPrompt(
   agent: ReturnType<typeof findAgent>,
@@ -251,6 +261,7 @@ async function buildDirectionPrompt(
   config: Awaited<ReturnType<InstanceStore["loadConfig"]>>,
   dateStamp: string,
   message: DirectionMessage,
+  sourceCtx: SourceContext,
 ): Promise<string> {
   const preamble = [
     `You are "${agent.title}" (${agent.name}), an agent in an AnimaMesh company-of-0 mesh.`,
@@ -267,6 +278,12 @@ async function buildDirectionPrompt(
     "- Decide the disposition yourself: answer, recommend, flag for a scheduled run, or say honestly",
     "  that nothing needs doing. Never invent work.",
     "- Reply in under 300 words — this goes back over chat/email, not into a filing.",
+    ...(agent.sources.length > 0
+      ? [
+          `- External context: the source section(s) below (${agent.sources.join(", ")}) are this run's`,
+          "  live listing — read them as current, and nothing beyond them.",
+        ]
+      : []),
     ...(agent.whitelist.includes("draft-write")
       ? [
           "- Exception to \"no actions\": your whitelist permits draft artifacts. When the direction asks",
@@ -290,6 +307,13 @@ async function buildDirectionPrompt(
     "```",
   ].join("\n");
 
+  // The issue-#5 sibling gap (v0.16.2): a direction asking "what's in the
+  // cabinet" ran WITHOUT the cabinet — scheduled runs inlined declared source
+  // sections, direction runs never did, and the principal's chat pull came
+  // back "I was never given that". Same live external context on both paths.
+  const external =
+    agent.sources.length > 0 ? await sourceSections(agent.sources, sourceCtx) : [];
+
   return [
     preamble,
     await bundleContext(store, config),
@@ -298,6 +322,7 @@ async function buildDirectionPrompt(
     // reads, or a "refresh that pack" direction runs blind on the current one.
     await declaredReadsContext(store, config, agent),
     await instanceContext(store),
+    ...external,
     directionSection,
     "\n## Output\nReturn ONLY your reply text as markdown (no code fences around the whole thing).",
   ].join("\n");
