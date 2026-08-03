@@ -2,9 +2,12 @@
 
 **A company of zero: markdown files, a heartbeat, and an agent mesh that
 runs a real business.** This page is the talk — diagram, then the code
-behind it, six times. Every link is in this public repo; the running
-production instance is private, so the code stops here are
-[sample-brain](README.md), a scrubbed copy of it that validates and runs.
+behind it, seven times. **100% of the code is open source** — the entire
+engine is this public Apache-2.0 repo; the only private thing is the
+company's *data* (its brain, which is markdown, not code). Every link is
+in this repo; the running production instance is private, so the code
+stops here are [sample-brain](README.md), a scrubbed copy of it that
+validates and runs.
 
 ---
 
@@ -171,6 +174,39 @@ its own bug tracker.
   directory, empty in the healthy state.
 - [The live issue tracker](https://github.com/jackzhaojin/anima-mesh/issues?q=is%3Aissue)
   — agent-filed issues among the human ones; see for yourself.
+
+## 7 · The AI comes to you — not you to the AI
+
+![AI comes to you — the mesh's push posture](../ai-comes-to-you.svg)
+
+*Themes:* in a company of zero the scarce resource isn't compute — it's
+**founder attention**. Most tooling is pull: dashboards to open, backlogs
+to groom, statuses to go check — every one taxes the human to hold state
+and remember to look. The mesh inverts the direction of travel: everything
+it does terminates in a channel the human already lives in. The daily
+brief arrives as a bot DM; a failed beat sends its **own** DM, so silence
+is never ambiguous; a nag re-arrives every morning with its day count
+until its done-condition is met; due work the cloud tier *can't* run
+becomes an explicit ask for the manual run it's owed; and even the
+engine's maintainer gets work brought to them — as issues in their queue
+(stop 6's pipeline). And it never arrives empty-handed: the **prep pack**
+pattern means the ask shows up with the work already started — a
+paste-ready session starter, the pre-work done, forced-choice quiz
+questions — so responding takes judgment, not context reloading. The
+machine holds the calendar, the state, and the day counts; the human
+holds only the decisions. That's what makes fractional-time founding
+arithmetic work: minutes a day, because the minutes start prepared.
+
+*Code:*
+
+- [../../src/harness/heartbeat-core.ts](../../src/harness/heartbeat-core.ts)
+  — one beat computes who's due AND what the principal is owed: brief
+  delivery, the guaranteed failure DM, due-but-tier-blocked nag notes.
+- [../../src/channels/discord.ts](../../src/channels/discord.ts) — the
+  brief as a bot DM, chunked and rate-limit-paced. There is no dashboard.
+- [drafts/nag-prep/01-bank-export.md](drafts/nag-prep/01-bank-export.md)
+  — an ask arriving prepared: session starter, pre-work, quiz me — kept
+  current by the hub itself via `draft-request`.
 
 ---
 
