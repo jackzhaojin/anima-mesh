@@ -259,7 +259,7 @@ conformance and complete a full agent run against the fake provider.
 
 ## Status
 
-v0.16.0 — pre-release. Package name on npm to be confirmed; pinned consumers
+v0.17.0 — pre-release. Package name on npm to be confirmed; pinned consumers
 should reference the repo by tag. The cloud tier introduced in v0.3 is the
 primary execution path; the CLI remains the bootstrap, operator, and
 subprocess-harness path. The recent lines extend one theme — **nothing the
@@ -273,7 +273,10 @@ ceiling (HTTP 524) that non-streaming calls silently imposed on long
 generations; v0.16 put the bundle's append-only `events/` stream in front
 of every agent every run (newest first, count out loud) — a settled fact
 recorded as an event can no longer be invisibly re-litigated by the
-scheduled tier. Before that: v0.12 capability truth + real server-side web
+scheduled tier; v0.17 added ask-driven retrieval (`read-request`): the
+model names the files THIS run is about from a live listing — PDFs
+included — and deterministic code serves them for one continuation run,
+because no inline heuristic can know what the question needs. Before that: v0.12 capability truth + real server-side web
 search on Workers; v0.11 the interactive tier (`export-local`) and the
 `defect-report` loop; v0.10 the draft surface; v0.9 the schedule surface;
 v0.8 GitHub App auth and the guaranteed failure DM. See

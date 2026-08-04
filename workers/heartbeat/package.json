@@ -21,5 +21,8 @@
       "workerd",
       "esbuild"
     ]
+  },
+  "dependencies": {
+    "unpdf": "^1.8.0"
   }
 }

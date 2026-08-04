@@ -216,6 +216,62 @@ export async function readCabinetFile(
   return text.length > maxChars ? text.slice(0, maxChars) + "\n…(truncated)" : text;
 }
 
+// ---- ask-driven reads (v0.17.0): resolve a model-named path, PDFs included ----
+
+const PDF_EXT = /\.pdf$/i;
+const PDF_MAX_BYTES = 4 * 1024 * 1024;
+
+/**
+ * Extract text from PDF bytes via unpdf (a serverless pdf.js build that runs
+ * on Workers). Dynamically imported so the cost is paid only when a PDF is
+ * actually requested. Injectable for tests.
+ */
+export async function extractPdfText(data: Uint8Array, opts: { maxChars: number }): Promise<string> {
+  const { extractText, getDocumentProxy } = await import("unpdf");
+  const doc = await getDocumentProxy(data);
+  const { text } = await extractText(doc, { mergePages: true });
+  const merged = typeof text === "string" ? text : (text as string[]).join("\n");
+  return merged.length > opts.maxChars ? merged.slice(0, opts.maxChars) + "\n…(truncated)" : merged;
+}
+
+/**
+ * Read one cabinet file by its listing path — the serving half of a
+ * `read-request`. Unlike the inline heuristics this follows the MODEL's
+ * choice, so it also covers PDFs (extracted, size-capped): extraction cost
+ * is only ever paid on request, never in the ambient budget.
+ */
+export async function readCabinetPath(
+  ctx: SourceContext,
+  path: string,
+  opts: { maxChars?: number; pdfExtractor?: typeof extractPdfText } = {},
+): Promise<string> {
+  const maxChars = opts.maxChars ?? 12_000;
+  const listing = await listCabinet(ctx);
+  const want = path.replace(/^\/+|\/+$/g, "").toLowerCase();
+  const entry = listing.entries.find((e) => !e.isFolder && e.path.toLowerCase() === want);
+  if (!entry) {
+    throw new Error(
+      `'${path}' is not in the cabinet listing${listing.truncated ? " (listing is bounded — the file may sit deeper than the walk reaches)" : " — check the exact path shown in the listing"}`,
+    );
+  }
+  if (!PDF_EXT.test(entry.name)) return readCabinetFile(ctx, entry, { maxChars });
+
+  if (entry.size !== undefined && entry.size > PDF_MAX_BYTES) {
+    throw new Error(`'${path}' is ${formatSize(entry.size)} — PDFs over ${formatSize(PDF_MAX_BYTES)} are not extracted`);
+  }
+  const token = await msGraphAccessToken(ctx);
+  const doFetch = ctx.fetchImpl ?? fetch;
+  const base = entry.driveId === "me" ? `${GRAPH_BASE}/me/drive` : `${GRAPH_BASE}/drives/${entry.driveId}`;
+  const res = await doFetch(`${base}/items/${entry.itemId}/content`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) {
+    throw new Error(`msgraph content → HTTP ${res.status} ${await res.text().catch(() => "")}`.trim());
+  }
+  const data = new Uint8Array(await res.arrayBuffer());
+  return (opts.pdfExtractor ?? extractPdfText)(data, { maxChars });
+}
+
 // ---- content inlining: which files, in what order, within what budget ----
 
 const INLINE_FILE_LIMIT = 6;

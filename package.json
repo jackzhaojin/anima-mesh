@@ -1,6 +1,6 @@
 {
   "name": "anima-mesh",
-  "version": "0.16.2",
+  "version": "0.17.0",
   "description": "AnimaMesh — an engine for running a company-of-0: a mesh of small agents over a git-backed OKF knowledge bundle, with humans as the approval gate.",
   "type": "module",
   "private": true,
@@ -28,6 +28,7 @@
   },
   "dependencies": {
     "@anthropic-ai/claude-agent-sdk": "^0.3.207",
+    "unpdf": "^1.8.0",
     "yaml": "^2.6.0"
   },
   "devDependencies": {

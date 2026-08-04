@@ -14,6 +14,7 @@ import { applyDefectReports } from "./defects.js";
 import { defectCapabilityLines, stripDefectReports } from "../defects/report-core.js";
 import { sourceSections } from "../sources/registry.js";
 import type { SourceContext, SourceFs } from "../sources/types.js";
+import { parseReadRequests, serveReadRequests, stripReadRequests, readRequestCapabilityLines } from "./read-requests.js";
 import {
   verifyConformanceBundle,
   verifyExpectedOutputsStore,
@@ -132,23 +133,44 @@ export async function runDirectionCore(options: DirectionRunOptions): Promise<Di
   });
 
   const providerCtx = options.providerCtx ?? { env: store.instanceEnv?.() ?? {} };
-  const prompt = await buildDirectionPrompt(agent, store, config, dateStamp, message, {
+  const sourceCtx: SourceContext = {
     env: providerCtx.env ?? {},
     fetchImpl: providerCtx.fetchImpl,
     log: progress,
     sourceFs: options.sourceFs,
-  });
+  };
+  const prompt = await buildDirectionPrompt(agent, store, config, dateStamp, message, sourceCtx);
   const cognition = effectiveCognition(agent, config);
   const provider = options.provider ?? resolveProvider(cognition.harness, providerCtx);
   provider.assertConfigured();
   progress(`direction ${runId.slice(0, 8)}: ${agent.name} via ${provider.name} (${message.channel})`);
 
-  const result = await provider.run({
-    prompt,
-    cwd: store.bundleDir ?? (typeof process !== "undefined" ? process.cwd() : "/"),
-    model: cognition.model,
-    onProgress: progress,
-  });
+  const runOnce = (p: string) =>
+    provider.run({
+      prompt: p,
+      cwd: store.bundleDir ?? (typeof process !== "undefined" ? process.cwd() : "/"),
+      model: cognition.model,
+      onProgress: progress,
+    });
+  let result = await runOnce(prompt);
+
+  // Ask-driven retrieval (v0.17.0) — the direction path is where "open the
+  // file my question is about" actually gets asked. Same loop as a beat run:
+  // model names paths, code validates + serves + ledgers, ONE continuation.
+  const readRequests = parseReadRequests(result.text);
+  if (readRequests.length > 0) {
+    const served = await serveReadRequests({ requests: readRequests, agent, store, config, sourceCtx });
+    await store.appendLedger({
+      ts: clock(),
+      runId,
+      agent: agent.name,
+      action: "reads-requested",
+      type: "report",
+      detail: { requested: served.requested, served: served.served, refused: served.refused, chars: served.chars },
+    });
+    progress(`direction ${runId.slice(0, 8)}: ${served.served}/${served.requested} requested read(s) served — continuation run`);
+    result = await runOnce(`${prompt}\n${served.section}`);
+  }
 
   // Draft-request blocks apply here too — this is what makes "DM the persona,
   // the prep artifact updates in the repo" a one-message loop. Blocks are
@@ -178,7 +200,7 @@ export async function runDirectionCore(options: DirectionRunOptions): Promise<Di
     env: providerCtx.env ?? {},
     fetchImpl: providerCtx.fetchImpl,
   });
-  const reply = stripDefectReports(stripDraftRequests(result.text)).trim().slice(0, REPLY_LIMIT);
+  const reply = stripReadRequests(stripDefectReports(stripDraftRequests(result.text))).slice(0, REPLY_LIMIT);
 
   // The artifact is the evidence: the inbound message AND the disposition,
   // written by the harness (L1 contract), named so brief delivery skips it.
@@ -293,6 +315,9 @@ async function buildDirectionPrompt(
         ]
       : []),
     ...(agent.whitelist.includes("defect-report") ? defectCapabilityLines(config.drafts) : []),
+    // Ask-driven retrieval (v0.17.0): a chat question is exactly where "open
+    // the file this is about" gets asked — same surface as beat runs.
+    ...readRequestCapabilityLines(agent),
   ].join("\n");
 
   const directionSection = [

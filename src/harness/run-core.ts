@@ -3,6 +3,7 @@ import { loadGatedTypes, assertActionAllowed, GateViolation } from "../gates/gat
 import { parseScheduleRequest, mutateSchedule } from "./schedule.js";
 import { applyDraftRequests, draftCapabilityLines } from "./drafts.js";
 import { applyDefectReports } from "./defects.js";
+import { parseReadRequests, serveReadRequests, stripReadRequests, readRequestCapabilityLines } from "./read-requests.js";
 import { defectCapabilityLines } from "../defects/report-core.js";
 import {
   resolveProvider,
@@ -194,19 +195,53 @@ export async function runAgentCore(options: RunCoreOptions): Promise<RunReport> 
   // The bundle IS the agent's working world: relative reads in any harness
   // resolve against the knowledge layer, matching the prompt's paths.
   // Remote stores have no local dir; API providers ignore cwd entirely.
-  const result = await provider.run({
-    prompt,
-    cwd: store.bundleDir ?? (typeof process !== "undefined" ? process.cwd() : "/"),
-    model: cognition.model,
-    onProgress: progress,
-    ...(webBudget > 0 ? { webSearchMaxUses: webBudget } : {}),
-  });
+  const runOnce = (p: string) =>
+    provider.run({
+      prompt: p,
+      cwd: store.bundleDir ?? (typeof process !== "undefined" ? process.cwd() : "/"),
+      model: cognition.model,
+      onProgress: progress,
+      ...(webBudget > 0 ? { webSearchMaxUses: webBudget } : {}),
+    });
+  let result = await runOnce(prompt);
   // A capability the run asked for and did not get is operational evidence,
   // not a footnote — it belongs in the ledger next to the run that produced
   // the thinner report.
   if (result.degraded) {
     progress(`run ${runId.slice(0, 8)}: DEGRADED — ${result.degraded}`);
   }
+  const runTokens = [normalizeTokens(result.tokens)];
+
+  // Ask-driven retrieval (v0.17.0): a read-request in the output is model
+  // judgment naming the files THIS run is about — the inline heuristics
+  // can't know that. Code validates, serves, ledgers, and runs the agent
+  // once more with the served section appended. ONE round: requests in the
+  // continuation's own output are stripped, never served.
+  const readRequests = parseReadRequests(result.text);
+  if (readRequests.length > 0) {
+    const served = await serveReadRequests({
+      requests: readRequests,
+      agent,
+      store,
+      config,
+      sourceCtx: { env: providerCtx.env ?? {}, fetchImpl: providerCtx.fetchImpl, log: progress, sourceFs: options.sourceFs },
+    });
+    await store.appendLedger({
+      ts: clock(),
+      runId,
+      agent: agent.name,
+      action: "reads-requested",
+      type: "report",
+      detail: { requested: served.requested, served: served.served, refused: served.refused, chars: served.chars },
+    });
+    progress(`run ${runId.slice(0, 8)}: ${served.served}/${served.requested} requested read(s) served — continuation run`);
+    result = await runOnce(`${prompt}\n${served.section}`);
+    if (result.degraded) {
+      progress(`run ${runId.slice(0, 8)}: DEGRADED — ${result.degraded}`);
+    }
+    runTokens.push(normalizeTokens(result.tokens));
+  }
+  const finalText = stripReadRequests(result.text);
 
   // L1 contract: the harness, not the agent, writes the artifact.
   const reportName = `${dateStamp}-${agent.name}-${runId.slice(0, 8)}.md`;
@@ -220,7 +255,7 @@ export async function runAgentCore(options: RunCoreOptions): Promise<RunReport> 
     `model: ${cognition.model}`,
     "---",
     "",
-    result.text.trim(),
+    finalText,
     "",
   ].join("\n");
   await store.writeReport(reportName, reportContent);
@@ -234,7 +269,13 @@ export async function runAgentCore(options: RunCoreOptions): Promise<RunReport> 
   });
 
   const finishedAt = clock();
-  const tokens = normalizeTokens(result.tokens);
+  // A retrieval continuation is a second full model call — its spend belongs
+  // to this run's total, not just the last call's.
+  const tokens = runTokens.reduce<TokenCounts | undefined>((acc, t) => {
+    if (!t) return acc;
+    if (!acc) return { ...t };
+    return { input: (acc.input ?? 0) + (t.input ?? 0), output: (acc.output ?? 0) + (t.output ?? 0) };
+  }, undefined);
   await store.appendLedger({
     ts: finishedAt,
     runId,
@@ -342,7 +383,7 @@ export async function runAgentCore(options: RunCoreOptions): Promise<RunReport> 
     reportPath: store.reportPath(reportName),
     verifierResults,
     ok: allOk(verifierResults),
-    text: result.text,
+    text: finalText,
     tokens,
   };
 }
@@ -398,6 +439,9 @@ async function buildPrompt(
   if (agent.whitelist.includes("defect-report")) {
     sections.push(...defectCapabilityLines(config.drafts));
   }
+  // Ask-driven retrieval (v0.17.0): every agent may request specific files —
+  // the inline heuristics can't know what THIS run is about; the model can.
+  sections.push(...readRequestCapabilityLines(agent));
   // Beat notes come from the deterministic scheduler, not the model — they
   // outrank recall the same way capability lines do.
   if (beatNotes && beatNotes.length > 0) {

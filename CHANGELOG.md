@@ -3,7 +3,7 @@
 AnimaMesh is pre-1.0, so this history is organized by **minor release line**:
 the capability boundary operators actually adopt. Patch tags are deliberately
 rolled into the value and maturity of their minor rather than narrated one by
-one. The latest tag is **v0.16.2**.
+one. The latest tag is **v0.17.0**.
 
 ## Upgrade procedure
 
@@ -29,6 +29,45 @@ The ledger remains append-only; never "migrate" it by editing old entries.
 ## [Unreleased]
 
 - Nothing yet.
+
+## [v0.17.x] — ask-driven retrieval: the agent reaches, code serves
+
+**Latest tag: v0.17.0 · 2026-08-03** *(planned minor, operator-agreed)*
+
+**The limit it removes.** Cloud agents know only what prompt assembly
+inlines, and the inline heuristics (README/index first, then most recently
+modified) can never know what THIS run is about: "read my 2015 agreement"
+loses every recency race, and PDFs were refused entirely. The live failure:
+a principal asked their persona over chat to read specific documents the
+listing plainly showed; the run could name the files and honestly say it
+had never been given them — twice.
+
+**The mechanism: `read-request`,** the third propose/dispose surface beside
+`schedule-request` and `draft-request` — but for reads. The model ends its
+output with a fenced block naming paths it saw in a listing (sources it may
+name: its declared `sources:` plus `bundle`); deterministic code validates
+(source allowlist, path jail, caps — 4 files / ~32K chars), serves each
+file or states the exact refusal, appends a ledger entry, and runs the
+agent ONCE more with the served section inlined. One round, ever: requests
+in the continuation are stripped, never served. Harness-agnostic — pure
+text in and out, no tool protocol, works on Workers and on providers with
+no tools at all. Both entry points get it: beat runs and directions.
+
+**PDFs open on request.** The `onedrive` source gained `readCabinetPath`
+(model-named listing path → entry → content) with PDF text extraction via
+`unpdf` (a serverless pdf.js build, workerd-verified), size-capped at 4MB
+and clipped to the read budget. Extraction cost is paid only when the model
+asks — PDFs stay out of the ambient inline budget deliberately.
+
+**Accounting stays honest:** a served round is a second full model call;
+the run's ledgered token count sums both calls. Every refusal — undeclared
+source, jailed path, cap overflow, unreadable file — is a visible line in
+the served section and counted in the `reads-requested` ledger entry.
+
+**Upgrade notes.** New dependency `unpdf` (engine root + heartbeat Worker
+workspace) — install and redeploy the heartbeat Worker. No config, bundle,
+or ledger changes; the capability announces itself to every agent from the
+next run.
 
 ## [v0.16.x] — recent events reach every run
 
@@ -759,7 +798,8 @@ initial local cognition options.
 - Scaffold with `pnpm cli init`, validate the result, and continue through the
   later minor upgrade notes before choosing a production tag.
 
-[Unreleased]: https://github.com/jackzhaojin/anima-mesh/compare/v0.15.0...HEAD
+[Unreleased]: https://github.com/jackzhaojin/anima-mesh/compare/v0.17.0...HEAD
+[v0.17.x]: https://github.com/jackzhaojin/anima-mesh/tree/v0.17.0
 [v0.16.x]: https://github.com/jackzhaojin/anima-mesh/tree/v0.16.2
 [v0.15.x]: https://github.com/jackzhaojin/anima-mesh/tree/v0.15.1
 [v0.14.x]: https://github.com/jackzhaojin/anima-mesh/tree/v0.14.0

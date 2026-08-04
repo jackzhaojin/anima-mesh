@@ -4,6 +4,8 @@ import {
   msGraphAccessToken,
   listCabinet,
   readCabinetFile,
+  readCabinetPath,
+  extractPdfText,
   cabinetListingMarkdown,
   selectFilesToInline,
   inlineCabinetFiles,
@@ -297,5 +299,76 @@ describe("sourceSections", () => {
   it("names unknown sources instead of silently skipping them", async () => {
     const sections = await sourceSections(["dropbox"], { env: {} });
     expect(sections[0]).toContain("unknown source");
+  });
+});
+
+/**
+ * Ask-driven reads (v0.17.0): resolve a MODEL-named listing path — the
+ * serving half of a read-request. PDFs are covered here (extracted on
+ * request only, never in the ambient inline budget).
+ */
+describe("readCabinetPath", () => {
+  it("resolves a listing path case-insensitively and reads it", async () => {
+    const mock = graphFetch();
+    const text = await readCabinetPath({ env: ENV, fetchImpl: mock.fetchImpl }, "finance/CHASE.csv");
+    expect(text).toContain("date,amount");
+  });
+
+  it("extracts a requested PDF through the extractor seam", async () => {
+    const mock = graphFetch({ "/items/leg-1/content": () => new Response(new Uint8Array([0x25, 0x50, 0x44, 0x46])) });
+    const calls: number[] = [];
+    const text = await readCabinetPath({ env: ENV, fetchImpl: mock.fetchImpl }, "Shared/resolution.pdf", {
+      maxChars: 500,
+      pdfExtractor: async (data, opts) => {
+        calls.push(data.length, opts.maxChars);
+        return "EXTRACTED CLAUSE TEXT";
+      },
+    });
+    expect(text).toBe("EXTRACTED CLAUSE TEXT");
+    expect(calls).toEqual([4, 500]);
+  });
+
+  it("fails loud on a path that is not in the listing", async () => {
+    const mock = graphFetch();
+    await expect(
+      readCabinetPath({ env: ENV, fetchImpl: mock.fetchImpl }, "Finance/never-existed.csv"),
+    ).rejects.toThrow(/not in the cabinet listing/);
+  });
+});
+
+describe("extractPdfText (real unpdf, minimal fixture)", () => {
+  /** A valid one-page PDF built with computed xref offsets — ASCII only. */
+  function minimalPdf(text: string): Uint8Array {
+    const objects: string[] = [];
+    objects[1] = "1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n";
+    objects[2] = "2 0 obj\n<< /Type /Pages /Kids [3 0 R] /Count 1 >>\nendobj\n";
+    objects[3] =
+      "3 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R /Resources << /Font << /F1 5 0 R >> >> >>\nendobj\n";
+    const stream = `BT /F1 24 Tf 72 700 Td (${text}) Tj ET`;
+    objects[4] = `4 0 obj\n<< /Length ${stream.length} >>\nstream\n${stream}\nendstream\nendobj\n`;
+    objects[5] = "5 0 obj\n<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>\nendobj\n";
+    let body = "%PDF-1.4\n";
+    const offsets: number[] = [];
+    for (let i = 1; i <= 5; i++) {
+      offsets[i] = body.length;
+      body += objects[i];
+    }
+    const xref = body.length;
+    body +=
+      "xref\n0 6\n0000000000 65535 f \n" +
+      [1, 2, 3, 4, 5].map((i) => `${String(offsets[i]).padStart(10, "0")} 00000 n \n`).join("");
+    body += `trailer\n<< /Size 6 /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF`;
+    return new TextEncoder().encode(body);
+  }
+
+  it("extracts real text from PDF bytes", async () => {
+    const text = await extractPdfText(minimalPdf("MESH DEMO 42"), { maxChars: 1000 });
+    expect(text).toContain("MESH DEMO 42");
+  });
+
+  it("clips extracted text at maxChars with a visible note", async () => {
+    const text = await extractPdfText(minimalPdf("A LONG LINE OF EXTRACTED PDF TEXT"), { maxChars: 10 });
+    expect(text.length).toBeLessThan(40);
+    expect(text).toContain("…(truncated)");
   });
 });
