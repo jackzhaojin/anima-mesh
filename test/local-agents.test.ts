@@ -72,7 +72,7 @@ describe("localAgentSlug / opencodeModelFor", () => {
     expect(opencodeModelFor(agentConcept("a"), config)).toBe("kimi-code/kimi-for-coding");
     expect(opencodeModelFor(agentConcept("a", { model: "k3" }), config)).toBe("kimi-code/k3");
     expect(opencodeModelFor(agentConcept("a", { model: "kimi-code/kimi-for-coding" }), config)).toBe("kimi-code/kimi-for-coding");
-    expect(opencodeModelFor(agentConcept("a", { model: "sonnet" }), config)).toBe("anthropic/claude-sonnet-5");
+    expect(opencodeModelFor(agentConcept("a", { model: "sonnet" }), config)).toBe("anthropic/claude-sonnet-5-5");
     const overridden = { ...config, localAgents: { opencodeModel: "kimi-code/k3" } };
     expect(opencodeModelFor(agentConcept("a"), overridden)).toBe("kimi-code/k3");
   });

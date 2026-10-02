@@ -56,7 +56,7 @@ The opencode artifact needs `provider/model`. Frontmatter models already in
 that form pass through; bare names map: `kimi-for-coding`,
 `kimi-for-coding-highspeed`, and `k3` → `kimi-code/<model>` (the
 subscription endpoint), any other `kimi-*` → `moonshot/<model>`, and
-`sonnet` → `anthropic/claude-sonnet-5` (`opus`/`haiku`/`claude-*` likewise
+`sonnet` → `anthropic/claude-sonnet-5-5` (`opus`/`haiku`/`claude-*` likewise
 map to their Anthropic ids). Override per instance in the config:
 
 ```jsonc

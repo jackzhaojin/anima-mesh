@@ -69,7 +69,7 @@ export function opencodeModelFor(agent: AgentConcept, config: InstanceConfig): s
   // Kimi-for-Coding subscription endpoint models (see providers/opencode.ts).
   if (m === "kimi-for-coding" || m === "kimi-for-coding-highspeed" || m === "k3") return `kimi-code/${m}`;
   if (m.startsWith("kimi-")) return `moonshot/${m}`;
-  if (m === "sonnet") return "anthropic/claude-sonnet-5";
+  if (m === "sonnet") return "anthropic/claude-sonnet-5-5";
   if (m === "opus") return "anthropic/claude-opus-4-8";
   if (m === "haiku") return "anthropic/claude-haiku-4-5";
   if (m.startsWith("claude-")) return `anthropic/${m}`;

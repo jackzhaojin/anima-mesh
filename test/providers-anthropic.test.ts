@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { createAnthropicApiProvider } from "../src/providers/anthropic-api.js";
+import { createAnthropicApiProvider, thinkingOffFields } from "../src/providers/anthropic-api.js";
 import { resolveProvider, CLOUD_HARNESSES } from "../src/providers/index.js";
 
 /** A Messages-API-shaped success payload. */
@@ -82,11 +82,59 @@ describe("anthropic-api provider (subscription OAuth over plain fetch)", () => {
     );
     const fetchImpl = vi.fn().mockResolvedValueOnce(thinkingOnly).mockResolvedValueOnce(okResponse("report"));
     const provider = createAnthropicApiProvider({ env: ENV, fetchImpl });
-    const result = await provider.run({ prompt: "p", cwd: "/" });
+    const result = await provider.run({ prompt: "p", cwd: "/", model: "claude-sonnet-5" });
     expect(result.text).toBe("report");
     expect(fetchImpl).toHaveBeenCalledTimes(2);
     expect(JSON.parse(fetchImpl.mock.calls[0]![1].body).thinking).toBeUndefined();
     expect(JSON.parse(fetchImpl.mock.calls[1]![1].body).thinking).toEqual({ type: "disabled" });
+  });
+
+  it("spells thinking-off per model: between_tools on sonnet-5-5, low effort where it cannot be disabled", () => {
+    expect(thinkingOffFields("claude-sonnet-5-5")).toEqual({ thinking: { type: "between_tools" } });
+    expect(thinkingOffFields("claude-opus-5-5")).toEqual({ output_config: { effort: "low" } });
+    expect(thinkingOffFields("claude-fable-5-1")).toEqual({ output_config: { effort: "low" } });
+    expect(thinkingOffFields("claude-sonnet-5")).toEqual({ thinking: { type: "disabled" } });
+    expect(thinkingOffFields("claude-opus-4-8")).toEqual({ thinking: { type: "disabled" } });
+  });
+
+  it("the default model (claude-sonnet-5-5) retries with between_tools, never the 400ing 'disabled'", async () => {
+    const thinkingOnly = new Response(
+      JSON.stringify({ content: [{ type: "thinking", thinking: "" }], stop_reason: "max_tokens" }),
+      { status: 200 },
+    );
+    const fetchImpl = vi.fn().mockResolvedValueOnce(thinkingOnly).mockResolvedValueOnce(okResponse("report"));
+    const provider = createAnthropicApiProvider({ env: ENV, fetchImpl });
+    const result = await provider.run({ prompt: "p", cwd: "/" });
+    expect(result.text).toBe("report");
+    const retry = JSON.parse(fetchImpl.mock.calls[1]![1].body);
+    expect(retry.model).toBe("claude-sonnet-5-5");
+    expect(retry.thinking).toEqual({ type: "between_tools" });
+  });
+
+  it("asks for the server-side refusal fallback on models that take the default form", async () => {
+    const fetchImpl = vi.fn().mockImplementation(async () => okResponse());
+    const provider = createAnthropicApiProvider({ env: ENV, fetchImpl });
+    await provider.run({ prompt: "p", cwd: "/", model: "claude-sonnet-5-5" });
+    await provider.run({ prompt: "p", cwd: "/", model: "claude-sonnet-5" });
+    const [newer, older] = fetchImpl.mock.calls.map(([, init]) => init);
+    expect(newer.headers["anthropic-beta"]).toBe("oauth-2025-04-20,server-side-fallback-2026-07-01");
+    expect(JSON.parse(newer.body).fallbacks).toBe("default");
+    expect(older.headers["anthropic-beta"]).toBe("oauth-2025-04-20");
+    expect(JSON.parse(older.body).fallbacks).toBeUndefined();
+  });
+
+  it("a thinking-config 400 that mentions between_tools is not mistaken for a web-search rejection", async () => {
+    const thinking400 = new Response(
+      JSON.stringify({
+        type: "error",
+        error: { type: "invalid_request_error", message: 'To turn thinking off on this model, send "thinking": {"type": "between_tools"}' },
+      }),
+      { status: 400 },
+    );
+    const fetchImpl = vi.fn().mockResolvedValue(thinking400);
+    const provider = createAnthropicApiProvider({ env: ENV, fetchImpl, retryDelaysMs: [] });
+    await expect(provider.run({ prompt: "p", cwd: "/", webSearchMaxUses: 2 })).rejects.toThrow(/400/);
+    expect(fetchImpl).toHaveBeenCalledTimes(1); // no silent rerun without web search
   });
 
   it("a thinking-only response still fails loud when the retry also returns no text", async () => {

@@ -3,7 +3,7 @@
 AnimaMesh is pre-1.0, so this history is organized by **minor release line**:
 the capability boundary operators actually adopt. Patch tags are deliberately
 rolled into the value and maturity of their minor rather than narrated one by
-one. The latest tag is **v0.17.1**.
+one. The latest tag is **v0.17.2**.
 
 ## Upgrade procedure
 
@@ -32,7 +32,22 @@ The ledger remains append-only; never "migrate" it by editing old entries.
 
 ## [v0.17.x] — ask-driven retrieval: the agent reaches, code serves
 
-**Latest tag: v0.17.1 · 2026-10-02** *(v0.17.0 planned minor, operator-agreed)*
+**Latest tag: v0.17.2 · 2026-10-02** *(v0.17.0 planned minor, operator-agreed)*
+
+**v0.17.2 - `anthropic-api` is ready for Claude Sonnet 5.5.** The default
+model is now `claude-sonnet-5-5`. The thinking-ate-the-budget retry used to
+send `thinking: {type: "disabled"}`, which Sonnet 5.5 rejects with a 400;
+it now spells thinking-off per model (`between_tools` on Sonnet 5.5, low
+effort on Opus 5.5 / Fable / Mythos where thinking cannot be turned off,
+`disabled` elsewhere). A thinking-config 400 is no longer misread as a
+web-search rejection (its text says `between_tools`). Models that take it
+(Sonnet 5.5, Opus 5.5, Opus 5, Fable 5.1) request the server-side refusal
+fallback (`fallbacks: "default"`, beta `server-side-fallback-2026-07-01`),
+so a classifier decline re-routes instead of failing the run. Web search
+stays on `web_search_20250305`: the dynamic-filtering variant did not run
+searches over the OAuth gateway when probed. The opencode `sonnet` alias
+now maps to `anthropic/claude-sonnet-5-5`. Instances: set agent `model:` to
+`claude-sonnet-5-5`; redeploy Workers to pick up the provider change.
 
 **v0.17.1 - a manual run honors its own pending wake.** One-shot wakes were
 consumed only by the beat. A wake for a laptop-tier agent can never be

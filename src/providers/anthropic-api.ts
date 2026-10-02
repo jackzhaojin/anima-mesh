@@ -37,11 +37,31 @@ import type { ApiProviderContext } from "./moonshot-api.js";
  */
 
 const DEFAULT_BASE_URL = "https://api.anthropic.com";
-const DEFAULT_MODEL = "claude-sonnet-5";
+const DEFAULT_MODEL = "claude-sonnet-5-5";
 const DEFAULT_TIMEOUT_MS = 10 * 60 * 1000;
 const DEFAULT_RETRY_DELAYS_MS = [2_000, 8_000];
 const ANTHROPIC_VERSION = "2023-06-01";
 const OAUTH_BETA = "oauth-2025-04-20";
+// Server-side refusal fallback: when a safety classifier declines
+// (`stop_reason: refusal`), the API re-routes the request by refusal
+// category itself, so a declined run still produces a report. Only the
+// models that take the `"default"` form; probed live over the OAuth
+// gateway on claude-sonnet-5-5, 2026-10-02 (accepted, HTTP 200).
+const FALLBACK_BETA = "server-side-fallback-2026-07-01";
+const DEFAULT_FALLBACK_MODELS = new Set(["claude-sonnet-5-5", "claude-opus-5-5", "claude-opus-5", "claude-fable-5-1"]);
+
+/**
+ * The request fields that turn thinking OFF for a model, used by the retry when
+ * thinking ate the whole output budget. There is no single spelling:
+ * `{type: "disabled"}` is a 400 on claude-sonnet-5-5 (its lowest setting is
+ * `between_tools`), and Opus 5.5 / Fable / Mythos cannot turn thinking off
+ * at all, so the closest move there is the lowest effort.
+ */
+export function thinkingOffFields(model: string): Record<string, unknown> {
+  if (model.startsWith("claude-sonnet-5-5")) return { thinking: { type: "between_tools" } };
+  if (/^claude-(opus-5-5|fable-|mythos-)/.test(model)) return { output_config: { effort: "low" } };
+  return { thinking: { type: "disabled" } };
+}
 // The gateway validates that the FIRST system block is EXACTLY this
 // sentence — its own block in an array, never concatenated with anything.
 // A concatenated string passes for small requests but routes large ones to
@@ -57,6 +77,9 @@ const SYSTEM_BLOCKS = [
 // unchanged on Workers. This is the only web capability any cloud-tier agent
 // has ever had; before it, "budget ~8 web fetches" in an agent's job was
 // instructions for a tool that did not exist (issue #4).
+// Deliberately the basic variant: `web_search_20260209` (dynamic filtering,
+// code-execution-backed) answered "couldn't run the search" over the OAuth
+// gateway on claude-sonnet-5-5 (probed 2026-10-02); the basic one searched.
 const WEB_SEARCH_TOOL_TYPE = "web_search_20250305";
 // Server tools can hand the turn back mid-search (`stop_reason: pause_turn`)
 // on long sweeps; continuing the SAME conversation is how the search finishes.
@@ -212,6 +235,9 @@ async function readMessage(res: Response): Promise<MessageJson> {
 function isToolRejection(status: number, body: string): boolean {
   if (status !== 400) return false;
   const b = body.toLowerCase();
+  // A thinking-config 400 is not about tools, even when its text says
+  // "between_tools"; misreading it would silently drop web search.
+  if (b.includes("thinking")) return false;
   return b.includes("web_search") || b.includes("tool");
 }
 
@@ -258,6 +284,7 @@ export function createAnthropicApiProvider(ctx: ApiProviderContext = {}): AgentW
       // is what makes a generation that long survive the edge's ~100s
       // completion timeout (the 2026-08-01 HTTP 524 beat failure).
       let disableThinking = false;
+      const fallback = DEFAULT_FALLBACK_MODELS.has(model);
       // Server-tool state. `webUses > 0` is the agent concept's `web:` budget,
       // already reconciled against this provider's capabilities by the harness.
       const webUses = Math.max(0, Math.floor(opts.webSearchMaxUses ?? 0));
@@ -278,7 +305,8 @@ export function createAnthropicApiProvider(ctx: ApiProviderContext = {}): AgentW
           // Streaming is a 524 fix, not a UX feature: without it the edge
           // caps COMPLETION time at ~100s no matter what timeoutMs says.
           stream: true,
-          ...(disableThinking ? { thinking: { type: "disabled" } } : {}),
+          ...(disableThinking ? thinkingOffFields(model) : {}),
+          ...(fallback ? { fallbacks: "default" } : {}),
           system: SYSTEM_BLOCKS,
           ...(webEnabled
             ? { tools: [{ type: WEB_SEARCH_TOOL_TYPE, name: "web_search", max_uses: webUses }] }
@@ -292,7 +320,7 @@ export function createAnthropicApiProvider(ctx: ApiProviderContext = {}): AgentW
             headers: {
               authorization: `Bearer ${token}`,
               "anthropic-version": ANTHROPIC_VERSION,
-              "anthropic-beta": OAUTH_BETA,
+              "anthropic-beta": fallback ? `${OAUTH_BETA},${FALLBACK_BETA}` : OAUTH_BETA,
               "content-type": "application/json",
             },
             body,
@@ -362,10 +390,10 @@ export function createAnthropicApiProvider(ctx: ApiProviderContext = {}): AgentW
             const types = (json.content ?? []).map((b) => b.type).join(",") || "none";
             if (!disableThinking && json.stop_reason === "max_tokens" && types === "thinking") {
               // Thinking ate the whole budget even at 16K — one retry with
-              // thinking off (accepted on sonnet-5/opus-4.8; a model that
-              // rejects it would 400, which surfaces honestly below).
+              // thinking off, spelled the way this model accepts it (see
+              // thinkingOffFields; a model that rejects it 400s honestly below).
               disableThinking = true;
-              progress("anthropic-api: thinking consumed the output budget — retrying with thinking disabled");
+              progress("anthropic-api: thinking consumed the output budget, retrying with thinking off");
               continue;
             }
             throw new Error(
