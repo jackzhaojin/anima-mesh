@@ -3,7 +3,7 @@
 AnimaMesh is pre-1.0, so this history is organized by **minor release line**:
 the capability boundary operators actually adopt. Patch tags are deliberately
 rolled into the value and maturity of their minor rather than narrated one by
-one. The latest tag is **v0.17.0**.
+one. The latest tag is **v0.17.1**.
 
 ## Upgrade procedure
 
@@ -32,7 +32,19 @@ The ledger remains append-only; never "migrate" it by editing old entries.
 
 ## [v0.17.x] — ask-driven retrieval: the agent reaches, code serves
 
-**Latest tag: v0.17.0 · 2026-08-03** *(planned minor, operator-agreed)*
+**Latest tag: v0.17.1 · 2026-10-02** *(v0.17.0 planned minor, operator-agreed)*
+
+**v0.17.1 - a manual run honors its own pending wake.** One-shot wakes were
+consumed only by the beat. A wake for a laptop-tier agent can never be
+honored by a cloud beat (by design it stays on file for the tier that can
+run it), so the local run it asked for was the only way to clear it, and
+`anima-mesh run` never did. Live failure: a hub woke a laptop-tier spoke,
+the principal ran it locally twice, and the cloud brief still nagged "DUE,
+needs a manual local run" every day for a month. `anima-mesh run` now
+removes the run agent's own wake on attempt (same rule as the beat) and
+ledgers `wake-consumed` with `via: "manual-run"`. Opt-in at the core
+(`RunCoreOptions.consumeWake`); beat runs are unchanged. No config, bundle,
+or ledger changes; no Worker redeploy needed (the CLI is the only caller).
 
 **The limit it removes.** Cloud agents know only what prompt assembly
 inlines, and the inline heuristics (README/index first, then most recently

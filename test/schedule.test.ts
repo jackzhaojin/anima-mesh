@@ -193,6 +193,50 @@ describe("the schedule-request gate — model proposes, code disposes", () => {
   });
 });
 
+describe("manual runs honor their own wake", () => {
+  it("consumes the run agent's pending wake (ledgered, via manual-run) and leaves other wakes alone", async () => {
+    const root = await makeInstance({
+      "bundle/agents/keeper.md": agentFile("keeper", { heartbeat: "monthly" }),
+      "bundle/agents/helper.md": agentFile("helper"),
+      "bundle/ops/schedule.md": concept("schedule", { wake: ["helper", "keeper"] }, "# Schedule\n\nHuman notes survive.\n"),
+    });
+    const fake = new FakeProvider(() => ({ text: "## Close\n\nDone.\n" }));
+    const report = await runAgent({ instanceRoot: root, agentName: "keeper", provider: fake, runId: "run-manual", consumeWake: true });
+
+    expect(report.ok).toBe(true);
+    const schedule = await readSchedule(root);
+    expect(schedule).toContain("- helper");
+    expect(schedule).not.toContain("- keeper");
+    expect(schedule).toContain("Human notes survive.");
+
+    const entries = new Ledger(path.join(root, "ledger/actions.jsonl")).entriesForRun("run-manual");
+    const consumed = entries.find((e) => e.action === "wake-consumed");
+    expect(consumed?.agent).toBe("keeper");
+    expect(consumed?.detail).toEqual({ agents: ["keeper"], via: "manual-run" });
+
+    // The cloud beat no longer sees a woken laptop-tier agent to nag about.
+    const beat = await heartbeatCore({ store: new FsInstanceStore(root), cloudTier: true, dryRun: true });
+    expect(beat.tierBlocked.map((d) => d.agent)).not.toContain("keeper");
+  });
+
+  it("leaves the wake to the beat when consumeWake is off, and is a no-op when nothing is pending", async () => {
+    const root = await makeInstance({
+      "bundle/agents/keeper.md": agentFile("keeper"),
+      "bundle/ops/schedule.md": concept("schedule", { wake: ["keeper"] }, "# Schedule\n"),
+    });
+    const fake = new FakeProvider(() => ({ text: "## Close\n\nDone.\n" }));
+    await runAgent({ instanceRoot: root, agentName: "keeper", provider: fake, runId: "run-off" });
+    expect(await readSchedule(root)).toContain('wake: ["keeper"]');
+
+    const bare = await makeInstance({ "bundle/agents/keeper.md": agentFile("keeper") });
+    const report = await runAgent({ instanceRoot: bare, agentName: "keeper", provider: fake, runId: "run-none", consumeWake: true });
+    expect(report.ok).toBe(true);
+    await expect(readSchedule(bare)).rejects.toThrow(); // no schedule file conjured
+    const entries = new Ledger(path.join(bare, "ledger/actions.jsonl")).entriesForRun("run-none");
+    expect(entries.some((e) => e.action === "wake-consumed")).toBe(false);
+  });
+});
+
 describe("wake consumption respects request time", () => {
   it("a wake the hub adds mid-beat for an already-ran spoke survives to the next beat", async () => {
     // Pre-beat: spoke is woken. During the beat the hub (runs last, having

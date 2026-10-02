@@ -1,6 +1,6 @@
 import { findAgent, agentsFromBundle, assertActivatable, effectiveCognition, type AgentConcept } from "../agents/concept.js";
 import { loadGatedTypes, assertActionAllowed, GateViolation } from "../gates/gatekeeper.js";
-import { parseScheduleRequest, mutateSchedule } from "./schedule.js";
+import { parseScheduleRequest, mutateSchedule, scheduleFromBundle } from "./schedule.js";
 import { applyDraftRequests, draftCapabilityLines } from "./drafts.js";
 import { applyDefectReports } from "./defects.js";
 import { parseReadRequests, serveReadRequests, stripReadRequests, readRequestCapabilityLines } from "./read-requests.js";
@@ -78,6 +78,15 @@ export interface RunCoreOptions {
    * effectively never happened.
    */
   beatNotes?: string[];
+  /**
+   * Honor a pending one-shot wake for this agent: remove it from
+   * `ops/schedule.md` (ledgered `wake-consumed`) once the run is attempted.
+   * The beat consumes its own wakes after the fact and leaves this off;
+   * manual runs (`anima-mesh run`) turn it on. Without it, a wake for a
+   * laptop-tier agent (which no cloud beat can honor) outlives the very
+   * local run it asked for, and the hub nags "run it locally" forever.
+   */
+  consumeWake?: boolean;
 }
 
 /** yyyy-mm-dd of an instant — in an IANA timezone when given, else runtime-local. */
@@ -167,6 +176,22 @@ export async function runAgentCore(options: RunCoreOptions): Promise<RunReport> 
   const dateStamp = dateStampFor(now, options.timeZone);
 
   await store.appendLedger({ ts: startedAt, runId, agent: agent.name, action: "run-started", type: "report" });
+
+  // Consumed on ATTEMPT, same rule as the beat: a broken agent must not keep
+  // a sticky wake alive. Recorded before the model runs so a provider failure
+  // still leaves the schedule honest.
+  if (options.consumeWake && scheduleFromBundle(bundle).wake.includes(agent.name)) {
+    await mutateSchedule(store, config, (s) => ({ ...s, wake: s.wake.filter((n) => n !== agent.name) }));
+    await store.appendLedger({
+      ts: clock(),
+      runId,
+      agent: agent.name,
+      action: "wake-consumed",
+      type: "schedule",
+      detail: { agents: [agent.name], via: "manual-run" },
+    });
+    progress(`run ${runId.slice(0, 8)}: pending wake consumed (manual run)`);
+  }
 
   const providerCtx = options.providerCtx ?? { env: store.instanceEnv?.() ?? {} };
   // Provider FIRST, prompt second: what the harness can actually do is an

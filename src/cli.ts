@@ -177,12 +177,14 @@ async function cmdRun(args: string[], io: { log: (s: string) => void }): Promise
       store,
       agentName,
       providerCtx: { env },
+      consumeWake: true,
       onProgress: (note) => io.log(`  ${note}`),
     });
   } else {
     report = await runAgent({
       instanceRoot,
       agentName,
+      consumeWake: true,
       onProgress: (note) => io.log(`  ${note}`),
     });
   }
