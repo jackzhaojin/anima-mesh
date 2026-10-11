@@ -2,6 +2,7 @@ import "../providers/node-providers.js"; // register subprocess providers (Node 
 import type { InstanceStore } from "../instance/store.js";
 import { FsInstanceStore } from "../instance/store-fs.js";
 import { nodeSourceFs } from "../sources/local-files.js";
+import { localBrainOpener } from "../brains/local.js";
 import { heartbeatCore, type HeartbeatCoreOptions, type HeartbeatResult } from "./heartbeat-core.js";
 
 export {
@@ -32,5 +33,11 @@ export async function heartbeat(options: HeartbeatOptions): Promise<HeartbeatRes
       return new FsInstanceStore(instanceRoot);
     })();
   // Node tier: sources may read local working trees (caller can still override).
-  return heartbeatCore({ sourceFs: nodeSourceFs, ...rest, store: resolved });
+  return heartbeatCore({
+    sourceFs: nodeSourceFs,
+    // Linked brains' sibling checkouts resolve against this instance's root.
+    openLocalBrain: localBrainOpener(resolved.root),
+    ...rest,
+    store: resolved,
+  });
 }

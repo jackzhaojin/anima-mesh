@@ -50,7 +50,7 @@ Objects, repository, and secrets from this public engine.
   is down. There is no monolith coordinator, no shared work queue, no phase
   loop — coordination happens through judgment over shared state.
 - **The shared state is a brain repo** — a git-backed
-  [OKF](https://github.com/google/okf)-style **knowledge bundle**: one
+  [OKF](https://github.com/GoogleCloudPlatform/knowledge-catalog/tree/main/okf)-style **knowledge bundle**: one
   **concept** per file, a declared `type` in YAML frontmatter, reserved
   `index.md` and `log.md`, and relative links forming a **machine-checked
   knowledge graph** (the conformance pass verifies every link resolves).
@@ -69,7 +69,8 @@ you and scaffolds a complete, conformant brain from an empty directory.
 
 ```
 your-brain/                      ← private instance (yours, never public)
-  animamesh.config.json          ← the pairing: paths, identity, engine pin
+  animamesh.config.json          ← the pairing: paths, identity, engine pin,
+                                    brain kind + links to other brains
   bundle/                        ← the knowledge bundle — the ONE seam
     index.md · log.md            ← reserved files
     constitution.md              ← immutable hard limits (machine-read gates)
@@ -78,6 +79,8 @@ your-brain/                      ← private instance (yours, never public)
     agents/*.md                  ← each agent IS a concept file
     crm/                         ← optional domain shelf: typed CRM concepts
                                     (orgs, people, engagements, interactions)
+    ontology/                    ← optional: concept-type schemas (the contract)
+    inherited/                   ← a child brain's materialized parent law
   ledger/actions.jsonl           ← append-only action ledger (audit seam)
   approvals/                     ← file-based needs-you gate (approval seam)
   reports/ drafts/               ← run artifacts
@@ -102,6 +105,36 @@ offers — **compliance screens encoded in the records themselves**, so agents
 enforce an instance's legal boundaries as data rules rather than remembered
 policy. It was promoted from a live instance, de-identified; the pattern
 generalizes to any relationship-shaped domain (vendors, candidates, press).
+
+## Layered and multi-player: the mesh of brains (v0.18)
+
+A brain is no longer only a company. Since v0.18 a brain is one **layer** of
+someone's world (`person`, `org`, `team`, or `group`), and brains connect
+([docs/layered-brains.md](docs/layered-brains.md)):
+
+- **A person's life gets its own brain.** Commitments, family, money, and
+  the organizations they belong to, with a personal chief of staff that
+  reads the principal's own Gmail and Calendar through read-only scopes,
+  with account numbers, one-time codes, and passwords redacted in code
+  before any prompt sees them.
+- **Brains link, and both sides must agree.** `member-of`/`has-member`,
+  `child-of`/`parent-of`, `peer-of`: a link is live only when both configs
+  declare it with inverse relations. A hub that declares `sources: [brains]`
+  sees what each linked brain shares with it, read-only, every run.
+- **The owner of the data decides what crosses.** `share:` markings grant a
+  concept to an audience (deny by default); `markings:` like `finance` or
+  `family` restrict it, conjunctively, unless a link explicitly clears them.
+  `anima-mesh brains` shows exactly who can see what, in both directions.
+- **Containment inherits law.** A team brain inside an org answers to the
+  org's constitution: `brains sync` materializes it, and the gatekeeper
+  unions every ancestor's gates with the team's own.
+- **Multi-player is in the data model.** `identity.members` with roles
+  (owner, approver, contributor, viewer); with members declared, only an
+  owner or approver may decide an approval, checked in code.
+- **Typed concepts make the twin an ontology.** A `concept-type` concept
+  declares a type's properties, enums, and typed links, and conformance
+  enforces it; `anima-mesh ontology` prints the type catalog and link graph
+  ([docs/ontology.md](docs/ontology.md), with the Palantir mapping).
 
 ## Design rules the code enforces
 
@@ -203,7 +236,14 @@ pnpm cli init ../my-brain --answers answers.json --agentic opencode
 pnpm cli init ../my-brain --org "Acme Co" --principal "Ada" \
   --agents compliance-ops,chief-of-staff --harness fake
 
+# a person's own brain (v0.18): person roster, Gmail/Calendar sources
+pnpm cli init ../my-life --name "Ada Lovelace" --principal "Ada" \
+  --principal-email ada@example.com --kind person --brain-id ada
+
 pnpm cli validate ../my-brain          # OKF + animamesh conformance
+pnpm cli brains --instance ../my-life  # links + who can see what, both directions
+pnpm cli ontology --instance ../my-brain       # types, schemas, link graph
+pnpm cli connect google --instance ../my-life  # one-time read-only consent
 pnpm cli run compliance-ops --instance ../my-brain
 pnpm cli run some-agent --instance github:owner/brain#branch   # zero local reads
 pnpm cli heartbeat --instance ../my-brain      # run everything due; hub last
@@ -237,6 +277,8 @@ separately credentialed dashboard Worker, and one evidence commit per run.
 | [docs/starting-a-company.md](docs/starting-a-company.md) | Empty directory → a mesh running a real company (repeatable for company #2, #3, …) |
 | [docs/deploying-cloud.md](docs/deploying-cloud.md) | Generic Cloudflare runbook: two Workers, secrets contract, Discord wiring |
 | [docs/local-agents.md](docs/local-agents.md) | The interactive tier: `export-local` agent artifacts + the `defect-report` loop |
+| [docs/layered-brains.md](docs/layered-brains.md) | Person, org, team, and group brains: links, `share:`/`markings:`, inheritance, members, Gmail/Calendar |
+| [docs/ontology.md](docs/ontology.md) | Concept-type schemas, the ontology view, and the mapping to Palantir's Ontology |
 | [CHANGELOG.md](CHANGELOG.md) | Each minor release line: its value, maturity, and operator upgrade steps |
 | [docs/engine-vs-instance.md](docs/engine-vs-instance.md) | The sorting rule: what belongs in this public engine vs a private brain |
 | [docs/okf-crm-domain.md](docs/okf-crm-domain.md) | The CRM domain shelf: typed concepts, lifecycle stages, compliance screens as data |
@@ -259,10 +301,15 @@ conformance and complete a full agent run against the fake provider.
 
 ## Status
 
-v0.17.0 — pre-release. Package name on npm to be confirmed; pinned consumers
+v0.18.0 - pre-release. Package name on npm to be confirmed; pinned consumers
 should reference the repo by tag. The cloud tier introduced in v0.3 is the
 primary execution path; the CLI remains the bootstrap, operator, and
-subprocess-harness path. The recent lines extend one theme — **nothing the
+subprocess-harness path. v0.18 opens a new line: **layered and multi-player
+brains** (person, org, team, and group brains linked by mutual consent, with
+owner-decided `share:` grants, mandatory `markings:`, inherited law down a
+containment chain, member roles on approvals, the principal's own Gmail and
+Calendar as redacted read-only sources, and concept-type schemas that make a
+brain an ontology). The lines before it extend one theme - **nothing the
 mesh cannot do is ever silent**: v0.13 added role-declared required reading
 (`reads:` frontmatter inlined every run, absences stated in the prompt —
 closed the mesh's own issues #5/#6, filed by its hub through the defect

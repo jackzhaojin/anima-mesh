@@ -2,6 +2,87 @@
  * Instance config shape + defaults — Workers-safe (no node built-ins).
  * Disk loading (loadInstance) lives in config.ts.
  */
+
+/**
+ * What a brain models - framing for prompts and scaffolds, never safety
+ * (safety is links + share markings + gates, all enforced in code):
+ * - person: one human's life (the digital twin of a principal)
+ * - org:    a company or other organization
+ * - team:   a unit inside an org
+ * - group:  any other shared space (a family, a community, a project)
+ */
+export type BrainKind = "person" | "org" | "team" | "group";
+
+/**
+ * This brain's relationship TO a linked brain - read as
+ * "<this brain> <relation> <linked brain>":
+ * - member-of / has-member: a person belongs to an org/team/group
+ * - child-of / parent-of:   containment (a team inside its org); the
+ *                            parent's constitution binds the child
+ * - peer-of:                lateral (partner orgs, two people)
+ * A link is live only when BOTH brains declare it with inverse relations.
+ */
+export type BrainRelation = "member-of" | "has-member" | "child-of" | "parent-of" | "peer-of";
+
+/** Who this brain is - the handle links and `share:` markings use. */
+export interface BrainIdentity {
+  /** Lowercase slug (a-z, 0-9, hyphens), unique across the brains it links to. */
+  id: string;
+  kind: BrainKind;
+  /** Display name. */
+  name?: string;
+}
+
+/** A typed connection to another brain (declared on both sides). */
+export interface BrainLinkConfig {
+  /** The linked brain's own `brain.id`. */
+  id: string;
+  /** This brain's relationship to the linked one (see BrainRelation). */
+  relation: BrainRelation;
+  /** Free-text role on a membership (owner, founder, advisor, …). Informational. */
+  role?: string;
+  /** Laptop transport: a local checkout of the linked brain, relative to this instance root. */
+  localPath?: string;
+  /** Cloud transport: the linked brain's repo, "owner/name". */
+  repo?: string;
+  /** Branch of `repo`. Default "main". */
+  ref?: string;
+  /**
+   * Env var holding a READ-ONLY token for `repo`. Default
+   * BRAIN_LINK_<ID>_TOKEN. Never falls back to this brain's own
+   * GITHUB_TOKEN: a link gets its own least-privilege credential.
+   */
+  tokenEnv?: string;
+  /** What THIS brain gives the linked one beyond `share:` markings. */
+  grants?: {
+    /** Export the hub's latest brief (the delivery agent's newest report). */
+    brief?: boolean;
+    /**
+     * Mandatory markings this link is cleared for. A concept carrying
+     * `markings: [finance]` crosses ONLY links that list `finance` here -
+     * even when its `share:` names the reader. Absent ⇒ cleared for none.
+     */
+    markings?: string[];
+  };
+}
+
+/**
+ * Multi-player roles. owner: amends the constitution, decides any approval;
+ * approver: decides approvals; contributor: directs the mesh; viewer: reads.
+ */
+export type MemberRole = "owner" | "approver" | "contributor" | "viewer";
+
+/** One human who acts in this brain. */
+export interface MemberConfig {
+  /** Lowercase slug; what `gate approve --by` names. */
+  id: string;
+  name: string;
+  email?: string;
+  role: MemberRole;
+  /** The member's own (person) brain, when linked via `has-member`. */
+  brain?: string;
+}
+
 export interface InstanceConfig {
   /** Relative path to the OKF bundle dir. */
   bundle: string;
@@ -17,7 +98,16 @@ export interface InstanceConfig {
   identity?: {
     principal: { name: string; email?: string };
     persona?: { name: string; emails?: string[] };
+    /**
+     * Multi-player: every human who acts in this brain, with a role.
+     * Absent ⇒ the principal alone, as owner (the single-player default).
+     */
+    members?: MemberConfig[];
   };
+  /** Who this brain is. Required before it may link to another brain. */
+  brain?: BrainIdentity;
+  /** Typed connections to other brains - the layering (see docs/layered-brains.md). */
+  links?: BrainLinkConfig[];
   /** D11 dual-gate state for commercial agents. Flipped by humans, read by code. */
   activation?: {
     boundaryMapVerified?: boolean;

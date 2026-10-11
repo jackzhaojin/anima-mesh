@@ -56,6 +56,32 @@ export {
   createClaudeAgentSdkProvider,
 } from "./providers/node-providers.js";
 
+export {
+  computeExport,
+  brainConfigProblems,
+  brainIssues,
+  shareAdmits,
+  markingsCleared,
+  effectiveMembers,
+  assertMayDecide,
+  readOnlyStore,
+  INVERSE_RELATION,
+  type BrainExport,
+  type ExportResult,
+} from "./brains/core.js";
+export { inspectBrains, syncInherited } from "./brains/inspect.js";
+export { checkSchemas, loadSchemas, type ConceptSchema } from "./okf/schema.js";
+export { buildOntology, formatOntology, type OntologyView } from "./okf/ontology.js";
+export { redactSensitive } from "./sources/google.js";
+export type {
+  BrainIdentity,
+  BrainKind,
+  BrainLinkConfig,
+  BrainRelation,
+  MemberConfig,
+  MemberRole,
+} from "./instance/config-core.js";
+
 export { type InstanceStore } from "./instance/store.js";
 export { FsInstanceStore } from "./instance/store-fs.js";
 export { GitHubInstanceStore, type GitHubStoreOptions } from "./instance/store-github.js";

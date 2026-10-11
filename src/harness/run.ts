@@ -2,6 +2,7 @@ import "../providers/node-providers.js"; // register subprocess providers (Node 
 import type { InstanceStore } from "../instance/store.js";
 import { FsInstanceStore } from "../instance/store-fs.js";
 import { nodeSourceFs } from "../sources/local-files.js";
+import { localBrainOpener } from "../brains/local.js";
 import { runAgentCore, type RunCoreOptions, type RunReport } from "./run-core.js";
 
 export type { RunReport } from "./run-core.js";
@@ -27,5 +28,11 @@ export async function runAgent(options: RunOptions): Promise<RunReport> {
       return new FsInstanceStore(instanceRoot);
     })();
   // Node tier: sources may read local working trees (caller can still override).
-  return runAgentCore({ sourceFs: nodeSourceFs, ...rest, store: resolved });
+  return runAgentCore({
+    sourceFs: nodeSourceFs,
+    // Linked brains' sibling checkouts resolve against this instance's root.
+    openLocalBrain: localBrainOpener(resolved.root),
+    ...rest,
+    store: resolved,
+  });
 }

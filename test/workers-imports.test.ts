@@ -30,6 +30,9 @@ const BANNED_FILES = [
   "src/harness/heartbeat.ts",
   "src/harness/verifiers.ts",
   "src/channels/index.ts",
+  "src/brains/local.ts",
+  "src/brains/inspect.ts",
+  "src/connect/google.ts",
 ].map((p) => path.join(ROOT, p));
 
 /** Matches runtime imports/re-exports; skips pure `import type`. */

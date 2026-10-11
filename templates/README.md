@@ -31,6 +31,24 @@ capability, not model discretion: code gates the whitelist + ladder
 level, runs the identity-leak guard, title-dedups against open issues,
 files, and ledgers — the model only writes the report.
 
+## Kind variants (v0.18)
+
+`templates/agents/<kind>/<name>.md` overrides the base template when a brain
+of that kind is scaffolded (`init --kind <kind>`). Shipped today:
+
+- **person/chief-of-staff** - the hub of one person's brain: leads with
+  nags, the next two weeks from the principal's calendar, the few messages
+  that need a reply, and what each linked brain needs from this person,
+  merged into one priority order. Declares
+  `sources: [brains, gmail, google-calendar]`; each is an honest gap until
+  configured. Bound to keep the boundary between brains: it never suggests
+  copying private material into an organization's brain.
+- **person/compliance-ops** - "Life Admin": the personal obligations
+  calendar (taxes, renewals, documents, enrollment windows, family dates),
+  60/14/1-day horizons, and never an account number in a report.
+
+A person brain's default roster is these two.
+
 ## Back office (active-eligible)
 
 - **chief-of-staff** — the hub: single daily brief, judgment-based routing,

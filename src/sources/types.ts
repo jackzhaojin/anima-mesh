@@ -1,3 +1,6 @@
+import type { BrainLinkConfig, InstanceConfig } from "../instance/config-core.js";
+import type { InstanceStore } from "../instance/store.js";
+
 /**
  * Read sources — external document stores an agent's prompt context can be
  * assembled from. Same philosophy as channels: one thin seam, fetch-based
@@ -18,7 +21,25 @@ export interface SourceContext {
    * reachable there and the import graph stays free of node built-ins.
    */
   sourceFs?: SourceFs;
+  /** The reading instance's config - the 'brains' source reads its identity and links here. */
+  config?: InstanceConfig;
+  /**
+   * Node tier only: open a linked brain's local checkout (link.localPath,
+   * resolved against this instance's root). Workers never set it - there,
+   * a linked brain is reachable only over its repo with a per-link token.
+   */
+  openLocalBrain?: LocalBrainOpener;
+  /**
+   * IANA timezone for date-bounded sources (the calendar window). Default:
+   * the runtime's local zone - Workers run in UTC and pass the instance's.
+   */
+  timeZone?: string;
+  /** Injectable clock for date-bounded sources (tests). */
+  now?: Date;
 }
+
+/** Opens a linked brain's local checkout, or undefined when none is usable. */
+export type LocalBrainOpener = (link: BrainLinkConfig) => InstanceStore | undefined;
 
 /** One file in a local working-tree listing. Path is root-relative. */
 export interface LocalFileEntry {

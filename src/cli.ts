@@ -23,6 +23,11 @@ import { heartbeat } from "./harness/heartbeat.js";
 import { buildAgentCard } from "./a2a/card.js";
 import { exportLocalAgents } from "./local/agents.js";
 import { listDefectDrafts, fileDefectDrafts } from "./defects/file.js";
+import { inspectBrains, syncInherited } from "./brains/inspect.js";
+import { brainIssues, assertMayDecide, BRAIN_KINDS } from "./brains/core.js";
+import { connectGoogle } from "./connect/google.js";
+import { buildOntology, formatOntology } from "./okf/ontology.js";
+import type { BrainKind } from "./instance/config-core.js";
 import { execFileSync } from "node:child_process";
 import { writeFileSync } from "node:fs";
 
@@ -55,6 +60,12 @@ export async function main(argv: string[], io: { log: (s: string) => void; error
         return await cmdExportLocal(rest, io);
       case "defect":
         return await cmdDefect(rest, io);
+      case "brains":
+        return await cmdBrains(rest, io);
+      case "connect":
+        return await cmdConnect(rest, io);
+      case "ontology":
+        return await cmdOntology(rest, io);
       case "templates":
         io.log(listAgentTemplates().join("\n"));
         return 0;
@@ -79,7 +90,8 @@ function usage(): string {
     "",
     "Usage:",
     "  anima-mesh init <dir> [--answers file.json] [--agentic [harness]]",
-    "                        [--org NAME --principal NAME] [--agents a,b,c]",
+    "                        [--org NAME | --name NAME] [--principal NAME] [--principal-email EMAIL]",
+    "                        [--kind person|org|team|group] [--brain-id ID] [--agents a,b,c]",
     "                        [--persona NAME] [--description TEXT]",
     "                        [--model MODEL] [--harness HARNESS]",
     "  anima-mesh validate <dir> [--profile okf|animamesh]",
@@ -91,6 +103,11 @@ function usage(): string {
     "  anima-mesh card [--instance dir] [--out FILE]",
     "  anima-mesh export-local [--instance dir] [--agents a,b | --all]",
     "  anima-mesh defect list|file <slug>|file --all [--instance dir]",
+    "  anima-mesh brains [--instance dir]          who this brain is, its links, who can see what",
+    "  anima-mesh brains sync [--instance dir]     materialize ancestor constitutions (child brains)",
+    "  anima-mesh ontology [--instance dir]        type catalog, schemas, link types, cross-brain refs",
+    "  anima-mesh connect google [--instance dir] [--port N] [--no-open]",
+    "                        one-time READ-ONLY Gmail + Calendar consent for the principal",
     "  anima-mesh templates",
   ].join("\n");
 }
@@ -115,13 +132,22 @@ async function cmdInit(args: string[], io: { log: (s: string) => void; error: (s
   let answers;
   if (answersFile) {
     answers = loadAnswersFile(answersFile);
-  } else if (flag(args, "org") !== undefined && flag(args, "principal") !== undefined) {
+  } else if ((flag(args, "org") !== undefined || flag(args, "name") !== undefined) && flag(args, "principal") !== undefined) {
+    const kind = flag(args, "kind") || undefined;
+    if (kind !== undefined && !BRAIN_KINDS.includes(kind as BrainKind)) {
+      io.error(`init: --kind must be one of ${BRAIN_KINDS.join("|")}`);
+      return 2;
+    }
     answers = normalizeAnswers({
-      orgName: flag(args, "org")!,
+      orgName: (flag(args, "org") ?? flag(args, "name"))!,
       principalName: flag(args, "principal")!,
+      principalEmail: flag(args, "principal-email") || undefined,
+      brainKind: kind as BrainKind | undefined,
+      brainId: flag(args, "brain-id") || undefined,
       personaName: flag(args, "persona") || undefined,
       description: flag(args, "description") || undefined,
-      agents: (flag(args, "agents") ?? "compliance-ops").split(",").map((s) => s.trim()).filter(Boolean),
+      // No --agents: the scaffold picks the kind's default roster.
+      agents: (flag(args, "agents") ?? "").split(",").map((s) => s.trim()).filter(Boolean),
       defaultModel: flag(args, "model") || undefined,
       defaultHarness: flag(args, "harness") || undefined,
     });
@@ -148,9 +174,15 @@ async function cmdValidate(args: string[], io: { log: (s: string) => void }): Pr
   const profile = (flag(args, "profile") as ConformanceProfile) || "animamesh";
   const root = path.resolve(target);
   // Instance dir (has config) → validate its bundle; otherwise treat as a bundle dir.
-  const bundleDir = existsSync(path.join(root, CONFIG_FILENAME)) ? loadInstance(root).bundleDir : root;
-  const bundle = await loadBundle(bundleDir);
+  const instance = existsSync(path.join(root, CONFIG_FILENAME)) ? loadInstance(root) : undefined;
+  const bundle = await loadBundle(instance?.bundleDir ?? root);
   const report = checkConformance(bundle, profile, { linkExists: diskLinkChecker });
+  if (instance) {
+    // Config-aware checks (v0.18.0): the link map, members, and share
+    // markings only make sense against the instance config.
+    report.issues.push(...brainIssues(bundle, instance.config));
+    report.ok = !report.issues.some((i) => i.level === "error");
+  }
   io.log(formatReport(report));
   return report.ok ? 0 : 1;
 }
@@ -215,7 +247,10 @@ async function cmdGate(args: string[], io: { log: (s: string) => void }): Promis
     const id = args[1];
     if (!id) throw new Error(`gate ${sub}: approval id required`);
     const by = flag(args, "by") ?? "principal";
-    const record = store.decide(id, sub === "approve" ? "approved" : "denied", by, flag(args, "note"));
+    // Multi-player: with members declared, the decider must be an owner or
+    // approver member - checked in code before the record changes.
+    const member = assertMayDecide(instance.config, by);
+    const record = store.decide(id, sub === "approve" ? "approved" : "denied", member?.id ?? by, flag(args, "note"));
     io.log(`${record.status}: ${record.id} (${record.actionType}) by ${record.decidedBy}`);
     return 0;
   }
@@ -369,6 +404,54 @@ async function cmdDefect(args: string[], io: { log: (s: string) => void; error: 
   }
   io.error(`defect: unknown subcommand '${sub}' (use list|file)`);
   return 2;
+}
+
+async function cmdBrains(args: string[], io: { log: (s: string) => void; error: (s: string) => void }): Promise<number> {
+  const positional = args.filter((a, i) => !a.startsWith("--") && args[i - 1]?.startsWith("--") !== true);
+  const sub = positional[0];
+  const instanceRoot = path.resolve(flag(args, "instance") ?? ".");
+  const env = loadInstanceEnv(instanceRoot);
+  if (sub === undefined || sub === "show" || sub === "check") {
+    const result = await inspectBrains(instanceRoot, env);
+    io.log(result.text);
+    return result.ok ? 0 : 1;
+  }
+  if (sub === "sync") {
+    const result = await syncInherited(instanceRoot, env);
+    if (result.note) io.log(result.note);
+    for (const rel of result.written) io.log(`wrote bundle/${rel}`);
+    for (const rel of result.unchanged) io.log(`current bundle/${rel}`);
+    return 0;
+  }
+  io.error(`brains: unknown subcommand '${sub}' (use show|sync)`);
+  return 2;
+}
+
+async function cmdOntology(args: string[], io: { log: (s: string) => void }): Promise<number> {
+  const target = path.resolve(flag(args, "instance") ?? args.find((a) => !a.startsWith("--")) ?? ".");
+  const instance = existsSync(path.join(target, CONFIG_FILENAME)) ? loadInstance(target) : undefined;
+  const bundle = await loadBundle(instance?.bundleDir ?? target);
+  const brain = instance?.config.brain;
+  io.log(formatOntology(buildOntology(bundle), brain ? `${brain.id} (${brain.kind})` : path.basename(target)));
+  return 0;
+}
+
+async function cmdConnect(args: string[], io: { log: (s: string) => void; error: (s: string) => void }): Promise<number> {
+  const positional = args.filter((a, i) => !a.startsWith("--") && args[i - 1]?.startsWith("--") !== true);
+  if (positional[0] !== "google") {
+    io.error("connect: the only connector is `google` (read-only Gmail + Calendar for the principal)");
+    return 2;
+  }
+  const port = flag(args, "port");
+  const result = await connectGoogle({
+    instanceRoot: flag(args, "instance") ?? ".",
+    port: port ? Number(port) : 0,
+    openBrowser: !hasFlag(args, "no-open"),
+    log: io.log,
+  });
+  io.log(`connected${result.account ? ` ${result.account}` : ""} - scopes: ${result.scopes.join(", ")}`);
+  io.log(`GOOGLE_READ_REFRESH_TOKEN stored in ${result.envFile} (mode 600; value not shown). For the cloud tier, load it with wrangler secret put.`);
+  return 0;
 }
 
 // Entry point when invoked as a binary (not imported by tests).

@@ -8,12 +8,13 @@ import {
   declaredReadsContext,
   instanceContext,
   levelMeaning,
+  meshPhrase,
 } from "./run-core.js";
 import { applyDraftRequests, stripDraftRequests, draftCapabilityLines } from "./drafts.js";
 import { applyDefectReports } from "./defects.js";
 import { defectCapabilityLines, stripDefectReports } from "../defects/report-core.js";
 import { sourceSections } from "../sources/registry.js";
-import type { SourceContext, SourceFs } from "../sources/types.js";
+import type { LocalBrainOpener, SourceContext, SourceFs } from "../sources/types.js";
 import { parseReadRequests, serveReadRequests, stripReadRequests, readRequestCapabilityLines } from "./read-requests.js";
 import {
   verifyConformanceBundle,
@@ -69,6 +70,8 @@ export interface DirectionRunOptions {
   providerCtx?: ApiProviderContext;
   /** Local-tree reads for sources that support them (Node callers). */
   sourceFs?: SourceFs;
+  /** Node callers: open linked brains' local checkouts for the 'brains' source. */
+  openLocalBrain?: LocalBrainOpener;
   /** "per-run" (default) flushes here; "caller" batches (the Worker). */
   flushPolicy?: "per-run" | "caller";
   timeZone?: string;
@@ -138,6 +141,10 @@ export async function runDirectionCore(options: DirectionRunOptions): Promise<Di
     fetchImpl: providerCtx.fetchImpl,
     log: progress,
     sourceFs: options.sourceFs,
+    config,
+    openLocalBrain: options.openLocalBrain,
+    timeZone: options.timeZone,
+    now,
   };
   const prompt = await buildDirectionPrompt(agent, store, config, dateStamp, message, sourceCtx);
   const cognition = effectiveCognition(agent, config);
@@ -286,7 +293,7 @@ async function buildDirectionPrompt(
   sourceCtx: SourceContext,
 ): Promise<string> {
   const preamble = [
-    `You are "${agent.title}" (${agent.name}), an agent in an AnimaMesh company-of-0 mesh.`,
+    `You are "${agent.title}" (${agent.name}), an agent in ${meshPhrase(config)}.`,
     `Today is ${dateStamp}. Autonomy level: ${agent.level} (${levelMeaning(agent.level)}).`,
     "",
     "## Your job",

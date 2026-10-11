@@ -5,6 +5,8 @@ import type { AgentConcept } from "../agents/concept.js";
 import type { SourceContext } from "../sources/types.js";
 import { readCabinetPath } from "../sources/msgraph.js";
 import { readDocsFile } from "../sources/github-docs.js";
+import { readBrainPath } from "../sources/brains.js";
+import { readGmailMessage } from "../sources/google.js";
 
 /**
  * Ask-driven retrieval (v0.17.0) — the third propose/dispose surface beside
@@ -91,7 +93,10 @@ export async function serveReadRequests(opts: {
   config: InstanceConfig;
   sourceCtx: SourceContext;
 }): Promise<ServedReads> {
-  const { requests, agent, store, config, sourceCtx } = opts;
+  const { requests, agent, store, config } = opts;
+  // Config-driven sources ('brains') resolve links from the reading brain's
+  // own config - supplied here so no caller can forget it.
+  const sourceCtx: SourceContext = { ...opts.sourceCtx, config: opts.sourceCtx.config ?? config };
   const allowed = new Set(["bundle", ...agent.sources]);
   const lines: string[] = [
     "\n## Requested reads (served at your request)",
@@ -136,6 +141,10 @@ export async function serveReadRequests(opts: {
         content = await readCabinetPath(sourceCtx, req.path, { maxChars: room });
       } else if (req.source === "github-docs") {
         content = await readDocsFile(sourceCtx, req.path, { maxChars: room });
+      } else if (req.source === "brains") {
+        content = await readBrainPath(sourceCtx, req.path, { maxChars: room });
+      } else if (req.source === "gmail") {
+        content = await readGmailMessage(sourceCtx, req.path, { maxChars: room });
       } else {
         throw new Error(`the engine cannot serve reads from source '${req.source}'`);
       }
@@ -160,13 +169,23 @@ export async function serveReadRequests(opts: {
 }
 
 /** The capability contract lines announcing the surface — stated to every agent. */
+/** What a request path looks like for each source - the example names the right shape. */
+const EXAMPLE_PATHS: Record<string, string> = {
+  bundle: "facts/some-concept.md",
+  onedrive: "Folder/File.pdf",
+  "github-docs": "path/in/repo.md",
+  brains: "<brain-id>/ops/calendar.md",
+  gmail: "<message-id>",
+};
+
 export function readRequestCapabilityLines(agent: AgentConcept): string[] {
   const sources = ["bundle", ...agent.sources];
+  const example = agent.sources.find((s) => s in EXAMPLE_PATHS) ?? "bundle";
   return [
     "- **On-demand reads (one round):** if the task needs a specific file you can see in a listing",
     "  below — or a bundle concept not already inlined — END your output with exactly this block:",
     "  ```read-request",
-    "  " + (agent.sources[0] ?? "bundle") + ": [Folder/File.pdf]",
+    "  " + example + ": [" + (EXAMPLE_PATHS[example] ?? "path") + "]",
     "  ```",
     `  Sources you may name: ${sources.join(", ")}. The harness serves the files (cabinet PDFs`,
     `  included) and runs you once more with them inlined — up to ${MAX_REQUEST_FILES} files / ~${Math.round(TOTAL_READ_CHARS / 1000)}K chars,`,

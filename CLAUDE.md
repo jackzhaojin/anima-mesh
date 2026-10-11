@@ -37,6 +37,8 @@ pnpm build         # emit dist/ (tsconfig.build.json)
 src/
   okf/          frontmatter parse/serialize · bundle loader · conformance
                 (profiles: "okf" base, "animamesh" adds constitution/agent rules)
+                · schema.ts (concept-type schemas: the ontology contract) ·
+                ontology.ts (derived type catalog + link graph)
   ledger/       append-only JSONL ledger + integrity/completeness assertions
   gates/        ApprovalStore (file-based needs-you) · gatekeeper (constitution
                 gates + ladder enforcement — GateViolation on any breach)
@@ -73,6 +75,14 @@ src/
                 (defect-report → public engine issue, leak-guarded)
   channels/     delivery registry (registry.ts, Workers-safe: discord/notion/
                 gmail/console, injected env) · index.ts fs wrapper
+  brains/       the mesh of brains (v0.18): core.ts (Workers-safe) = brain
+                identity, links declared on both sides, `share:` grants +
+                mandatory `markings:`, computeExport (the EXPORTER decides),
+                read-only linked stores, members/roles, inherited gates;
+                local.ts/inspect.ts (Node) = sibling checkouts, `brains`
+                view, `brains sync` (materialized parent constitutions)
+  connect/      Node-only one-time consents: google.ts = loopback PKCE for
+                the principal's gmail.readonly + calendar.readonly
   sources/      READ-ONLY external context (agents opt in via `sources:`
                 frontmatter; inlined at prompt assembly; failures become
                 honest sections, never aborted runs) · msgraph.ts = the
@@ -82,7 +92,10 @@ src/
                 failures honest, not-read files marked; github-docs stays
                 listing-only) ·
                 github-docs.ts = git-hosted corpus (REST on Workers,
-                local-files.ts working tree on Node) · registry.ts
+                local-files.ts working tree on Node) · brains.ts = what
+                linked brains share (local checkout or per-link token) ·
+                google.ts = the PRINCIPAL's gmail + google-calendar,
+                redacted in code, framed untrusted · registry.ts
   local/        the interactive tier: agents-core.ts composes any agent
                 concept + instance identity into .claude/agents/ +
                 .opencode/agents/ artifacts (export-local; init runs it
@@ -94,7 +107,8 @@ src/
   init/         interview (file/flags/interactive/agentic) · scaffoldBrain
                 (acceptance test: its own output must pass conformance)
   cli.ts        init/validate/run/gate/report/deliver/heartbeat/card/
-                export-local/defect/templates — main(argv) → exit code,
+                export-local/defect/brains/ontology/connect/templates -
+                main(argv) → exit code,
                 driven in-process by tests; `github:owner/repo#ref`
                 instance scheme runs against a remote brain
 workers/heartbeat/  the cloud tier: Worker + HeartbeatDO (DST-correct daily

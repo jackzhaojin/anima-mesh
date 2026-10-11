@@ -1,6 +1,8 @@
 import type { SourceContext } from "./types.js";
 import { listCabinet, cabinetListingMarkdown, inlineCabinetFiles, cabinetContentsMarkdown, msGraphConfigured } from "./msgraph.js";
 import { listDocs, docsListingMarkdown, githubDocsConfigured } from "./github-docs.js";
+import { brainsSection } from "./brains.js";
+import { gmailSection, calendarSection } from "./google.js";
 
 /**
  * Source registry — Workers-safe (fetch-based sources only, injected env).
@@ -11,7 +13,7 @@ import { listDocs, docsListingMarkdown, githubDocsConfigured } from "./github-do
  * yields an HONEST section saying so — context absence must be visible to
  * the model (and thus the report), and must never abort the run.
  */
-export const KNOWN_SOURCES = ["onedrive", "github-docs"] as const;
+export const KNOWN_SOURCES = ["onedrive", "github-docs", "brains", "gmail", "google-calendar"] as const;
 
 export async function sourceSections(sourceNames: string[], ctx: SourceContext): Promise<string[]> {
   const sections: string[] = [];
@@ -20,6 +22,12 @@ export async function sourceSections(sourceNames: string[], ctx: SourceContext):
       sections.push(await onedriveSection(ctx));
     } else if (name === "github-docs") {
       sections.push(await githubDocsSection(ctx));
+    } else if (name === "brains") {
+      sections.push(await brainsSection(ctx));
+    } else if (name === "gmail") {
+      sections.push(await gmailSection(ctx));
+    } else if (name === "google-calendar") {
+      sections.push(await calendarSection(ctx));
     } else {
       sections.push(`\n## Source '${name}'\n\n_(unknown source — the engine knows: ${KNOWN_SOURCES.join(", ")})_`);
     }

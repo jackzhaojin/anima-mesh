@@ -2,6 +2,7 @@ import type { Bundle } from "../okf/bundle-core.js";
 import { conceptsByType } from "../okf/bundle-core.js";
 import { canPerform, requiresGate, type ActionCategory, type Level } from "../autonomy/ladder.js";
 import type { ApprovalRecord } from "./approvals.js";
+import { inheritedGatedTypes } from "../brains/core.js";
 
 /** Anything that can answer "what is approval <id>?" — ApprovalStore or a store-backed map. */
 export interface ApprovalLookup {
@@ -25,11 +26,14 @@ export const DEFAULT_GATED_TYPES: readonly string[] = [
 export function loadGatedTypes(bundle: Bundle): string[] {
   const constitution = conceptsByType(bundle, "constitution")[0];
   const declared = constitution?.frontmatter["gated-actions"];
-  if (Array.isArray(declared) && declared.every((x) => typeof x === "string") && declared.length > 0) {
-    // Union, never replacement: a constitution can add gates, not remove the floor.
-    return [...new Set([...DEFAULT_GATED_TYPES, ...declared])];
-  }
-  return [...DEFAULT_GATED_TYPES];
+  const own =
+    Array.isArray(declared) && declared.every((x) => typeof x === "string") && declared.length > 0
+      ? (declared as string[])
+      : [];
+  // Union, never replacement: a constitution can add gates, not remove the
+  // floor - and a child brain answers to every ancestor's gates too (the
+  // materialized `inherited-constitution` copies written by `brains sync`).
+  return [...new Set([...DEFAULT_GATED_TYPES, ...own, ...inheritedGatedTypes(bundle)])];
 }
 
 export class GateViolation extends Error {

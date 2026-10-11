@@ -23,6 +23,13 @@ export interface Env {
   GITHUB_DOCS_REPO?: string; // "owner/name" — the 'github-docs' source; absent = source unconfigured here
   GITHUB_DOCS_REF?: string; // branch/tag/SHA; default HEAD (the repo's default branch)
   GITHUB_DOCS_PATH?: string; // only list paths under this repo subpath
+  GMAIL_READ_QUERY?: string; // 'gmail' source search; default inbox, last 2 days, no promotions/social/forums
+  GMAIL_READ_MAX?: string; // messages per run; default 20, cap 50
+  GMAIL_READ_BODIES?: string; // "true" inlines clipped bodies; default snippets only
+  GCAL_READ_CALENDARS?: string; // 'google-calendar' source calendar ids, comma-separated; default "primary"
+  GCAL_READ_DAYS_AHEAD?: string; // default 14
+  GCAL_READ_DAYS_BACK?: string; // default 1
+  GCAL_READ_DESCRIPTIONS?: string; // "true" inlines clipped event descriptions
   // -- secrets --
   GITHUB_APP_ID?: string; // GitHub App auth (preferred): all three or none
   GITHUB_APP_INSTALLATION_ID?: string;
@@ -42,7 +49,17 @@ export interface Env {
   MSGRAPH_REFRESH_TOKEN?: string;
   GITHUB_DOCS_TOKEN?: string; // fine-grained PAT, Contents READ-ONLY on the docs repo; falls back to GITHUB_TOKEN
   GITHUB_DEFECTS_TOKEN?: string; // PAT with Issues R/W on the ENGINE repo — the STANDARD posture (v0.11.2): set it and leak-clean defect reports auto-file as issues
+  GOOGLE_READ_CLIENT_ID?: string; // the PRINCIPAL's Google account, READ-ONLY (gmail.readonly + calendar.readonly) - 'gmail' / 'google-calendar' sources
+  GOOGLE_READ_CLIENT_SECRET?: string;
+  GOOGLE_READ_REFRESH_TOKEN?: string; // minted on the laptop by `anima-mesh connect google`
+  // BRAIN_LINK_<ID>_TOKEN (one per linked brain, any number): a READ-ONLY
+  // token for that brain's repo - the 'brains' source. Passed through by
+  // name pattern below; never falls back to GITHUB_TOKEN.
+  [linkToken: `BRAIN_LINK_${string}_TOKEN`]: string | undefined;
 }
+
+/** Linked-brain read tokens travel by name pattern - there can be any number of links. */
+const LINK_TOKEN_RE = /^BRAIN_LINK_[A-Z0-9_]+_TOKEN$/;
 
 /** Flatten the Worker env into the engine's injectable env record. */
 export function envRecord(env: Env): Record<string, string | undefined> {
@@ -71,5 +88,20 @@ export function envRecord(env: Env): Record<string, string | undefined> {
     GITHUB_DOCS_PATH: env.GITHUB_DOCS_PATH,
     GITHUB_DOCS_TOKEN: env.GITHUB_DOCS_TOKEN,
     GITHUB_DEFECTS_TOKEN: env.GITHUB_DEFECTS_TOKEN,
+    GOOGLE_READ_CLIENT_ID: env.GOOGLE_READ_CLIENT_ID,
+    GOOGLE_READ_CLIENT_SECRET: env.GOOGLE_READ_CLIENT_SECRET,
+    GOOGLE_READ_REFRESH_TOKEN: env.GOOGLE_READ_REFRESH_TOKEN,
+    GMAIL_READ_QUERY: env.GMAIL_READ_QUERY,
+    GMAIL_READ_MAX: env.GMAIL_READ_MAX,
+    GMAIL_READ_BODIES: env.GMAIL_READ_BODIES,
+    GCAL_READ_CALENDARS: env.GCAL_READ_CALENDARS,
+    GCAL_READ_DAYS_AHEAD: env.GCAL_READ_DAYS_AHEAD,
+    GCAL_READ_DAYS_BACK: env.GCAL_READ_DAYS_BACK,
+    GCAL_READ_DESCRIPTIONS: env.GCAL_READ_DESCRIPTIONS,
+    ...Object.fromEntries(
+      Object.entries(env as unknown as Record<string, unknown>).filter(
+        (entry): entry is [string, string] => LINK_TOKEN_RE.test(entry[0]) && typeof entry[1] === "string",
+      ),
+    ),
   };
 }

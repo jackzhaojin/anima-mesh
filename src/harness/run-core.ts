@@ -15,7 +15,8 @@ import {
 import type { InstanceStore } from "../instance/store.js";
 import type { InstanceConfig } from "../instance/config-core.js";
 import { sourceSections } from "../sources/registry.js";
-import type { SourceFs } from "../sources/types.js";
+import type { SourceContext } from "../sources/types.js";
+import type { LocalBrainOpener, SourceFs } from "../sources/types.js";
 import {
   verifyConformanceBundle,
   verifyExpectedOutputsStore,
@@ -56,6 +57,11 @@ export interface RunCoreOptions {
    * their fetch-based access paths.
    */
   sourceFs?: SourceFs;
+  /**
+   * Node tier: opens linked brains' local checkouts for the 'brains'
+   * source. Workers leave it unset - links are then read over their repos.
+   */
+  openLocalBrain?: LocalBrainOpener;
   /**
    * "per-run" (default): flush the store after verifiers — a no-op on fs.
    * "caller": the caller batches several runs into one flush (cloud beat).
@@ -204,15 +210,23 @@ export async function runAgentCore(options: RunCoreOptions): Promise<RunReport> 
   provider.assertConfigured();
   const capabilities = providerCapabilities(provider);
   const webBudget = capabilities.webSearch ? agent.web : 0;
+  const sourceCtx = {
+    env: providerCtx.env ?? {},
+    fetchImpl: providerCtx.fetchImpl,
+    log: progress,
+    sourceFs: options.sourceFs,
+    config,
+    openLocalBrain: options.openLocalBrain,
+    timeZone: options.timeZone,
+    now,
+  };
   const prompt = await buildPrompt(
     agent,
     store,
     config,
     dateStamp,
     { provider: provider.name, capabilities, webBudget },
-    providerCtx,
-    progress,
-    options.sourceFs,
+    sourceCtx,
     options.beatNotes,
   );
   progress(`run ${runId.slice(0, 8)}: ${agent.name} via ${provider.name} (${cognition.model})`);
@@ -249,7 +263,7 @@ export async function runAgentCore(options: RunCoreOptions): Promise<RunReport> 
       agent,
       store,
       config,
-      sourceCtx: { env: providerCtx.env ?? {}, fetchImpl: providerCtx.fetchImpl, log: progress, sourceFs: options.sourceFs },
+      sourceCtx,
     });
     await store.appendLedger({
       ts: clock(),
@@ -424,14 +438,12 @@ async function buildPrompt(
   config: InstanceConfig,
   dateStamp: string,
   runtime: { provider: string; capabilities: ProviderCapabilities; webBudget: number },
-  providerCtx?: ApiProviderContext,
-  log?: (note: string) => void,
-  sourceFs?: SourceFs,
+  sourceCtx: SourceContext,
   beatNotes?: string[],
 ): Promise<string> {
   const sections: string[] = [];
   sections.push(
-    `You are "${agent.title}" (${agent.name}), an agent in an AnimaMesh company-of-0 mesh.`,
+    `You are "${agent.title}" (${agent.name}), an agent in ${meshPhrase(config)}.`,
     `Today is ${dateStamp}. Autonomy level: ${agent.level} (${levelMeaning(agent.level)}).`,
     "",
     "## Your job",
@@ -475,10 +487,7 @@ async function buildPrompt(
   // Declared read sources (agent frontmatter opt-in) — live external context
   // inlined so L1 runs still need no tool access. Failures become honest
   // sections, never aborted runs.
-  const external =
-    agent.sources.length > 0
-      ? await sourceSections(agent.sources, { env: providerCtx?.env ?? {}, fetchImpl: providerCtx?.fetchImpl, log, sourceFs })
-      : [];
+  const external = agent.sources.length > 0 ? await sourceSections(agent.sources, sourceCtx) : [];
   return [
     sections.join("\n"),
     await bundleContext(store, config),
@@ -564,6 +573,27 @@ export function capabilityLines(
     );
   }
   return lines;
+}
+
+/**
+ * How the opening line names the mesh. A brain that declares its identity
+ * is named for what it models - a person's life is not a company; brains
+ * without one keep the historical phrase.
+ */
+export function meshPhrase(config: InstanceConfig): string {
+  const brain = config.brain;
+  if (!brain) return "an AnimaMesh company-of-0 mesh";
+  const label = brain.name ? ` - ${brain.name}` : "";
+  switch (brain.kind) {
+    case "person":
+      return `an AnimaMesh personal brain (\`${brain.id}\`${label}): the working twin of one person's life`;
+    case "team":
+      return `an AnimaMesh team brain (\`${brain.id}\`${label})`;
+    case "group":
+      return `an AnimaMesh shared brain (\`${brain.id}\`${label})`;
+    default:
+      return `an AnimaMesh company-of-0 mesh (brain \`${brain.id}\`${label})`;
+  }
 }
 
 export function levelMeaning(level: string): string {

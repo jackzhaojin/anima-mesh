@@ -38,7 +38,13 @@ specifics (those live in each instance's own repo — see the boundary doc).
     (`export-local`), and the `defect-report` loop back into this repo —
     issue-first with the instance's standing PAT, deterministic at every
     trust-bearing step (gate, leak guard, dedup, ledger)
-11. [learnings/](learnings/README.md) — hard-won platform knowledge with
+11. [layered-brains.md](layered-brains.md) - the mesh of brains (v0.18):
+    person, org, team, and group brains; links declared on both sides;
+    `share:` grants and `markings:` restrictions; inherited law; members and
+    roles; the principal's Gmail and Calendar as redacted read-only sources
+12. [ontology.md](ontology.md) - concept-type schemas, the ontology view, and
+    how the bundle maps to Palantir's Ontology
+13. [learnings/](learnings/README.md) - hard-won platform knowledge with
     evidence; **check here first when a vendor edge misbehaves**
 
 Upgrading, or wondering when a behavior changed? [../CHANGELOG.md](../CHANGELOG.md)

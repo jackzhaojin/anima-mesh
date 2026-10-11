@@ -3,6 +3,8 @@ import * as path from "node:path";
 import { loadBundle } from "../okf/bundle.js";
 import { checkConformance, type ConformanceReport } from "../okf/conformance.js";
 import { CONFIG_FILENAME, type InstanceConfig } from "../instance/config.js";
+import type { BrainKind } from "../instance/config-core.js";
+import { BRAIN_KINDS, isSlug, RESERVED_TOKENS } from "../brains/core.js";
 import { fillTemplate, loadAgentTemplate } from "./templates.js";
 import { agentsFromBundle } from "../agents/concept.js";
 import { composeLocalAgents, selectLocalAgents } from "../local/agents-core.js";
@@ -28,6 +30,14 @@ export interface InitAnswers {
   defaultHarness?: string;
   engineRepo?: string;
   engineRef?: string;
+  /**
+   * What the brain models (v0.18.0). Absent ⇒ an org, and no `brain`
+   * identity block is written unless `brainId` is given - exactly the
+   * pre-layering scaffold.
+   */
+  brainKind?: BrainKind;
+  /** The brain's id for links and `share:` markings. Default: slug of orgName. */
+  brainId?: string;
   /** Injectable clock for deterministic tests. */
   now?: string;
 }
@@ -39,6 +49,16 @@ export interface ScaffoldResult {
 }
 
 const DEFAULT_AGENTS = ["compliance-ops"];
+/** A person brain starts with its hub and its obligations keeper (person variants). */
+const DEFAULT_PERSON_AGENTS = ["chief-of-staff", "compliance-ops"];
+
+function slugOf(text: string): string {
+  return text
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 63);
+}
 
 /** Instances pin the engine by tag; default the pin to the version this scaffolder shipped in. */
 function engineVersionTag(): string {
@@ -57,7 +77,16 @@ export async function scaffoldBrain(targetDir: string, answers: InitAnswers): Pr
   }
   const nowIso = answers.now ?? new Date().toISOString();
   const date = nowIso.slice(0, 10);
-  const agents = answers.agents.length > 0 ? answers.agents : DEFAULT_AGENTS;
+  const kind: BrainKind = answers.brainKind ?? "org";
+  if (!BRAIN_KINDS.includes(kind)) throw new Error(`init: brain kind must be one of ${BRAIN_KINDS.join("|")}`);
+  const isPerson = kind === "person";
+  // An identity block is written when the caller asks for layering at all.
+  const brainId = answers.brainKind || answers.brainId ? (answers.brainId ?? slugOf(answers.orgName)) : undefined;
+  if (brainId !== undefined && (!isSlug(brainId) || RESERVED_TOKENS.has(brainId))) {
+    throw new Error(`init: brain id '${brainId}' must be a lowercase slug and not a reserved word`);
+  }
+  const agents = answers.agents.length > 0 ? answers.agents : isPerson ? DEFAULT_PERSON_AGENTS : DEFAULT_AGENTS;
+  const factsRel = isPerson ? "facts/person.md" : "facts/organization.md";
   const model = answers.defaultModel ?? "kimi-code/kimi-for-coding";
   const harness = answers.defaultHarness ?? "opencode";
   const persona = answers.personaName?.trim() || undefined;
@@ -84,7 +113,9 @@ export async function scaffoldBrain(targetDir: string, answers: InitAnswers): Pr
         ? { persona: { name: persona, ...(answers.personaEmails?.length ? { emails: answers.personaEmails } : {}) } }
         : {}),
     },
-    activation: { boundaryMapVerified: false, optionTrigger: null, founderWaiver: false },
+    ...(brainId ? { brain: { id: brainId, kind, name: answers.orgName }, links: [] } : {}),
+    // A person's brain runs no commercial agents - the D11 dual gate is an org concern.
+    ...(isPerson ? {} : { activation: { boundaryMapVerified: false, optionTrigger: null, founderWaiver: false } }),
   };
   put(CONFIG_FILENAME, JSON.stringify(config, null, 2) + "\n");
 
@@ -97,7 +128,8 @@ export async function scaffoldBrain(targetDir: string, answers: InitAnswers): Pr
     "README.md",
     `# ${answers.orgName} — brain\n\n` +
       `Private AnimaMesh instance: an OKF knowledge bundle plus the operational\n` +
-      `surfaces (ledger, approvals, reports) for a company-of-0 mesh.\n\n` +
+      `surfaces (ledger, approvals, reports) for ${isPerson ? "one person's life (a personal brain)" : "a company-of-0 mesh"}.\n\n` +
+      (brainId ? `- Brain: \`${brainId}\` (${kind}) - links to other brains live in animamesh.config.json\n` : "") +
       `- Engine: ${config.engine!.repo} @ ${config.engine!.ref}\n` +
       `- Principal: ${answers.principalName} (the approval gate)\n` +
       (persona ? `- Mesh persona: ${persona}\n` : "") +
@@ -117,8 +149,8 @@ export async function scaffoldBrain(targetDir: string, answers: InitAnswers): Pr
       `\`type\` required; [log.md](log.md) is append-only.\n\n` +
       `| Concept | What it holds |\n|---|---|\n` +
       `| [constitution.md](constitution.md) | Immutable hard limits — agents may not modify |\n` +
-      `| [facts/organization.md](facts/organization.md) | The organization's stable facts |\n` +
-      `| [ops/calendar.md](ops/calendar.md) | Compliance calendar |\n` +
+      `| [${factsRel}](${factsRel}) | ${isPerson ? "Who this person is - stable facts" : "The organization's stable facts"} |\n` +
+      `| [ops/calendar.md](ops/calendar.md) | ${isPerson ? "Obligations calendar" : "Compliance calendar"} |\n` +
       `| [ops/watch-list.md](ops/watch-list.md) | Research / competitive watch |\n` +
       `| [ops/schedule.md](ops/schedule.md) | Schedule overrides and one-shot wakes |\n` +
       `${agentLinks}\n`,
@@ -146,8 +178,8 @@ export async function scaffoldBrain(targetDir: string, answers: InitAnswers): Pr
   );
 
   put(
-    "bundle/facts/organization.md",
-    `---\ntype: fact\ntitle: "Organization"\nstatus: unverified\ndate: ${date}\n---\n\n` +
+    `bundle/${factsRel}`,
+    `---\ntype: fact\ntitle: "${isPerson ? "Person" : "Organization"}"\nstatus: unverified\ndate: ${date}\n---\n\n` +
       `# ${answers.orgName}\n\n` +
       (answers.description ? `${answers.description.trim()}\n\n` : "") +
       `- **Principal (approval gate):** ${answers.principalName}${answers.principalEmail ? ` <${answers.principalEmail}>` : ""}\n` +
@@ -160,12 +192,12 @@ export async function scaffoldBrain(targetDir: string, answers: InitAnswers): Pr
 
   put(
     "bundle/ops/calendar.md",
-    `---\ntype: calendar\ntitle: "Compliance calendar"\nstatus: active\ndate: ${date}\n---\n\n` +
-      `# Compliance calendar\n\n` +
+    `---\ntype: calendar\ntitle: "${isPerson ? "Obligations calendar" : "Compliance calendar"}"\nstatus: active\ndate: ${date}\n---\n\n` +
+      `# ${isPerson ? "Obligations calendar" : "Compliance calendar"}\n\n` +
       `The obligations the principal never again carries in their head. Agents read\nthis every heartbeat.\n\n` +
       `## Hard deadlines\n\n| Due | Item | State |\n|---|---|---|\n| _yyyy-mm-dd_ | _add your first hard deadline_ | not started |\n\n` +
       `## Recurring cycles\n\n| Cadence | Item |\n|---|---|\n| daily | agent heartbeats; report what needs the principal |\n\n` +
-      `## One-time items outstanding\n\n- [ ] Replace these placeholders with the organization's real obligations\n`,
+      `## One-time items outstanding\n\n- [ ] Replace these placeholders with ${isPerson ? "this person's" : "the organization's"} real obligations\n`,
   );
 
   put(
@@ -204,7 +236,7 @@ export async function scaffoldBrain(targetDir: string, answers: InitAnswers): Pr
     DEFAULT_HARNESS: harness,
   };
   for (const agentName of agents) {
-    put(`bundle/agents/${agentName}.md`, fillTemplate(loadAgentTemplate(agentName), vars));
+    put(`bundle/agents/${agentName}.md`, fillTemplate(loadAgentTemplate(agentName, kind), vars));
   }
 
   // ── operational surfaces ─────────────────────────────────────────────────

@@ -1,5 +1,6 @@
 import type { Bundle, Concept } from "./bundle-core.js";
 import { conceptsByType, getConcept } from "./bundle-core.js";
+import { checkSchemas } from "./schema.js";
 
 /**
  * Conformance profiles:
@@ -104,6 +105,11 @@ export function checkConformance(
     }
   }
 
+  // R5 - the ontology: concepts whose type declares a schema (a
+  // `concept-type` concept) satisfy it. Opt-in per type; warnings unless
+  // the schema says `strict: true`.
+  issues.push(...checkSchemas(bundle));
+
   if (profile === "animamesh") {
     // A1 — a constitution concept exists and is marked immutable.
     const constitutions = conceptsByType(bundle, "constitution");
@@ -132,6 +138,21 @@ export function checkConformance(
       const level = c.frontmatter.level;
       if (level !== "L1" && level !== "L2" && level !== "L3" && level !== "L4") {
         err("animamesh/agent-level", "agent concept must declare level L1|L2|L3|L4", c.relPath);
+      }
+    }
+
+    // A5 - materialized ancestor constitutions (brains sync) are law the
+    // gatekeeper reads: immutable, attributed, dated.
+    for (const c of conceptsByType(bundle, "inherited-constitution")) {
+      if (c.frontmatter.immutable !== true) {
+        err("animamesh/inherited-immutable", "inherited-constitution must set `immutable: true`", c.relPath);
+      }
+      if (typeof c.frontmatter.from !== "string" || !/^[a-z0-9][a-z0-9-]*$/.test(c.frontmatter.from)) {
+        err("animamesh/inherited-from", "inherited-constitution must name its source brain (`from: <brain-id>`)", c.relPath);
+      }
+      const synced = c.frontmatter.synced;
+      if (!(synced instanceof Date) && !(typeof synced === "string" && /^\d{4}-\d{2}-\d{2}/.test(synced))) {
+        err("animamesh/inherited-synced", "inherited-constitution must carry its `synced:` date", c.relPath);
       }
     }
 

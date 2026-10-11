@@ -30,7 +30,7 @@ everything builds in temp dirs via `helpers.ts` and runs against
   completes a run; agentic enrichment adopts valid suggestions, strips unknown
   agents, survives fenced/prose JSON, falls back on garbage, and never
   overrides an explicit human choice.
-- **cli.test.ts** — the CLI (11 commands) driven in-process (`main(argv)` →
+- **cli.test.ts** - the CLI (14 commands) driven in-process (`main(argv)` →
   exit code): init/validate/run/gate/report/templates plus
   `defect list`/`defect file` — including the v0.11.3 positional-parsing
   regression: `defect file --instance <dir>` must never read the flag value
@@ -108,6 +108,34 @@ everything builds in temp dirs via `helpers.ts` and runs against
 - **workers-alarm-time.test.ts / workers-imports.test.ts** — DST-correct
   alarm math across both US transitions; the Worker import-graph walker that
   fails on any `node:*` or subprocess module.
+- **brains.test.ts** - the mesh of brains (v0.18) as behavior: config
+  validation (slugs, reserved words, self/duplicate links, one parent,
+  members with an owner); `share:` is deny-by-default and decided by the
+  EXPORTER's relation; mandatory `markings:` win over any share and are
+  conjunctive; only granted briefs and only child links get the brief and
+  the constitution; linked brains are read-only (every write throws); a real
+  run inlines shared concepts and never private ones; one-sided, mismatched,
+  or invalid link maps read nothing; a GitHub link never borrows
+  `GITHUB_TOKEN`; read-requests across a link refuse private and missing
+  concepts identically; inherited gates are enforced; only owner/approver
+  members decide.
+- **brains-cli.test.ts** - `init --kind person` scaffolds a conformant
+  personal brain; `brains` shows both directions, mutuality, and
+  unresolvable `brain://` refs; `brains sync` materializes parent law (and
+  `brains` flags it stale after the parent amends); `gate --by` enforces
+  member roles; `validate` errors on a malformed link map.
+- **google-sources.test.ts** - `redactSensitive` removes card, account,
+  SSN, one-time-code, and password values and leaves ordinary text alone;
+  consent scopes are exactly read-only; inbox and calendar sections are
+  framed as untrusted, redacted, and honest when unconfigured or failing.
+- **connect-google.test.ts** - the consent URL (read-only scopes, PKCE
+  S256, offline), refusal of wider-scoped tokens, the `.env.local` upsert
+  (mode 600), the full loopback flow storing the token without printing
+  it, and a forged-state callback storing nothing.
+- **ontology.test.ts** - concept-type schemas: opt-in per type, required /
+  enum / date / list / boolean / typed-link checks, strict schemas fail
+  conformance while non-strict ones warn, malformed schemas are errors; the
+  ontology view's catalog, link types, and cross-brain references.
 
 ## workers/heartbeat/test/ — the Worker in real workerd
 
