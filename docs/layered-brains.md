@@ -251,6 +251,11 @@ Two safety properties live in code:
   data. Instructions inside an email are never direction; directions arrive
   only through the allowlisted channel edge.
 
+A person brain's natural document store is that same account's Drive: the
+brain keeps the facts (dates, amounts, obligations) and links the file;
+the document of record stays in Drive. See "Pair the brain with a document
+store" in [starting-a-company.md](starting-a-company.md).
+
 Defaults are least exposure: inbox snippets (not bodies) for the last two
 days without promotions/social/forums, and calendar titles and places for
 14 days ahead, with descriptions and attendee identities off, and Drive

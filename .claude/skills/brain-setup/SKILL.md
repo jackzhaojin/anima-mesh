@@ -101,14 +101,25 @@ Walk the user through, in order (each exists for a reason — say the reason):
 1. **Private git repo, immediately.** The brain will hold real corporate
    facts. Never let it live inside a cloud-synced folder (sync conflicts
    corrupt append-only files).
-2. **Secrets stay outside git.** `.env.local` (git-ignored, mode 600) holds
+2. **Pick its document store.** Recommend one for almost every brain: the
+   brain is memory and index, the store holds the documents of record
+   (contracts, tax forms, statements, decks). Ask which the organization
+   already uses - personal Google Drive or OneDrive for a person brain;
+   Google Workspace (My Drive or shared drives); SharePoint, OneDrive, or
+   Teams files on Microsoft 365 - and wire the matching read-only source
+   (`google-drive`, `onedrive`) on the agents that need it. Concepts then
+   summarize what matters and link the store path; documents never get
+   copied into the bundle
+   ([starting-a-company.md](../../../docs/starting-a-company.md), "Pair the
+   brain with a document store").
+3. **Secrets stay outside git.** `.env.local` (git-ignored, mode 600) holds
    model/channel tokens, referenced by variable name only. Setup itself
    needs none; a real-model `run` needs a model key — but a credential-free
    dry run works today: scaffold with `"defaultHarness": "fake"` (or
    `--harness fake`) and the deterministic provider completes the full
    loop — report, ledger, verifiers — offline. Switch an agent to real
    cognition later by editing its `model:`/`harness:` frontmatter.
-3. **First run, locally:**
+4. **First run, locally:**
    ```bash
    pnpm cli run <agent> --instance <target-dir>
    pnpm cli report --instance <target-dir>
@@ -120,12 +131,12 @@ Walk the user through, in order (each exists for a reason — say the reason):
    to their persona directly with `claude --agent <persona-first-name>` or
    a Tab-switch in opencode, from the brain repo, and regenerate any time
    with `pnpm cli export-local` ([docs/local-agents.md](../../../docs/local-agents.md)).
-4. **Seed the bundle.** The scaffold leaves deliberate placeholders: the
+5. **Seed the bundle.** The scaffold leaves deliberate placeholders: the
    compliance calendar's first hard deadline, the watch-list's first subject,
    and `facts/organization.md` marked `status: unverified` until checked
    against source documents. Point the user at them — an empty calendar
    makes a boring brief.
-5. **Cloud tier, when ready.** The same brain runs from Cloudflare Workers
+6. **Cloud tier, when ready.** The same brain runs from Cloudflare Workers
    with the laptop closed — hand them
    [docs/deploying-cloud.md](../../../docs/deploying-cloud.md). Not a
    day-one requirement.

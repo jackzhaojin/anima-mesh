@@ -28,7 +28,16 @@ The ledger remains append-only; never "migrate" it by editing old entries.
 
 ## [Unreleased]
 
-- Nothing yet.
+- **Docs: pair every brain with a document store.** `starting-a-company.md`
+  now recommends that almost every brain pair with one store for its
+  documents of record (personal Google Drive or OneDrive; Google Workspace
+  My Drive or shared drives; SharePoint, OneDrive, or Teams files), maps
+  each to the read-only source that reaches it today (`google-drive`,
+  `onedrive`, `github-docs`), and sets the division of labor: the store
+  holds the document, the brain holds what matters about it and links the
+  path. The `brain-setup` skill asks for the store as its own step;
+  `layered-brains.md` points person brains at their own Drive. No code
+  change.
 
 ## [v2.1.0] - Google Drive, read-only, on the principal's Google client
 

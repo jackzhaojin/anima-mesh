@@ -169,11 +169,47 @@ the hard way:
   none). A refused budget is stated in the agent's own prompt, so it
   reports the gap instead of imagining fetches.
 
-For live document context, add `sources: [onedrive]`,
-`sources: [github-docs]`, or both to only the agents that need it. The harness
-inlines a current read-only listing during prompt assembly. A missing or failed
-source is surfaced as an explicit context gap and does not abort the run. The
-current prompt surface includes listing metadata, not document bodies.
+For live document context, add `sources: [onedrive]`, `sources:
+[google-drive]`, `sources: [github-docs]`, or a mix, to only the agents that
+need it. The harness inlines a current read-only listing during prompt
+assembly. A missing or failed source is surfaced as an explicit context gap
+and does not abort the run. Listings carry metadata, not document bodies;
+an agent asks for a specific file with a `read-request`.
+
+### Pair the brain with a document store (recommended for almost every brain)
+
+A brain is memory and index - typed concepts, decisions, a calendar, the
+ledger. It is not a file server. Nearly every brain should be paired with
+**one document store** that holds the documents of record (contracts, tax
+forms, statements, decks, scans) and that people can use without the brain.
+
+| Brain | Natural store | Engine source today |
+|---|---|---|
+| Person | the principal's own Google Drive, or personal OneDrive | `google-drive` (`drive.readonly`, one consent with Gmail and Calendar: `anima-mesh connect google`); `onedrive` |
+| Org or team on Google Workspace | My Drive or shared drives | `google-drive` (shared drives are listed too) |
+| Org on Microsoft 365 | a SharePoint document library or OneDrive; Teams channel files live in SharePoint | `onedrive` (Microsoft Graph, delegated `Files.Read.All`; `MSGRAPH_DRIVE_ID` selects a library) |
+| Engineering or docs-as-code | a git repo | `github-docs` |
+
+The division of labor that keeps both useful:
+
+- **The store holds the document; the brain holds what matters about it.**
+  A concept records the dates, amounts, obligations, and decisions a
+  document carries, under the right `markings:`, and links the document's
+  path in the store. Documents are never copied into the bundle, and the
+  brain repo itself never lives inside a synced store folder (step 1 of
+  the setup skill says why).
+- **The store makes sense on its own.** Mutually exclusive, collectively
+  exhaustive top-level folders (for a person: professional, finance,
+  property, family, personal, ...; for a company: the functions), dated
+  `yyyy`/`yyyy-mm-dd` folders inside them, and a `README` at the root that
+  explains the layout to humans and to other assistants.
+- **Read-only by default.** Sources are read-only by construction. Tidying
+  the store is a supervised, interactive act (or the principal's own), never
+  a heartbeat side effect.
+- **Dates are history.** On Google Drive, a move keeps a file's id and
+  modified date while a rename or an edit resets it; when tidying, move
+  files into clearly named folders instead of renaming them, and confirm
+  each move through the API before the next.
 
 ## 4. Connect the principal
 
