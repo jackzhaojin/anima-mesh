@@ -3,6 +3,8 @@ import { mkdirSync } from "node:fs";
 import { tmpdir } from "node:os";
 import * as path from "node:path";
 import type { AgentWorkerProvider, ProviderRunOptions, ProviderResult } from "./types.js";
+import type { ApiProviderContext } from "./moonshot-api.js";
+import { CLI_AUTH_ENV, failureDetail, subprocessEnv } from "./subprocess-env.js";
 
 /**
  * opencode harness — drives any opencode-configured model headlessly via a
@@ -12,7 +14,8 @@ import type { AgentWorkerProvider, ProviderRunOptions, ProviderResult } from "./
  * different model vendor.
  *
  * Auth rides on opencode's own credential store (`opencode auth`) or
- * MOONSHOT_API_KEY in the environment — never on the engine.
+ * MOONSHOT_API_KEY in the environment (the shell, or the instance env for
+ * the auth keys in CLI_AUTH_ENV) — never on the engine.
  */
 const DEFAULT_MODEL = "kimi-code/kimi-for-coding";
 const DEFAULT_TIMEOUT_MS = 20 * 60 * 1000;
@@ -32,22 +35,25 @@ interface OpencodeServer {
 const serversByCwd = new Map<string, Promise<OpencodeServer>>();
 const serverChildren = new Set<ChildProcess>();
 
-function startServer(cwd: string): Promise<OpencodeServer> {
+function startServer(cwd: string, env: NodeJS.ProcessEnv): Promise<OpencodeServer> {
   const workdir = cwd || path.join(tmpdir(), "anima-mesh-opencode");
   mkdirSync(workdir, { recursive: true });
 
   const proc = spawn(
     "opencode",
     ["serve", "--port", "0", "--hostname", "127.0.0.1"],
-    { cwd: workdir, env: process.env, stdio: ["ignore", "pipe", "pipe"] },
+    { cwd: workdir, env, stdio: ["ignore", "pipe", "pipe"] },
   );
   serverChildren.add(proc);
 
   return new Promise<OpencodeServer>((resolve, reject) => {
     let settled = false;
+    let output = "";
     const strip = (s: string) => s.replace(/\x1b\[[0-9;?]*[a-zA-Z]/g, "");
     const onData = (b: Buffer) => {
-      const m = strip(b.toString()).match(/listening on\s+(https?:\/\/[^\s]+)/i);
+      const text = strip(b.toString());
+      if (output.length < 4000) output += text;
+      const m = text.match(/listening on\s+(https?:\/\/[^\s]+)/i);
       if (!settled && m) {
         settled = true;
         resolve({ base: m[1]!.replace(/\/+$/, ""), proc });
@@ -58,17 +64,17 @@ function startServer(cwd: string): Promise<OpencodeServer> {
     proc.on("exit", (code) => {
       serversByCwd.delete(cwd);
       serverChildren.delete(proc);
-      if (!settled) reject(new Error(`opencode serve exited early (code ${code})`));
+      if (!settled) reject(new Error(`opencode serve exited early (code ${code}): ${failureDetail(output, "")}`));
     });
     setTimeout(() => !settled && reject(new Error("timed out waiting for opencode serve")), SERVE_STARTUP_TIMEOUT_MS);
   });
 }
 
-function getServer(cwd: string): Promise<OpencodeServer> {
+function getServer(cwd: string, env: NodeJS.ProcessEnv): Promise<OpencodeServer> {
   const key = path.resolve(cwd);
   let existing = serversByCwd.get(key);
   if (!existing) {
-    existing = startServer(key).catch((e) => {
+    existing = startServer(key, env).catch((e) => {
       serversByCwd.delete(key);
       return Promise.reject(e);
     });
@@ -152,60 +158,66 @@ function tapSession(base: string, sessionId: string, onProgress: (note: string) 
   return { stop: () => ctrl.abort() };
 }
 
-export const opencodeProvider: AgentWorkerProvider = {
-  name: "opencode",
-  // Same posture as claude-code: read tools against `cwd` are the CLI's
-  // default; web availability depends on the local install, so it is not
-  // claimed here.
-  capabilities: { fileReads: true, webSearch: false },
+export function createOpencodeProvider(ctx: ApiProviderContext = {}): AgentWorkerProvider {
+  const instanceEnv = ctx.env ?? {};
+  return {
+    name: "opencode",
+    // Same posture as claude-code: read tools against `cwd` are the CLI's
+    // default; web availability depends on the local install, so it is not
+    // claimed here.
+    capabilities: { fileReads: true, webSearch: false },
 
-  assertConfigured(): void {
-    const which = process.platform === "win32" ? "where" : "which";
-    const res = spawnSync(which, ["opencode"], { stdio: "ignore" });
-    if (res.status !== 0) {
-      throw new Error("opencode harness: `opencode` CLI not found on PATH — install opencode or pick another harness");
-    }
-  },
+    assertConfigured(): void {
+      const which = process.platform === "win32" ? "where" : "which";
+      const res = spawnSync(which, ["opencode"], { stdio: "ignore" });
+      if (res.status !== 0) {
+        throw new Error("opencode harness: `opencode` CLI not found on PATH — install opencode or pick another harness");
+      }
+    },
 
-  async run(opts: ProviderRunOptions): Promise<ProviderResult> {
-    const model = opts.model ?? DEFAULT_MODEL;
-    const [providerID, modelID] = splitModel(model);
-    const progress = opts.onProgress ?? (() => {});
+    async run(opts: ProviderRunOptions): Promise<ProviderResult> {
+      const model = opts.model ?? DEFAULT_MODEL;
+      const [providerID, modelID] = splitModel(model);
+      const progress = opts.onProgress ?? (() => {});
 
-    progress(`opencode: starting (${model}) in ${opts.cwd}`);
-    const { base } = await getServer(opts.cwd);
+      progress(`opencode: starting (${model}) in ${opts.cwd}`);
+      const { base } = await getServer(opts.cwd, subprocessEnv(instanceEnv, CLI_AUTH_ENV.opencode ?? []));
 
-    const session = await postJson(base, "/session", { title: "anima-mesh run" });
-    const sessionId: string = session.id;
-    const tap = tapSession(base, sessionId, progress);
+      const session = await postJson(base, "/session", { title: "anima-mesh run" });
+      const sessionId: string = session.id;
+      const tap = tapSession(base, sessionId, progress);
 
-    let message: any;
-    try {
-      message = await postJson(
-        base,
-        `/session/${sessionId}/message`,
-        { providerID, modelID, parts: [{ type: "text", text: opts.prompt }] },
-        opts.timeoutMs ?? DEFAULT_TIMEOUT_MS,
-      );
-    } finally {
-      await new Promise((r) => setTimeout(r, 250));
-      tap.stop();
-    }
+      let message: any;
+      try {
+        message = await postJson(
+          base,
+          `/session/${sessionId}/message`,
+          { providerID, modelID, parts: [{ type: "text", text: opts.prompt }] },
+          opts.timeoutMs ?? DEFAULT_TIMEOUT_MS,
+        );
+      } finally {
+        await new Promise((r) => setTimeout(r, 250));
+        tap.stop();
+      }
 
-    if (message?.info?.error) {
-      throw new Error(`opencode turn errored: ${JSON.stringify(message.info.error).slice(0, 300)}`);
-    }
+      if (message?.info?.error) {
+        throw new Error(`opencode turn errored: ${JSON.stringify(message.info.error).slice(0, 300)}`);
+      }
 
-    const text = (message?.parts ?? [])
-      .filter((p: { type: string; text?: string }) => p.type === "text" && typeof p.text === "string")
-      .map((p: { text: string }) => p.text)
-      .join("\n")
-      .trim();
+      const text = (message?.parts ?? [])
+        .filter((p: { type: string; text?: string }) => p.type === "text" && typeof p.text === "string")
+        .map((p: { text: string }) => p.text)
+        .join("\n")
+        .trim();
 
-    progress("opencode: done");
-    return { text, raw: message, tokens: message?.info?.tokens, costUsd: message?.info?.cost };
-  },
-};
+      progress("opencode: done");
+      return { text, raw: message, tokens: message?.info?.tokens, costUsd: message?.info?.cost };
+    },
+  };
+}
+
+/** Context-free instance: shell env only (resolveProvider without a ctx). */
+export const opencodeProvider: AgentWorkerProvider = createOpencodeProvider();
 
 /** "provider/model" → [providerID, modelID]; bare model falls back to kimi-code. */
 function splitModel(model: string): [string, string] {

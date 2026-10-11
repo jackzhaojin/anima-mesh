@@ -51,7 +51,9 @@ export {
 } from "./providers/index.js";
 export {
   claudeCodeProvider,
+  createClaudeCodeProvider,
   opencodeProvider,
+  createOpencodeProvider,
   claudeAgentSdkProvider,
   createClaudeAgentSdkProvider,
 } from "./providers/node-providers.js";

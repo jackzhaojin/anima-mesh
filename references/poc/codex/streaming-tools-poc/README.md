@@ -7,6 +7,9 @@ This project explores the more advanced parts of the Codex SDK:
 - command execution visibility
 - file change visibility when Codex is allowed to write
 
+Uses `@openai/codex-sdk` 0.162.1 and its bundled CLI, with the existing local
+Codex login. No API key or separate OAuth implementation is configured here.
+
 ## Scripts
 
 - `npm run buffered:tools`: buffered `run()` demo that prints the final item list after the turn completes
@@ -19,7 +22,7 @@ This project explores the more advanced parts of the Codex SDK:
 
 ```bash
 cd references/poc/codex/streaming-tools-poc
-npm install
+npm ci
 npm run stream:tools
 ```
 
