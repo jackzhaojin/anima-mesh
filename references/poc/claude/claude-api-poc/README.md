@@ -39,6 +39,21 @@ and out of version control; its contents should have this shape:
 ANTHROPIC_API_KEY=your-api-key
 ```
 
+### Claude Code cloud sessions
+
+A cloud environment's network secrets can't supply this key: the agent proxy
+never attaches secrets to `api.anthropic.com`. Store it as an ordinary
+environment variable under a non-`ANTHROPIC_` name instead, then map it on the
+command (start a new session after saving so the VM reads it):
+
+```sh
+ANTHROPIC_API_KEY="$POC_ANTHROPIC_API_KEY" pnpm test:live
+```
+
+Environment variables are readable by anyone using the environment, so use a
+dedicated key with a low spend limit. See [FINDINGS.md](FINDINGS.md) for the
+verified run.
+
 ## What PASS proves
 
 The runner creates a temporary file containing a random challenge, then asks
