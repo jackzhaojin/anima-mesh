@@ -75,7 +75,7 @@ src/
                 (defect-report → public engine issue, leak-guarded)
   channels/     delivery registry (registry.ts, Workers-safe: discord/notion/
                 gmail/console, injected env) · index.ts fs wrapper
-  brains/       the mesh of brains (v0.18): core.ts (Workers-safe) = brain
+  brains/       the mesh of brains (v2.0): core.ts (Workers-safe) = brain
                 identity, links declared on both sides, `share:` grants +
                 mandatory `markings:`, computeExport (the EXPORTER decides),
                 read-only linked stores, members/roles, inherited gates;
@@ -173,6 +173,11 @@ extend the current line — ship as patch tags (`vX.Y.Z+1`). A minor bump
 and explicitly agreed with the operator before the work starts** — never
 chosen opportunistically mid-session because a change feels feature-shaped.
 When in doubt, it's a patch.
+
+**2.0.0 (2026-10-10) was an operator-chosen major**: the mesh of brains
+(layering + multi-player) changed what the engine is for. The pre-release
+cuts v0.18.0/v0.18.1 were folded into it. The same policy continues from
+2.0: patch by default (`v2.0.Z+1`), minors and majors planned and agreed.
 
 For every minor or major release, attempt to update [README.md](README.md) to
 explain what changed and remove deprecated or no-longer-applicable material,

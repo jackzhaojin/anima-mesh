@@ -22,7 +22,7 @@ import { localBrainOpener } from "../src/brains/local.js";
 import type { InstanceConfig, MemberConfig } from "../src/instance/config-core.js";
 
 /**
- * The mesh of brains (v0.18.0). What must hold forever:
+ * The mesh of brains (v2.0.0). What must hold forever:
  *  - deny by default: an unmarked concept never crosses a link;
  *  - the EXPORTER's config and markings decide what crosses, never the reader's;
  *  - a link is live only when both sides declare it with inverse relations;

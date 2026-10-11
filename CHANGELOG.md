@@ -3,7 +3,7 @@
 AnimaMesh is pre-1.0, so this history is organized by **minor release line**:
 the capability boundary operators actually adopt. Patch tags are deliberately
 rolled into the value and maturity of their minor rather than narrated one by
-one. The latest tag is **v0.18.1**.
+one. The latest tag is **v2.0.0**.
 
 ## Upgrade procedure
 
@@ -30,90 +30,126 @@ The ledger remains append-only; never "migrate" it by editing old entries.
 
 - Nothing yet.
 
-## [v0.18.x] - layered and multi-player brains: the mesh of brains
+## [v2.0.0] - the mesh of brains: layered and multi-player
 
-**Latest tag: v0.18.1 · 2026-10-10** *(planned minor: the operator asked for
-two new feature lines, layering and multi-player, before the work started)*
+**Tag: v2.0.0 · 2026-10-10** *(an operator-chosen major. The pre-release
+cuts v0.18.0 and v0.18.1, tagged earlier the same day, are folded into this
+release and withdrawn; pin `v2.0.0`.)*
 
-**v0.18.1 - the interactive tier names the brain too.** `export-local`
-artifacts opened with "an AnimaMesh company-of-0 mesh" for every brain; they
-now use the same kind-aware phrase as scheduled runs ("an AnimaMesh personal
-brain (`<id>` - <name>)" for a person brain). Also in the v0.18.0 line before
-tagging: a new brain is dated by the local calendar day (not UTC), `gate`
-without `--by` decides as the principal's member record, and a person brain
-may list its own principal as a member without a link warning.
-Re-run `anima-mesh export-local` to refresh existing artifacts.
+**Why a major.** Through 0.17, one brain meant one company and one human:
+the engine ran a company-of-0. 2.0 changes what the engine is for. A brain
+is now one **layer** of someone's world (a person's life, a company, a team
+inside it, a shared group), brains connect to each other, and more than one
+human can act in a brain. The 0.x safety model carries over unchanged and
+gains a second axis: what may cross between brains. Existing brains are not
+broken: a brain with no `brain` block runs exactly as it did on 0.17.
 
-**The limit it removes.** One brain meant one company and one human. A
-person who runs a company, sits on a team inside it, and has a life outside
-it had nowhere to put the life, and no way for the company's brain and the
-life's brain to know about each other without merging them.
+**The limit it removes.** A person who runs a company, sits on a team
+inside it, and has a life outside it had nowhere to put the life, and no
+way for the company's brain and the life's brain to know about each other
+without merging them.
 
-**What ships.**
+### Layering: brains and links
 
-- **Brain identity** (`brain: { id, kind, name }`, kinds `person`, `org`,
-  `team`, `group`). Prompts name the brain for what it models; a person
-  brain is "the working twin of one person's life", not a company mesh.
-- **Links declared on both sides** (`links:`, relations `member-of` /
-  `has-member`, `child-of` / `parent-of`, `peer-of`). A link is live only
-  when both configs declare inverse relations; one-sided or mismatched links
-  read nothing and say why.
-- **The `brains` source.** A hub with `sources: [brains]` sees, every run,
-  what each linked brain shares with it: the inherited constitution (child
+- **Brain identity**: `brain: { id, kind, name }`, kinds `person`, `org`,
+  `team`, `group`. Prompts name the brain for what it models (a person
+  brain is "the working twin of one person's life"), on scheduled runs and
+  in `export-local` artifacts alike.
+- **Links declared on both sides**: `links:` with relations `member-of` /
+  `has-member`, `child-of` / `parent-of`, `peer-of`. A link is live only
+  when both configs declare inverse relations; one-sided, mismatched, or
+  malformed link maps read nothing and say why.
+- **The `brains` source**: a hub with `sources: [brains]` sees, every run,
+  what each linked brain shares with it: inherited constitutions (child
   links), the latest brief (when granted), and every shared concept, cited
   as `brain://<id>/<path>`, with what it could not see counted out loud.
   Linked brains open read-only (write methods throw). Transports: a sibling
   `localPath` checkout on the laptop, or the linked `repo` over GitHub with
-  the link's own `BRAIN_LINK_<ID>_TOKEN`, never the brain's `GITHUB_TOKEN`.
-  `read-request` accepts `brains: [<id>/<path>]`.
-- **`share:` grants and `markings:` restrictions.** Concepts cross only when
-  their `share:` names the reader (by id, or `members` / `groups` /
-  `parent` / `children` / `peers` / `linked`, computed from the EXPORTER's
-  config). Mandatory `markings:` (e.g. `finance`, `family`) block a concept
-  on every link that does not clear them in `grants.markings`, whatever
-  `share:` says.
-- **Containment inherits law.** `anima-mesh brains sync` materializes the
+  that link's own `BRAIN_LINK_<ID>_TOKEN`, never the brain's `GITHUB_TOKEN`.
+  `read-request` accepts `brains: [<id>/<path>]`; "not shared" and "does not
+  exist" get the same answer.
+- **Containment inherits law**: `anima-mesh brains sync` materializes the
   parent chain's constitutions into `bundle/inherited/<id>/constitution.md`
-  (type `inherited-constitution`, hashed); the gatekeeper unions their
-  `gated-actions` with the child's own.
-- **Members and roles** (`identity.members`, roles `owner`, `approver`,
-  `contributor`, `viewer`). With members declared, `gate approve|deny --by`
-  must name an owner or approver member, checked in code; the record stores
-  the member id.
-- **The principal's own Google account as read sources**: `gmail` (inbox
-  snippets by default, a full message on read-request) and
-  `google-calendar` (titles and places for a window). Read-only scopes only;
-  `anima-mesh connect google` runs a loopback PKCE consent and writes the
-  refresh token to `.env.local` (mode 600, never printed), refusing a token
-  with any wider scope. `redactSensitive` strips card and account numbers,
-  SSNs, one-time codes, and passwords in code before any prompt; every
-  section is framed as untrusted third-party text.
-- **The ontology layer.** `concept-type` concepts declare a type's
-  properties (kinds, required, enums, lists, typed links); conformance
-  enforces them (warnings, or errors with `strict: true`) and validates the
-  schemas themselves. `anima-mesh ontology` prints the type catalog, schema
-  coverage, link types between concept types, and `brain://` references.
-- **Operator surfaces.** `anima-mesh brains` shows identity, members, every
-  link's transports and mutuality, and who can see what in both directions;
-  `validate` adds the link map, markings, and share-token checks;
-  `init --kind person --brain-id <id> --principal-email <e>` scaffolds a
-  personal brain (person variants of `chief-of-staff` and `compliance-ops`
-  under `templates/agents/person/`, no commercial activation block).
+  (type `inherited-constitution`, hashed, immutable); the gatekeeper unions
+  their `gated-actions` with the child's own. Membership inherits nothing: a
+  person brain is sovereign.
 
-**Upgrade notes.**
+### What crosses: grants and markings
 
-- Nothing is required: a brain without a `brain` block behaves exactly as
-  before. To join the mesh of brains, add `brain` to each config, declare
-  links on both sides, and mark what may cross.
+- **`share:` grants** (discretionary, deny by default): by brain id, or by
+  audience word (`members`, `groups`, `parent`, `children`, `peers`,
+  `linked`) computed from the EXPORTER's config, never the reader's.
+- **`markings:` restrictions** (mandatory, conjunctive): a concept marked
+  `[finance]` crosses only links whose `grants.markings` clear `finance`,
+  whatever `share:` says.
+- **Link grants**: `grants.brief` exports the hub's latest brief;
+  `validate` warns when a person brain grants its brief (a brief carries
+  everything the hub read).
+
+### Multi-player
+
+- **Members and roles**: `identity.members` with `owner`, `approver`,
+  `contributor`, `viewer`. With members declared, `gate approve|deny` must
+  be decided by an owner or approver member (checked in code; the record
+  stores the member id; without `--by` the principal's own member record
+  decides). Direction senders and dashboard logins still come from the
+  Worker allowlists; deriving them from roles is on the roadmap.
+- **The brain is the unit of access control**: collaboration means each
+  person keeps their own brain and shared work lives in an org, team, or
+  group brain they are members of.
+
+### The principal's own Google account
+
+- **`gmail` and `google-calendar` read sources**: the human's account (not
+  the persona's mailbox), read-only scopes, inbox snippets by default and a
+  full message on read-request, a calendar window by local day.
+  `redactSensitive` strips card and account numbers, SSNs, one-time codes,
+  and passwords in code before any prompt; every section is framed as
+  untrusted third-party text.
+- **`anima-mesh connect google`**: loopback PKCE consent for
+  `gmail.readonly` + `calendar.readonly` only, refusing a token with any
+  wider scope; the refresh token goes to `.env.local` (mode 600) and is
+  never printed.
+
+### The ontology
+
+- **`concept-type` schemas**: a type declares its properties (kinds,
+  required, enums, lists, typed links); conformance enforces them (rule R5:
+  warnings, or errors with `strict: true`) and validates the schemas.
+- **`anima-mesh ontology`**: the type catalog, schema coverage, link types
+  between concept types, and `brain://` references, derived every time.
+  [docs/ontology.md](docs/ontology.md) maps the bundle to Palantir's
+  Ontology (object, link, and action types; markings; projects).
+
+### Operator surfaces
+
+- `anima-mesh brains` shows identity, members, every link's transports and
+  mutuality, and **who can see what in both directions**, computed by the
+  same code the harness enforces with.
+- `validate` adds the link map, members, markings, and share-token checks.
+- `init --kind person --brain-id <id> --principal-email <e>` scaffolds a
+  person brain (person variants of `chief-of-staff` and `compliance-ops`
+  under `templates/agents/person/`, no commercial activation block); new
+  brains are dated by the local calendar day, not UTC.
+
+**Upgrade notes (from 0.17.x).**
+
+- Pin `v2.0.0`. Nothing else is required: a brain without a `brain` block
+  behaves exactly as before. To join the mesh, add `brain` to each config,
+  declare links on both sides, and mark what may cross; check the result
+  with `anima-mesh brains`.
+- Re-run `anima-mesh export-local` to refresh interactive artifacts.
 - Workers: new optional secrets `GOOGLE_READ_CLIENT_ID`,
   `GOOGLE_READ_CLIENT_SECRET`, `GOOGLE_READ_REFRESH_TOKEN`, and one
-  `BRAIN_LINK_<ID>_TOKEN` per cloud-read link; optional vars
-  `GMAIL_READ_*` and `GCAL_READ_*`. Redeploy to pick up the engine.
-- A link's cloud token should be a fine-grained token with Contents
-  read-only on exactly that repo. A classic PAT with `repo` scope reads every
-  repo of its account, linked brains included.
+  `BRAIN_LINK_<ID>_TOKEN` per cloud-read link (passed through by name
+  pattern); optional vars `GMAIL_READ_*` and `GCAL_READ_*`. Redeploy to pick
+  up the engine.
+- A link's cloud token should be fine-grained, Contents read-only on exactly
+  that repo. A classic PAT with `repo` scope reads every repo of its
+  account, linked brains included.
 - Cross-owner links (two people's brains) should wait for the exporter-side
-  endpoint (roadmap); until then, collaborate through a shared group brain.
+  endpoint on the roadmap; until then, collaborate through a shared group
+  brain. See [docs/layered-brains.md](docs/layered-brains.md).
 
 ## [v0.17.x] — ask-driven retrieval: the agent reaches, code serves
 

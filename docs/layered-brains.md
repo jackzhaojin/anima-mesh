@@ -1,6 +1,6 @@
-# Layered brains: the mesh of brains (v0.18.0)
+# Layered brains: the mesh of brains (v2.0.0)
 
-One brain used to mean one company. Since v0.18.0 a brain is one **layer**
+One brain used to mean one company. Since v2.0.0 a brain is one **layer**
 of someone's world, and brains connect to each other:
 
 ```

@@ -13,7 +13,7 @@ import type {
 import { newestReportName } from "../harness/latest-report.js";
 
 /**
- * The mesh of brains (v0.18.0) - layering and multi-player, Workers-safe.
+ * The mesh of brains (v2.0.0) - layering and multi-player, Workers-safe.
  *
  * A brain is one instance repo: a person's life, an org, a team inside an
  * org, or a shared group. Brains connect through typed LINKS declared on

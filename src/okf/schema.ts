@@ -2,7 +2,7 @@ import type { Bundle, Concept } from "./bundle-core.js";
 import { conceptsByType } from "./bundle-core.js";
 
 /**
- * Concept types as declared schemas - the ontology layer (v0.18.0).
+ * Concept types as declared schemas - the ontology layer (v2.0.0).
  *
  * OKF says every concept has a `type`; until now a type was only a word.
  * A `concept-type` concept turns the word into a contract, the way an

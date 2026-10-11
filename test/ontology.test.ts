@@ -7,7 +7,7 @@ import { checkSchemas, loadSchemas } from "../src/okf/schema.js";
 import { buildOntology, formatOntology } from "../src/okf/ontology.js";
 
 /**
- * The ontology layer (v0.18.0): a `concept-type` concept turns a type word
+ * The ontology layer (v2.0.0): a `concept-type` concept turns a type word
  * into a contract - properties with kinds, required fields, closed
  * vocabularies, typed links. What must hold: schemas are opt-in per type;
  * what a schema names it enforces (warnings, or errors when strict); the

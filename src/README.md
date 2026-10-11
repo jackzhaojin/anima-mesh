@@ -22,7 +22,7 @@ ones above it).
   constitution present and `immutable: true`, decisions/events dated, agent
   concepts declare `model`/`harness`/`level`. Broken relative links are
   warnings, not errors.
-- `schema.ts` - the ontology layer (v0.18): `concept-type` concepts declare a
+- `schema.ts` - the ontology layer (v2.0): `concept-type` concepts declare a
   type's properties (kinds, required, enums, lists, typed links);
   `checkSchemas` enforces them (warnings, errors when `strict: true`) and
   validates the schemas themselves. Runs inside `checkConformance` (rule R5)
@@ -250,7 +250,7 @@ contents"), never aborted runs.
   deterministic walk + root-escape-proof reads). Imports node built-ins, so
   it lives OUTSIDE the Worker import graph: `run.ts`/`heartbeat.ts` inject
   it; `workers-imports.test.ts` bans it from Worker entries.
-- `sources/brains.ts` - the `brains` source (v0.18): what LINKED brains
+- `sources/brains.ts` - the `brains` source (v2.0): what LINKED brains
   share with this one, opened read-only over a local checkout (Node, via the
   injected `openLocalBrain`) or the linked repo with the link's own
   `BRAIN_LINK_<ID>_TOKEN` (never `GITHUB_TOKEN`). Verifies the relationship
@@ -264,7 +264,7 @@ contents"), never aborted runs.
 - `sources/registry.ts` — `sourceSections(names, ctx)`, the harness's one
   entry point.
 
-## brains/ - the mesh of brains (v0.18)
+## brains/ - the mesh of brains (v2.0)
 
 - `core.ts` (Workers-safe) - brain identity, links and relations, members
   and roles (`effectiveMembers`, `assertMayDecide`), `share:` grants and

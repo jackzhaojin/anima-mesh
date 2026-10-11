@@ -66,7 +66,7 @@ export async function inspectBrains(instanceRoot: string, env: Record<string, st
 
   if (!config.brain) {
     out.push("This instance declares no brain identity (animamesh.config.json → brain: { id, kind, name }).");
-    out.push("It can neither link to nor be read by other brains - single-brain operation, exactly as before v0.18.0.");
+    out.push("It can neither link to nor be read by other brains - single-brain operation, exactly as before v2.0.0.");
   } else {
     out.push(`Brain ${config.brain.id}${config.brain.name ? ` - ${config.brain.name}` : ""} (${config.brain.kind})`);
   }

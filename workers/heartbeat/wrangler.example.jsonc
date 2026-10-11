@@ -67,7 +67,7 @@
   // `anima-mesh defect file`.
   // anthropic-api uses subscription OAuth over plain fetch;
   // ANTHROPIC_API_KEY is not used by this adapter.
-  // v0.18 (docs/layered-brains.md): the principal's own Google account for
+  // v2.0 (docs/layered-brains.md): the principal's own Google account for
   // the 'gmail' / 'google-calendar' read sources - GOOGLE_READ_CLIENT_ID,
   // GOOGLE_READ_CLIENT_SECRET, GOOGLE_READ_REFRESH_TOKEN (read-only scopes,
   // minted on the laptop by `anima-mesh connect google`); and one

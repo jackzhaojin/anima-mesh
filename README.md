@@ -1,20 +1,35 @@
 # AnimaMesh
 
-**An engine for running a company with agents — a real one, with deadlines, books, and filings — where the humans shrink to a single role: the approval gate.**
+**An engine for running your world with agents - your life, your company, and
+the teams inside it - where humans keep a single role: the approval gate.**
 
-AnimaMesh operates a **company-of-0**: an organization whose entire back office
-— compliance calendar, bookkeeping, document librarianship, board governance,
-research watch, inbound triage — is run by a mesh of AI agents. One human
-(the principal) supplies judgment and signatures. Everything else wakes up on
-its own heartbeat, reads the company's knowledge, does the preparable work, and
-reports back: *"here's what I found, here's the draft, approve or edit."*
+Since 2.0, AnimaMesh animates a **mesh of brains**. Each brain is one layer of
+someone's world, kept as a private, typed knowledge bundle in its own repo:
 
-The initiative inverts: **you stop driving the company's operations and start
-reviewing them.** And because all company state is one **OKF knowledge
-bundle** — typed markdown concepts under one validator — the mesh grows past
-back office by adding *concept types*, not software: the first front-office
-domain shelf is a [CRM](docs/okf-crm-domain.md) that lives in the bundle
-itself.
+- a **person** brain is the working twin of one human's life (commitments,
+  family, money, career, and the organizations they belong to);
+- an **org** brain runs a company, the original **company-of-0**: a back
+  office (compliance calendar, bookkeeping, librarianship, governance,
+  research watch, inbound triage) operated by agents, with one human
+  supplying judgment and signatures;
+- **team** and **group** brains are the shared spaces in between (a unit of
+  a company, a family, a project with outside collaborators).
+
+Brains link to each other, and both sides must agree. The brain that owns
+the data decides what crosses: `share:` grants it, `markings:` like
+`finance` or `family` forbid it, and containment carries law down (a team
+answers to its company's constitution). Members with roles make a brain
+multi-player. Every agent wakes on its own heartbeat, reads the knowledge
+its brain gives it, does the preparable work, and reports back: *"here's
+what I found, here's the draft, approve or edit."*
+
+The initiative inverts: **you stop driving the work and start reviewing
+it.** And because every brain is an **OKF knowledge bundle** (typed markdown
+concepts under one validator, with optional schemas that make each type a
+contract), a brain grows by adding *concept types*, not software: the first
+front-office domain shelf is a [CRM](docs/okf-crm-domain.md) that lives in
+the bundle itself, and the bundle as a whole reads as an ontology
+([docs/ontology.md](docs/ontology.md)).
 
 ## Where it runs
 
@@ -106,9 +121,9 @@ enforce an instance's legal boundaries as data rules rather than remembered
 policy. It was promoted from a live instance, de-identified; the pattern
 generalizes to any relationship-shaped domain (vendors, candidates, press).
 
-## Layered and multi-player: the mesh of brains (v0.18)
+## Layered and multi-player: the mesh of brains (2.0)
 
-A brain is no longer only a company. Since v0.18 a brain is one **layer** of
+A brain is no longer only a company. Since v2.0 a brain is one **layer** of
 someone's world (`person`, `org`, `team`, or `group`), and brains connect
 ([docs/layered-brains.md](docs/layered-brains.md)):
 
@@ -236,7 +251,7 @@ pnpm cli init ../my-brain --answers answers.json --agentic opencode
 pnpm cli init ../my-brain --org "Acme Co" --principal "Ada" \
   --agents compliance-ops,chief-of-staff --harness fake
 
-# a person's own brain (v0.18): person roster, Gmail/Calendar sources
+# a person's own brain (v2.0): person roster, Gmail/Calendar sources
 pnpm cli init ../my-life --name "Ada Lovelace" --principal "Ada" \
   --principal-email ada@example.com --kind person --brain-id ada
 
@@ -301,33 +316,26 @@ conformance and complete a full agent run against the fake provider.
 
 ## Status
 
-v0.18.0 - pre-release. Package name on npm to be confirmed; pinned consumers
-should reference the repo by tag. The cloud tier introduced in v0.3 is the
-primary execution path; the CLI remains the bootstrap, operator, and
-subprocess-harness path. v0.18 opens a new line: **layered and multi-player
-brains** (person, org, team, and group brains linked by mutual consent, with
-owner-decided `share:` grants, mandatory `markings:`, inherited law down a
-containment chain, member roles on approvals, the principal's own Gmail and
-Calendar as redacted read-only sources, and concept-type schemas that make a
-brain an ontology). The lines before it extend one theme - **nothing the
-mesh cannot do is ever silent**: v0.13 added role-declared required reading
-(`reads:` frontmatter inlined every run, absences stated in the prompt —
-closed the mesh's own issues #5/#6, filed by its hub through the defect
-loop); v0.14 made due-but-cloud-unrunnable agents first-class (the hub's
-brief nags for the manual run owed instead of a journal-only skip); v0.15
-streamed all `anthropic-api` cognition, removing the ~100s edge-timeout
-ceiling (HTTP 524) that non-streaming calls silently imposed on long
-generations; v0.16 put the bundle's append-only `events/` stream in front
-of every agent every run (newest first, count out loud) — a settled fact
-recorded as an event can no longer be invisibly re-litigated by the
-scheduled tier; v0.17 added ask-driven retrieval (`read-request`): the
-model names the files THIS run is about from a live listing — PDFs
-included — and deterministic code serves them for one continuation run,
-because no inline heuristic can know what the question needs. Before that: v0.12 capability truth + real server-side web
-search on Workers; v0.11 the interactive tier (`export-local`) and the
-`defect-report` loop; v0.10 the draft surface; v0.9 the schedule surface;
-v0.8 GitHub App auth and the guaranteed failure DM. See
-[CHANGELOG.md](CHANGELOG.md) for the value and upgrade boundary of each minor
+v2.0.0 (2026-10-10). Package name on npm to be confirmed; pinned consumers
+reference the repo by tag. **2.0 is the mesh of brains**: person, org, team,
+and group brains linked by mutual consent, owner-decided `share:` grants,
+mandatory `markings:`, inherited law down a containment chain, member roles
+on approvals, the principal's own Gmail and Calendar as redacted read-only
+sources, and concept-type schemas that make a brain an ontology. It is a
+major version because it changes what the engine is for: one brain was one
+company; now a brain is a layer, and the engine reasons across layers. A
+brain without a `brain` block runs exactly as it did on 0.17, so the upgrade
+itself is a pin bump.
+
+The cloud tier introduced in v0.3 is the primary execution path; the CLI
+remains the bootstrap, operator, and subprocess-harness path. The 0.x lines
+before 2.0 extend one theme, **nothing the mesh cannot do is ever silent**:
+v0.17 ask-driven retrieval (`read-request`); v0.16 recent events inlined for
+every agent; v0.15 streamed `anthropic-api`; v0.14 due-but-cloud-unrunnable
+agents nag through the brief; v0.13 role-declared reads; v0.12 capability
+truth and real server-side web search; v0.11 the interactive tier and the
+defect loop; v0.10 the draft surface; v0.9 the schedule surface; v0.8
+GitHub App auth. See [CHANGELOG.md](CHANGELOG.md) for the value and upgrade boundary of each minor
 line, and [docs/learnings/](docs/learnings/README.md) for evidence-backed
 platform lessons.
 

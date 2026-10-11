@@ -31,7 +31,7 @@ capability, not model discretion: code gates the whitelist + ladder
 level, runs the identity-leak guard, title-dedups against open issues,
 files, and ledgers — the model only writes the report.
 
-## Kind variants (v0.18)
+## Kind variants (v2.0)
 
 `templates/agents/<kind>/<name>.md` overrides the base template when a brain
 of that kind is scaffolded (`init --kind <kind>`). Shipped today:

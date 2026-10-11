@@ -178,7 +178,7 @@ async function cmdValidate(args: string[], io: { log: (s: string) => void }): Pr
   const bundle = await loadBundle(instance?.bundleDir ?? root);
   const report = checkConformance(bundle, profile, { linkExists: diskLinkChecker });
   if (instance) {
-    // Config-aware checks (v0.18.0): the link map, members, and share
+    // Config-aware checks (v2.0.0): the link map, members, and share
     // markings only make sense against the instance config.
     report.issues.push(...brainIssues(bundle, instance.config));
     report.ok = !report.issues.some((i) => i.level === "error");

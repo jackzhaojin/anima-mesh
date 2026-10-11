@@ -31,7 +31,7 @@ export interface InitAnswers {
   engineRepo?: string;
   engineRef?: string;
   /**
-   * What the brain models (v0.18.0). Absent ⇒ an org, and no `brain`
+   * What the brain models (v2.0.0). Absent ⇒ an org, and no `brain`
    * identity block is written unless `brainId` is given - exactly the
    * pre-layering scaffold.
    */

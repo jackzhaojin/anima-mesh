@@ -1,7 +1,7 @@
-# The ontology: typed concepts as a digital twin (v0.18.0)
+# The ontology: typed concepts as a digital twin (v2.0.0)
 
 A brain is a digital twin of whatever it models: a person's life, a company,
-a team. OKF already says every concept declares a `type`. Since v0.18.0 a
+a team. OKF already says every concept declares a `type`. Since v2.0.0 a
 type can also declare a **schema**, which turns the type word into a
 contract, and the engine can show the whole brain as an ontology: types,
 counts, schema coverage, the links between types, and what crosses to other

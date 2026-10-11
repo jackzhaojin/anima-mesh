@@ -108,7 +108,7 @@ everything builds in temp dirs via `helpers.ts` and runs against
 - **workers-alarm-time.test.ts / workers-imports.test.ts** — DST-correct
   alarm math across both US transitions; the Worker import-graph walker that
   fails on any `node:*` or subprocess module.
-- **brains.test.ts** - the mesh of brains (v0.18) as behavior: config
+- **brains.test.ts** - the mesh of brains (v2.0) as behavior: config
   validation (slugs, reserved words, self/duplicate links, one parent,
   members with an owner); `share:` is deny-by-default and decided by the
   EXPORTER's relation; mandatory `markings:` win over any share and are

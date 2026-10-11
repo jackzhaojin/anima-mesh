@@ -38,7 +38,7 @@ specifics (those live in each instance's own repo — see the boundary doc).
     (`export-local`), and the `defect-report` loop back into this repo —
     issue-first with the instance's standing PAT, deterministic at every
     trust-bearing step (gate, leak guard, dedup, ledger)
-11. [layered-brains.md](layered-brains.md) - the mesh of brains (v0.18):
+11. [layered-brains.md](layered-brains.md) - the mesh of brains (v2.0):
     person, org, team, and group brains; links declared on both sides;
     `share:` grants and `markings:` restrictions; inherited law; members and
     roles; the principal's Gmail and Calendar as redacted read-only sources
