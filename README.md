@@ -179,14 +179,14 @@ someone's world (`person`, `org`, `team`, or `group`), and brains connect
 - **The model chokepoint.** Each agent concept declares its `model` and
   `harness`; swapping vendors is a config edit, never a rebuild. Shipped
   harnesses: `moonshot-api`, `anthropic-api`, `anthropic-api-key`, and
-  `codex-api` (pure fetch — the ones a cloud beat may run), `claude-code`
+  `openai-codex` (pure fetch — the ones a cloud beat may run), `claude-code`
   (headless CLI), `claude-agent-sdk` and `claude-agent-sdk-api-key`
   (subprocess, laptop-tier by architecture), `codex` (headless Codex CLI),
   `opencode` (any opencode-configured model), `fake` (deterministic, for
   the regression suite). **Billing is part of the harness name**, so the
   brain chooses it per agent: `anthropic-api` / `claude-agent-sdk` /
   `claude-code` bill the Claude subscription, the `*-api-key` pair bills
-  metered API credits, `codex` / `codex-api` bill the ChatGPT plan's Codex
+  metered API credits, `codex` / `openai-codex` bill the ChatGPT plan's Codex
   quota, and `moonshot-api` bills Kimi. A credential that happens to be
   exported in the shell never moves a run from one to another. An instance can redirect a declared harness at runtime via
   `animamesh.config.json → cognition.overrides` — vendor trouble becomes a

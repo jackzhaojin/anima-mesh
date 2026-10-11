@@ -44,13 +44,13 @@ server-side web search as `anthropic-api`), `claude-agent-sdk-api-key` (the
 Agent SDK on the same key, laptop; the path
 `references/poc/claude/claude-api-poc` proved, and it refuses any run the SDK
 reports as billed elsewhere), `codex` (the Codex CLI on the local ChatGPT
-login, `codex exec --json`, read-only sandbox, laptop), and `codex-api`
+login, `codex exec --json`, read-only sandbox, laptop), and `openai-codex`
 (ChatGPT-plan Codex over fetch, cloud and laptop). Two guards come with it:
 the subscription harnesses now strip a stray exported `ANTHROPIC_API_KEY`
 from their subprocesses (the CLI would otherwise prefer it and bill
 credits), and Codex's rotating refresh tokens have exactly one owner per
 tier (HeartbeatDO storage on the Worker, the CLI's own `auth.json` on the
-laptop). *Upgrade:* nothing required. To use `codex-api` on Workers, add
+laptop). *Upgrade:* nothing required. To use `openai-codex` on Workers, add
 the `CODEX_REFRESH_TOKEN` secret from a dedicated login
 ([deploying-cloud.md](docs/deploying-cloud.md#codex-on-the-worker)); its
 request shape is unprobed from Workers egress, so treat the first beat as

@@ -2,7 +2,7 @@ import { describe, it, expect, vi } from "vitest";
 import { readFileSync, writeFileSync } from "node:fs";
 import * as path from "node:path";
 import { codexExecArgs, parseCodexEvents } from "../src/providers/codex.js";
-import { createCodexApiProvider } from "../src/providers/codex-api.js";
+import { createOpenAICodexProvider } from "../src/providers/openai-codex.js";
 import {
   codexAuthSource,
   memoryTokenStore,
@@ -104,10 +104,10 @@ describe("codex (local CLI harness)", () => {
   });
 });
 
-describe("codex-api (ChatGPT-plan Codex over fetch)", () => {
+describe("openai-codex (ChatGPT-plan Codex over fetch)", () => {
   it("sends the endpoint's required shape and reads the streamed reply", async () => {
     const fetchImpl = vi.fn().mockResolvedValue(sse(...completed("the report")));
-    const provider = createCodexApiProvider({ env: {}, fetchImpl, codexAuth: fixedAuth() });
+    const provider = createOpenAICodexProvider({ env: {}, fetchImpl, codexAuth: fixedAuth() });
 
     const result = await provider.run({ prompt: "do the thing", cwd: "/ignored" });
 
@@ -137,7 +137,7 @@ describe("codex-api (ChatGPT-plan Codex over fetch)", () => {
         { type: "response.completed", response: {} },
       ),
     );
-    const provider = createCodexApiProvider({ env: {}, fetchImpl, codexAuth: fixedAuth() });
+    const provider = createOpenAICodexProvider({ env: {}, fetchImpl, codexAuth: fixedAuth() });
     expect((await provider.run({ prompt: "p", cwd: "/" })).text).toBe("part two");
   });
 
@@ -148,7 +148,7 @@ describe("codex-api (ChatGPT-plan Codex over fetch)", () => {
         { type: "response.incomplete", response: { incomplete_details: { reason: "max_output_tokens" } } },
       ),
     );
-    const provider = createCodexApiProvider({ env: {}, fetchImpl, codexAuth: fixedAuth() });
+    const provider = createOpenAICodexProvider({ env: {}, fetchImpl, codexAuth: fixedAuth() });
     const result = await provider.run({ prompt: "p", cwd: "/" });
     expect(result.text).toBe("half");
     expect(result.degraded).toContain("max_output_tokens");
@@ -160,7 +160,7 @@ describe("codex-api (ChatGPT-plan Codex over fetch)", () => {
       headers: { "content-type": "text/event-stream" },
     });
     const fetchImpl = vi.fn().mockImplementation(async () => cut());
-    const provider = createCodexApiProvider({ env: {}, fetchImpl, codexAuth: fixedAuth(), retryDelaysMs: [0] });
+    const provider = createOpenAICodexProvider({ env: {}, fetchImpl, codexAuth: fixedAuth(), retryDelaysMs: [0] });
     await expect(provider.run({ prompt: "p", cwd: "/" })).rejects.toThrow(/stream failed after retries/);
     expect(fetchImpl).toHaveBeenCalledTimes(2);
   });
@@ -174,7 +174,7 @@ describe("codex-api (ChatGPT-plan Codex over fetch)", () => {
       .fn()
       .mockResolvedValueOnce(new Response("unauthorized", { status: 401 }))
       .mockResolvedValueOnce(sse(...completed("ok")));
-    const provider = createCodexApiProvider({ env: {}, fetchImpl, codexAuth });
+    const provider = createOpenAICodexProvider({ env: {}, fetchImpl, codexAuth });
     expect((await provider.run({ prompt: "p", cwd: "/" })).text).toBe("ok");
     expect(codexAuth.mock.calls[1]![0]).toEqual({ force: true });
     expect(fetchImpl.mock.calls[1]![1].headers.authorization).toBe("Bearer fresh");
@@ -183,18 +183,18 @@ describe("codex-api (ChatGPT-plan Codex over fetch)", () => {
   it("a second 401 fails loud instead of looping on refreshes", async () => {
     const fetchImpl = vi.fn().mockImplementation(async () => new Response("unauthorized", { status: 401 }));
     const codexAuth = fixedAuth();
-    const provider = createCodexApiProvider({ env: {}, fetchImpl, codexAuth, retryDelaysMs: [0, 0] });
-    await expect(provider.run({ prompt: "p", cwd: "/" })).rejects.toThrow(/codex-api → HTTP 401/);
+    const provider = createOpenAICodexProvider({ env: {}, fetchImpl, codexAuth, retryDelaysMs: [0, 0] });
+    await expect(provider.run({ prompt: "p", cwd: "/" })).rejects.toThrow(/openai-codex → HTTP 401/);
     expect(codexAuth).toHaveBeenCalledTimes(2);
   });
 
   it("names the plan's usage limit on 429 and an edge block page on HTML", async () => {
     const limited = vi.fn().mockImplementation(async () => new Response('{"error":{"type":"usage_limit_reached"}}', { status: 429 }));
-    const p1 = createCodexApiProvider({ env: {}, fetchImpl: limited, codexAuth: fixedAuth(), retryDelaysMs: [0] });
+    const p1 = createOpenAICodexProvider({ env: {}, fetchImpl: limited, codexAuth: fixedAuth(), retryDelaysMs: [0] });
     await expect(p1.run({ prompt: "p", cwd: "/" })).rejects.toThrow(/ChatGPT plan usage limit/);
 
     const blocked = vi.fn().mockResolvedValue(new Response("<!DOCTYPE html><html>challenge", { status: 403 }));
-    const p2 = createCodexApiProvider({ env: {}, fetchImpl: blocked, codexAuth: fixedAuth() });
+    const p2 = createOpenAICodexProvider({ env: {}, fetchImpl: blocked, codexAuth: fixedAuth() });
     const err = (await p2.run({ prompt: "p", cwd: "/" }).catch((e: Error) => e)) as Error;
     expect(err.message).toContain("HTML block page");
     expect(err.message).not.toContain("DOCTYPE");
@@ -202,7 +202,7 @@ describe("codex-api (ChatGPT-plan Codex over fetch)", () => {
 
   it("CODEX_BASE_URL overrides the endpoint", async () => {
     const fetchImpl = vi.fn().mockResolvedValue(sse(...completed("ok")));
-    const provider = createCodexApiProvider({
+    const provider = createOpenAICodexProvider({
       env: { CODEX_BASE_URL: "https://fake-codex.test/" },
       fetchImpl,
       codexAuth: fixedAuth(),
@@ -212,13 +212,13 @@ describe("codex-api (ChatGPT-plan Codex over fetch)", () => {
   });
 
   it("under-claims web search until it has been probed live", () => {
-    expect(createCodexApiProvider({ env: {} }).capabilities).toEqual({ fileReads: false, webSearch: false });
+    expect(createOpenAICodexProvider({ env: {} }).capabilities).toEqual({ fileReads: false, webSearch: false });
   });
 
   it("is a cloud harness, and names the login it is missing", () => {
-    expect(CLOUD_HARNESSES.has("codex-api")).toBe(true);
-    expect(() => createCodexApiProvider({ env: {} }).assertConfigured()).toThrow(/codex login.*CODEX_REFRESH_TOKEN/);
-    expect(() => createCodexApiProvider({ env: { CODEX_REFRESH_TOKEN: "rt" } }).assertConfigured()).not.toThrow();
+    expect(CLOUD_HARNESSES.has("openai-codex")).toBe(true);
+    expect(() => createOpenAICodexProvider({ env: {} }).assertConfigured()).toThrow(/codex login.*CODEX_REFRESH_TOKEN/);
+    expect(() => createOpenAICodexProvider({ env: { CODEX_REFRESH_TOKEN: "rt" } }).assertConfigured()).not.toThrow();
   });
 });
 

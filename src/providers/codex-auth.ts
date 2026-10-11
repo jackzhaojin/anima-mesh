@@ -1,7 +1,7 @@
 import { getEnv } from "../instance/env-core.js";
 
 /**
- * ChatGPT-plan (Codex subscription) OAuth for the `codex-api` harness —
+ * ChatGPT-plan (Codex subscription) OAuth for the `openai-codex` harness —
  * Workers-safe: fetch only, no fs, no node:*.
  *
  * The constraint that shapes everything here: refresh tokens ROTATE. Each
@@ -125,7 +125,7 @@ export function codexAuthSource(store: CodexTokenStore, opts: CodexAuthOptions =
     }
     if (!tokens) {
       throw new Error(
-        "codex-api: no Codex login — set CODEX_REFRESH_TOKEN from a DEDICATED `codex login` (see docs/deploying-cloud.md), or log in with the codex CLI on this machine",
+        "openai-codex: no Codex login — set CODEX_REFRESH_TOKEN from a DEDICATED `codex login` (see docs/deploying-cloud.md), or log in with the codex CLI on this machine",
       );
     }
     const accountId = () => tokens!.accountId ?? accountIdFrom(tokens!.idToken, tokens!.accessToken);
@@ -147,14 +147,14 @@ export function codexAuthSource(store: CodexTokenStore, opts: CodexAuthOptions =
       const raw = (await res.text().catch(() => "")).slice(0, 200);
       const reused = /refresh_token_reused|invalid_grant/i.test(raw);
       throw new Error(
-        `codex-api → token refresh HTTP ${res.status}: ${raw}` +
+        `openai-codex → token refresh HTTP ${res.status}: ${raw}` +
           (reused
             ? " [the refresh token was already spent or revoked — something else refreshed this login. Give the Worker its OWN `codex login` and re-seed CODEX_REFRESH_TOKEN]"
             : ""),
       );
     }
     const json = (await res.json()) as { access_token?: string; refresh_token?: string; id_token?: string };
-    if (!json.access_token) throw new Error("codex-api → token refresh returned no access_token");
+    if (!json.access_token) throw new Error("openai-codex → token refresh returned no access_token");
     // Persist BEFORE use: the old refresh token is already spent server-side.
     tokens = {
       ...tokens,
@@ -186,7 +186,7 @@ export function staticCodexAuth(opts: CodexAuthOptions = {}): CodexAuthSource {
     const accessToken = getEnv(env, "CODEX_ACCESS_TOKEN");
     if (!accessToken || force || !fresh(accessToken, now())) {
       throw new Error(
-        "codex-api: no usable access token and no persistent token store to refresh with — run from the Worker (Durable-Object-backed) or a laptop with `codex login` (auth.json)",
+        "openai-codex: no usable access token and no persistent token store to refresh with — run from the Worker (Durable-Object-backed) or a laptop with `codex login` (auth.json)",
       );
     }
     return { accessToken, accountId: getEnv(env, "CODEX_ACCOUNT_ID") ?? accountIdFrom(accessToken) };

@@ -5,7 +5,7 @@ import { codexAuthSource, type CodexAuthSource, type CodexTokenStore } from "./c
 
 /**
  * Node-only: the laptop's Codex token store IS the Codex CLI's own
- * `$CODEX_HOME/auth.json` (default ~/.codex). `codex-api` on the laptop
+ * `$CODEX_HOME/auth.json` (default ~/.codex). `openai-codex` on the laptop
  * then shares the operator's `codex login`, re-reading the file before
  * every use and writing rotated tokens back in place exactly as the CLI
  * does — so neither side ever presents a refresh token the other spent.
@@ -80,7 +80,7 @@ export function fileCodexAuth(env?: Record<string, string | undefined>): CodexAu
         const msg = err instanceof Error ? err.message : String(err);
         if (msg.includes("no Codex login")) {
           throw new Error(
-            `codex-api: no Codex login at ${file} — run \`codex login\` (if your install stores credentials in the OS keyring, set cli_auth_credentials_store = "file")`,
+            `openai-codex: no Codex login at ${file} — run \`codex login\` (if your install stores credentials in the OS keyring, set cli_auth_credentials_store = "file")`,
           );
         }
         throw err;

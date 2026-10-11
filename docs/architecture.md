@@ -51,7 +51,7 @@ no cognition or persona secrets — see
 declares `model` + `harness`; the instance config's `cognition.overrides`
 can reroute a declared harness at runtime (vendor trouble = config edit).
 Cloud-capable providers are pure fetch (`moonshot-api`, `anthropic-api`,
-`anthropic-api-key`, `codex-api`); subprocess providers (`claude-code`,
+`anthropic-api-key`, `openai-codex`); subprocess providers (`claude-code`,
 `claude-agent-sdk[-api-key]`, `codex`, `opencode`) are laptop-tier by
 architecture. Billing is part of the harness name (subscription, metered
 API credits, ChatGPT-plan Codex quota, Kimi), so choosing who pays is the

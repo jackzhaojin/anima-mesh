@@ -4,6 +4,11 @@ import type { ApiProviderContext } from "./moonshot-api.js";
 import { staticCodexAuth, type CodexAuth } from "./codex-auth.js";
 
 /**
+ * `openai-codex` — the name the agent-tooling ecosystem settled on (OpenClaw,
+ * pi-ai) for OpenAI models on a ChatGPT SUBSCRIPTION via Codex OAuth, as
+ * opposed to plain `openai` (a metered API key). Should a metered OpenAI
+ * harness ever land, it takes that other name.
+ *
  * Codex (OpenAI) on a ChatGPT plan, over plain fetch — the Workers-capable
  * sibling of the subprocess `codex` harness, the way `anthropic-api` is to
  * `claude-code`. It calls the Responses endpoint the Codex CLI itself uses
@@ -116,7 +121,7 @@ export async function consumeResponsesSse(
   return { text: (messages.length ? messages.join("\n") : deltas).trim(), usage, incomplete };
 }
 
-export function createCodexApiProvider(ctx: ApiProviderContext = {}): AgentWorkerProvider {
+export function createOpenAICodexProvider(ctx: ApiProviderContext = {}): AgentWorkerProvider {
   const env = ctx.env ?? {};
   // Wrapped, never aliased: Workers reject a rebound `this` on global fetch.
   const doFetch = ctx.fetchImpl ?? ((...args: Parameters<typeof fetch>) => fetch(...args));
@@ -124,7 +129,7 @@ export function createCodexApiProvider(ctx: ApiProviderContext = {}): AgentWorke
   const auth = ctx.codexAuth ?? staticCodexAuth({ env });
 
   return {
-    name: "codex-api",
+    name: "openai-codex",
     // Plain Responses call with an empty tools array: the worker has only the
     // prompt. The endpoint's server-side `web_search` tool is not wired until
     // it has been probed live — claiming it unprobed would recreate issue #4.
@@ -137,7 +142,7 @@ export function createCodexApiProvider(ctx: ApiProviderContext = {}): AgentWorke
         !getEnv(env, "CODEX_REFRESH_TOKEN")
       ) {
         throw new Error(
-          "codex-api harness: no Codex login — `codex login` on the laptop, or CODEX_REFRESH_TOKEN (from a dedicated login) in Worker secrets",
+          "openai-codex harness: no Codex login — `codex login` on the laptop, or CODEX_REFRESH_TOKEN (from a dedicated login) in Worker secrets",
         );
       }
     },
@@ -160,7 +165,7 @@ export function createCodexApiProvider(ctx: ApiProviderContext = {}): AgentWorke
       });
       const sessionId = crypto.randomUUID();
 
-      progress(`codex-api: starting (${model})`);
+      progress(`openai-codex: starting (${model})`);
       let creds: CodexAuth = await auth();
       let reauthed = false;
       for (let attempt = 0; ; attempt++) {
@@ -182,7 +187,7 @@ export function createCodexApiProvider(ctx: ApiProviderContext = {}): AgentWorke
           });
         } catch (err) {
           if (err instanceof DOMException && err.name === "TimeoutError") {
-            throw new Error(`codex-api run timed out after ${timeoutMs}ms`);
+            throw new Error(`openai-codex run timed out after ${timeoutMs}ms`);
           }
           throw err;
         }
@@ -193,23 +198,23 @@ export function createCodexApiProvider(ctx: ApiProviderContext = {}): AgentWorke
             out = await consumeResponsesSse(res);
           } catch (err) {
             if (err instanceof DOMException && err.name === "TimeoutError") {
-              throw new Error(`codex-api run timed out after ${timeoutMs}ms`);
+              throw new Error(`openai-codex run timed out after ${timeoutMs}ms`);
             }
             const msg = err instanceof Error ? err.message : String(err);
             if (attempt < retryDelays.length) {
               const delay = retryDelays[attempt]!;
-              progress(`codex-api: stream failed (${msg}) — retry ${attempt + 1}/${retryDelays.length} in ${delay}ms`);
+              progress(`openai-codex: stream failed (${msg}) — retry ${attempt + 1}/${retryDelays.length} in ${delay}ms`);
               await sleep(delay);
               continue;
             }
-            throw new Error(`codex-api → stream failed after retries: ${msg}`);
+            throw new Error(`openai-codex → stream failed after retries: ${msg}`);
           }
           if (!out.text) {
             throw new Error(
-              `codex-api → response contained no output text${out.incomplete ? ` (incomplete: ${out.incomplete})` : ""}`,
+              `openai-codex → response contained no output text${out.incomplete ? ` (incomplete: ${out.incomplete})` : ""}`,
             );
           }
-          progress("codex-api: done");
+          progress("openai-codex: done");
           // costUsd unset: plan quota, not metered spend. The ledger stores tokens.
           return {
             text: out.text,
@@ -223,7 +228,7 @@ export function createCodexApiProvider(ctx: ApiProviderContext = {}): AgentWorke
         // means it was revoked or rotated out from under us.
         if (res.status === 401 && !reauthed) {
           reauthed = true;
-          progress("codex-api: HTTP 401 — refreshing the login once");
+          progress("openai-codex: HTTP 401 — refreshing the login once");
           creds = await auth({ force: true });
           attempt = -1;
           continue;
@@ -237,15 +242,15 @@ export function createCodexApiProvider(ctx: ApiProviderContext = {}): AgentWorke
           const retryAfter = Number(res.headers.get("retry-after"));
           const delay =
             Number.isFinite(retryAfter) && retryAfter > 0 ? retryAfter * 1000 : retryDelays[attempt]!;
-          progress(`codex-api: HTTP ${res.status}, retry ${attempt + 1}/${retryDelays.length} in ${delay}ms`);
+          progress(`openai-codex: HTTP ${res.status}, retry ${attempt + 1}/${retryDelays.length} in ${delay}ms`);
           await sleep(delay);
           continue;
         }
-        throw new Error(`codex-api → HTTP ${res.status}: ${errBody}`);
+        throw new Error(`openai-codex → HTTP ${res.status}: ${errBody}`);
       }
     },
   };
 }
 
 /** Default instance: static-token only until a context supplies a token source. */
-export const codexApiProvider = createCodexApiProvider();
+export const openaiCodexProvider = createOpenAICodexProvider();

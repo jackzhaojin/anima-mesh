@@ -2,7 +2,7 @@ import { registerProvider, registerContextualFactory } from "./index.js";
 import { claudeCodeProvider } from "./claude-code.js";
 import { opencodeProvider } from "./opencode.js";
 import { codexProvider } from "./codex.js";
-import { createCodexApiProvider } from "./codex-api.js";
+import { createOpenAICodexProvider } from "./openai-codex.js";
 import { fileCodexAuth } from "./codex-auth-file.js";
 import {
   createClaudeAgentSdkProvider,
@@ -25,12 +25,12 @@ registerProvider(claudeAgentSdkApiKeyProvider);
 registerContextualFactory("claude-agent-sdk", createClaudeAgentSdkProvider);
 registerContextualFactory("claude-agent-sdk-api-key", createClaudeAgentSdkApiKeyProvider);
 
-// `codex-api` on the laptop refreshes through the Codex CLI's own auth.json
+// `openai-codex` on the laptop refreshes through the Codex CLI's own auth.json
 // (rotating refresh tokens need a persisting owner — codex-auth.ts). The
 // Workers-safe registration in index.ts stays static-token-only.
-registerProvider(createCodexApiProvider({ codexAuth: fileCodexAuth() }));
-registerContextualFactory("codex-api", (ctx) =>
-  createCodexApiProvider({ ...ctx, codexAuth: ctx.codexAuth ?? fileCodexAuth(ctx.env) }),
+registerProvider(createOpenAICodexProvider({ codexAuth: fileCodexAuth() }));
+registerContextualFactory("openai-codex", (ctx) =>
+  createOpenAICodexProvider({ ...ctx, codexAuth: ctx.codexAuth ?? fileCodexAuth(ctx.env) }),
 );
 
 export { claudeCodeProvider } from "./claude-code.js";

@@ -158,7 +158,7 @@ describe("provider registry", () => {
   });
 
   it("CLOUD_HARNESSES contains exactly the fetch-only harnesses", () => {
-    expect([...CLOUD_HARNESSES].sort()).toEqual(["anthropic-api", "anthropic-api-key", "codex-api", "moonshot-api"]);
+    expect([...CLOUD_HARNESSES].sort()).toEqual(["anthropic-api", "anthropic-api-key", "moonshot-api", "openai-codex"]);
     expect(CLOUD_HARNESSES.has("claude-agent-sdk")).toBe(false);
     expect(CLOUD_HARNESSES.has("claude-agent-sdk-api-key")).toBe(false);
     expect(CLOUD_HARNESSES.has("codex")).toBe(false);

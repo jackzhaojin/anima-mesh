@@ -11,7 +11,7 @@ import {
   createAnthropicApiKeyProvider,
   anthropicApiKeyProvider,
 } from "./anthropic-api.js";
-import { createCodexApiProvider, codexApiProvider } from "./codex-api.js";
+import { createOpenAICodexProvider, openaiCodexProvider } from "./openai-codex.js";
 
 export type {
   AgentWorkerProvider,
@@ -32,7 +32,7 @@ export {
   createAnthropicApiKeyProvider,
   anthropicApiKeyProvider,
 } from "./anthropic-api.js";
-export { createCodexApiProvider, codexApiProvider } from "./codex-api.js";
+export { createOpenAICodexProvider, openaiCodexProvider } from "./openai-codex.js";
 export {
   codexAuthSource,
   staticCodexAuth,
@@ -53,7 +53,7 @@ const registry = new Map<string, AgentWorkerProvider>([
   ["moonshot-api", moonshotApiProvider],
   ["anthropic-api", anthropicApiProvider],
   ["anthropic-api-key", anthropicApiKeyProvider],
-  ["codex-api", codexApiProvider],
+  ["openai-codex", openaiCodexProvider],
   ["fake", new FakeProvider()],
 ]);
 
@@ -66,7 +66,7 @@ const contextualFactories = new Map<string, (ctx: ApiProviderContext) => AgentWo
   ["moonshot-api", createMoonshotApiProvider],
   ["anthropic-api", createAnthropicApiProvider],
   ["anthropic-api-key", createAnthropicApiKeyProvider],
-  ["codex-api", createCodexApiProvider],
+  ["openai-codex", createOpenAICodexProvider],
 ]);
 
 /**
@@ -77,13 +77,13 @@ const contextualFactories = new Map<string, (ctx: ApiProviderContext) => AgentWo
  *
  * Billing is part of the harness name, so the brain picks it per agent:
  * `anthropic-api` = Claude subscription, `anthropic-api-key` = metered API
- * credits, `codex-api` = ChatGPT-plan Codex quota, `moonshot-api` = Kimi.
+ * credits, `openai-codex` = ChatGPT-plan Codex quota, `moonshot-api` = Kimi.
  */
 export const CLOUD_HARNESSES: ReadonlySet<string> = new Set([
   "moonshot-api",
   "anthropic-api",
   "anthropic-api-key",
-  "codex-api",
+  "openai-codex",
 ]);
 
 /**

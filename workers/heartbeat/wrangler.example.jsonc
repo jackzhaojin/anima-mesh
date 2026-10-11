@@ -49,7 +49,7 @@
   // BEAT_TRIGGER_TOKEN;
   // cognition uses MOONSHOT_API_KEY, CLAUDE_CODE_OAUTH_TOKEN,
   // ANTHROPIC_API_KEY (anthropic-api-key: metered credits), and/or
-  // CODEX_REFRESH_TOKEN (codex-api: a DEDICATED `codex login`'s token;
+  // CODEX_REFRESH_TOKEN (openai-codex: a DEDICATED `codex login`'s token;
   // rotations live in HeartbeatDO storage - docs/deploying-cloud.md);
   // Discord surfaces use DISCORD_BOT_TOKEN and DISCORD_DM_USER_ID;
   // for inbound email also GMAIL_CLIENT_ID, GMAIL_CLIENT_SECRET,
