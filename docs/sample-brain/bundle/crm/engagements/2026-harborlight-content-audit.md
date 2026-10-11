@@ -1,7 +1,6 @@
 ---
 type: crm-engagement
 title: "2026 — Harborlight content-operations audit"
-status: active
 date: 2026-06-01
 stage: researched
 warmth: warm

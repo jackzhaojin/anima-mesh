@@ -1,7 +1,6 @@
 ---
 type: cabinet
 title: "Bank statements — FY2026 set"
-status: active
 date: 2026-03-18
 ---
 

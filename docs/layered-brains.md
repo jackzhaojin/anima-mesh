@@ -115,7 +115,7 @@ prose. `validate` warns when a person brain does this.
 An agent opts in like any source:
 
 ```yaml
-sources: [brains]
+context-sources: [brains]
 ```
 
 Every run, for each link, the harness opens the linked brain **read-only**
@@ -215,7 +215,7 @@ A person brain's hub usually reads its principal's inbox, calendar, and
 recent Drive files:
 
 ```yaml
-sources: [brains, gmail, google-calendar, google-drive]
+context-sources: [brains, gmail, google-calendar, google-drive]
 ```
 
 These are **not** the persona's mailbox (the `gmail` channel, `GMAIL_*`,

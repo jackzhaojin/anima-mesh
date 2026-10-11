@@ -1,7 +1,6 @@
 ---
 type: decision
 title: "Engine defects file straight as public issues"
-status: active
 date: 2026-06-08
 supersedes: "2026-05-11 drafts-first defect posture"
 ---

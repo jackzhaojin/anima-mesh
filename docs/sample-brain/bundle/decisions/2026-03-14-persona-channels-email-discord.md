@@ -1,7 +1,6 @@
 ---
 type: decision
 title: "Mira operates on her own email + Discord"
-status: active
 date: 2026-03-14
 supersedes: "the 2026-03-10 kickoff assumption (custom-domain mail first)"
 ---

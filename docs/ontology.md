@@ -18,7 +18,7 @@ name: commitment            # the type this schema governs
 title: Commitment
 strict: true                # violations are errors; default: warnings
 properties:
-  status: { kind: enum, values: [planned, confirmed, delivered, cancelled], required: true }
+  stage:  { kind: enum, values: [planned, confirmed, delivered, cancelled], required: true }
   date:   { kind: date, required: true }
   with:   { kind: link, target: crm-person }   # a relative .md link to a crm-person concept
   tags:   { kind: list, of: enum, values: [talk, family, finance] }
@@ -48,6 +48,12 @@ Rules:
   Without it they are warnings, the right setting while a shelf migrates.
 - **The schemas are checked too**: unknown kinds, enums without values,
   missing `name`, and two schemas for one type are errors.
+- **OKF v0.2 keys keep their meaning** (v2.2.0). `status` is the lifecycle
+  (`draft | stable | deprecated`), and `sources` / `generated` / `verified`
+  / `stale_after` have fixed shapes ([okf-v0.2.md](okf-v0.2.md)). A schema
+  that gives `status` domain values, or redefines the others, gets an
+  `ontology/reserved-property` warning. Put a domain lifecycle under
+  `stage:` (as above).
 - **The ontology lives in the bundle.** Schemas are concepts: versioned in
   git, readable by every agent, editable by the people they describe.
 

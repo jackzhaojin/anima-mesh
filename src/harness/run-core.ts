@@ -15,6 +15,8 @@ import {
 import type { InstanceStore } from "../instance/store.js";
 import type { InstanceConfig } from "../instance/config-core.js";
 import { sourceSections } from "../sources/registry.js";
+import { trustDigest } from "../okf/trust.js";
+import type { Bundle, Concept } from "../okf/bundle-core.js";
 import type { SourceContext } from "../sources/types.js";
 import type { LocalBrainOpener, SourceFs } from "../sources/types.js";
 import {
@@ -490,7 +492,7 @@ async function buildPrompt(
   const external = agent.sources.length > 0 ? await sourceSections(agent.sources, sourceCtx) : [];
   return [
     sections.join("\n"),
-    await bundleContext(store, config),
+    await bundleContext(store, config, sourceCtx.now),
     await declaredReadsContext(store, config, agent),
     await instanceContext(store),
     ...external,
@@ -607,9 +609,36 @@ export function levelMeaning(level: string): string {
 }
 
 const RECENT_EVENTS = 5;
+const MAX_TRUST_LIST = 12;
+
+/**
+ * OKF v0.2 trust signals as ambient context (v2.2.0). The frontmatter says
+ * which concepts are past `stale_after`, still `draft`, or `deprecated`;
+ * derived here in code so an agent never has to notice it by luck. Advisory
+ * only (SPEC §5.3) - nothing is hidden from the agent and no gate reads it.
+ * Empty when the bundle records none of these signals.
+ */
+export function knowledgeTrustSection(bundle: Bundle, now: Date): string | null {
+  const d = trustDigest(bundle, now);
+  if (d.stale.length + d.drafts.length + d.deprecated.length === 0) return null;
+  const label = (c: Concept) =>
+    `${c.relPath}${typeof c.frontmatter.title === "string" ? ` (${c.frontmatter.title})` : ""}`;
+  const list = (cs: Concept[]) => [
+    ...cs.slice(0, MAX_TRUST_LIST).map((c) => `- ${label(c)}`),
+    ...(cs.length > MAX_TRUST_LIST ? [`- ...and ${cs.length - MAX_TRUST_LIST} more`] : []),
+  ];
+  const lines = [
+    "\n### Knowledge trust (derived from OKF v0.2 frontmatter, in code)",
+    `Across ${d.total} concept(s): ${d.tiers["human-reviewed"]} human-reviewed, ${d.tiers["machine-confirmed"]} machine-confirmed, ${d.tiers.unverified} unverified.`,
+  ];
+  if (d.stale.length) lines.push("", "**Stale** - past `stale_after`; re-verify before relying on it, and say so when you cite it:", ...list(d.stale));
+  if (d.drafts.length) lines.push("", "**Draft** - not yet reviewed; never state it as settled:", ...list(d.drafts));
+  if (d.deprecated.length) lines.push("", "**Deprecated** - kept for history and links; never cite it as current:", ...list(d.deprecated));
+  return lines.join("\n");
+}
 const MAX_EVENT_CHARS = 3000;
 
-export async function bundleContext(store: InstanceStore, config: InstanceConfig): Promise<string> {
+export async function bundleContext(store: InstanceStore, config: InstanceConfig, now: Date = new Date()): Promise<string> {
   // Tolerant reads — a missing ops file is context absence, not a crash.
   const parts: string[] = ["\n## Bundle context (source of truth excerpts)"];
   // ops/nags.md: the persistent-reminder surface — principals opt in to being
@@ -638,6 +667,8 @@ export async function bundleContext(store: InstanceStore, config: InstanceConfig
       parts.push(`\n#### events/${name}\n\n${raw.trim() ? clipped : "(file exists and is EMPTY)"}`);
     }
   }
+  const trust = knowledgeTrustSection(await store.loadBundle(), now);
+  if (trust) parts.push(trust);
   return parts.join("\n");
 }
 

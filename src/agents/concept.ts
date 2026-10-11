@@ -16,7 +16,12 @@ export interface AgentConcept {
   harness: string;
   heartbeat?: string;
   whitelist: string[];
-  /** Read sources inlined into this agent's prompt context (e.g. "onedrive"). */
+  /**
+   * Read sources inlined into this agent's prompt context (e.g. "onedrive"),
+   * from frontmatter `context-sources:`. OKF v0.2 (v2.2.0) gave `sources:`
+   * one meaning in every bundle - provenance entries `{ resource, ... }` -
+   * so the opt-in moved; legacy string entries under `sources:` still count.
+   */
   sources: string[];
   /**
    * Role-declared required reading (frontmatter `reads:`): instance paths —
@@ -55,7 +60,7 @@ export function agentFromConcept(concept: Concept): AgentConcept {
     harness,
     heartbeat: typeof fm.heartbeat === "string" ? fm.heartbeat : undefined,
     whitelist: Array.isArray(fm.whitelist) ? fm.whitelist.filter((x): x is string => typeof x === "string") : [],
-    sources: Array.isArray(fm.sources) ? fm.sources.filter((x): x is string => typeof x === "string") : [],
+    sources: contextSources(fm),
     reads: Array.isArray(fm.reads)
       ? fm.reads.filter((x): x is string => typeof x === "string" && x.trim().length > 0).map((x) => x.trim())
       : [],
@@ -64,6 +69,15 @@ export function agentFromConcept(concept: Concept): AgentConcept {
     job: concept.body.trim(),
     relPath: concept.relPath,
   };
+}
+
+function stringList(v: unknown): string[] {
+  return Array.isArray(v) ? v.filter((x): x is string => typeof x === "string" && x.trim().length > 0).map((x) => x.trim()) : [];
+}
+
+/** `context-sources:` plus any legacy string entries under `sources:` (never provenance objects). */
+export function contextSources(fm: Record<string, unknown>): string[] {
+  return [...new Set([...stringList(fm["context-sources"]), ...stringList(fm.sources)])];
 }
 
 export function agentsFromBundle(bundle: Bundle): AgentConcept[] {

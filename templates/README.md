@@ -40,7 +40,7 @@ of that kind is scaffolded (`init --kind <kind>`). Shipped today:
   nags, the next two weeks from the principal's calendar, the few messages
   that need a reply, and what each linked brain needs from this person,
   merged into one priority order. Declares
-  `sources: [brains, gmail, google-calendar]`; each is an honest gap until
+  `context-sources: [brains, gmail, google-calendar]`; each is an honest gap until
   configured. Bound to keep the boundary between brains: it never suggests
   copying private material into an organization's brain.
 - **person/compliance-ops** - "Life Admin": the personal obligations

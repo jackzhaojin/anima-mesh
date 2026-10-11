@@ -1,7 +1,6 @@
 ---
 type: fact
 title: "Founder day-job boundary"
-status: active
 date: 2026-03-10
 ---
 

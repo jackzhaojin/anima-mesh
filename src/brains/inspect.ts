@@ -1,9 +1,10 @@
 import { createHash } from "node:crypto";
-import { appendFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import * as path from "node:path";
 import { FsInstanceStore } from "../instance/store-fs.js";
 import { parseConcept, serializeConcept } from "../okf/frontmatter.js";
 import { conceptsByType } from "../okf/bundle-core.js";
+import { addLogEntry } from "../okf/log.js";
 import { localBrainOpener } from "./local.js";
 import { readLinkedBrain, openLinkedBrain, linkTokenEnv, type LinkedRead } from "../sources/brains.js";
 import {
@@ -230,6 +231,9 @@ export async function syncInherited(
         immutable: true,
         "gated-actions": c.gatedActions,
         "source-sha256": hash,
+        // OKF v0.2 provenance: a process wrote this, from the parent's constitution.
+        generated: { by: "process:anima-mesh-brains-sync", at: now.toISOString() },
+        sources: [{ id: c.from, resource: `brain://${c.from}/constitution.md`, title: `Constitution of brain ${c.from}` }],
       },
       body:
         `> Materialized by \`anima-mesh brains sync\` from brain \`${c.from}\` on ${date}. ` +
@@ -243,9 +247,13 @@ export async function syncInherited(
   if (result.written.length > 0) {
     const logFile = path.join(bundleDir, "log.md");
     if (existsSync(logFile)) {
-      appendFileSync(
+      writeFileSync(
         logFile,
-        `\n- **${date}** - Inherited constitution(s) synced from \`${link.id}\` by \`anima-mesh brains sync\`: ${result.written.join(", ")}.\n`,
+        addLogEntry(
+          readFileSync(logFile, "utf8"),
+          date,
+          `- **Update**: Inherited constitution(s) synced from \`${link.id}\` by \`anima-mesh brains sync\`: ${result.written.join(", ")}.`,
+        ),
         "utf8",
       );
     }

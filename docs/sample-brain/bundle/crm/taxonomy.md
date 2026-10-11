@@ -1,7 +1,6 @@
 ---
 type: crm-taxonomy
 title: "CRM taxonomy and binding rules"
-status: active
 date: 2026-06-01
 ---
 

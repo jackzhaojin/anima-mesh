@@ -1,7 +1,6 @@
 ---
 type: crm-org
 title: "Harborlight Media"
-status: active
 date: 2026-06-01
 ---
 

@@ -18,8 +18,9 @@ left to right:
 
 - **What the mesh knows** (`bundle/`): one concept per markdown file, typed
   by frontmatter. The constitution's hard limits are machine-read by the
-  gates; facts carry a `verified`/`unverified` status so an agent can tell
-  a checked fact from a lead; decisions are dated and immutable — changing
+  gates; facts carry OKF v0.2 trust (`verified:` records who checked what,
+  `sources:` where it came from) so an agent can tell a checked fact from a
+  lead ([okf-v0.2.md](okf-v0.2.md)); decisions are dated and immutable — changing
   course means a *new* decision superseding the old, so the reasoning trail
   never rewrites itself.
 - **Who does the work** (`bundle/agents/`): the roster, as files. More
@@ -69,7 +70,7 @@ Cognition is per-agent too: each file declares `model` + `harness`, and the
 instance config's `cognition.overrides` can reroute a harness at runtime —
 this instance once redirected its default vendor to another provider
 during an outage with a two-line config edit, no agent files touched. The
-same frontmatter carries the agent's reach: `sources:` opts into read-only
+same frontmatter carries the agent's reach: `context-sources:` opts into read-only
 external listings (a document cabinet, a docs repo), `web: <n>` budgets
 that many web searches per run — granted or refused out loud depending on
 what the effective harness can actually do — and `reads:` names the

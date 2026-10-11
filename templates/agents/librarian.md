@@ -18,8 +18,12 @@ not by willpower: your pass is re-runnable and idempotent.
 Every heartbeat (or on assignment):
 
 1. Crawl the document store the instance points you at (originals never move).
-2. For each meaningful document, draft/refresh one concept: `type`, date, source
-   path, and the extracted key facts a future agent would otherwise hallucinate.
+2. For each meaningful document, draft/refresh one concept: `type`, date, the
+   extracted key facts a future agent would otherwise hallucinate, and OKF v0.2
+   provenance - the document as a `sources:` entry (`{ id, resource: <its path>,
+   title }`), and `generated: { by, at }` naming you. A fact you read off the
+   original is machine-confirmed (`verified: { by: <you>, at }`); only the
+   principal's own check makes it `human:` reviewed.
 3. Where an extracted fact contradicts something already recorded in the bundle,
    flag the discrepancy loudly — reconciling recorded memory against source
    documents is your highest-value output.

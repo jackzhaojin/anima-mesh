@@ -1,5 +1,6 @@
 import type { Bundle, Concept } from "./bundle-core.js";
 import { conceptsByType } from "./bundle-core.js";
+import { LIFECYCLE_VALUES } from "./trust.js";
 
 /**
  * Concept types as declared schemas - the ontology layer (v2.0.0).
@@ -17,7 +18,7 @@ import { conceptsByType } from "./bundle-core.js";
  * title: Commitment
  * strict: true                # violations are errors (default: warnings)
  * properties:
- *   status: { kind: enum, values: [planned, confirmed, delivered], required: true }
+ *   stage:  { kind: enum, values: [planned, confirmed, delivered], required: true }
  *   date:   { kind: date, required: true }
  *   with:   { kind: link, target: crm-person }
  * ```
@@ -120,6 +121,8 @@ export function loadSchemas(bundle: Bundle): { schemas: Map<string, ConceptSchem
         issues.push({ level: "error", rule: "ontology/schema-property", path: c.relPath, message: `property '${prop}': ${spec}` });
       } else {
         properties[prop] = spec;
+        const reserved = reservedPropertyProblem(prop, spec);
+        if (reserved) issues.push({ level: "warning", rule: "ontology/reserved-property", path: c.relPath, message: reserved });
       }
     }
     schemas.set(fm.name, {
@@ -131,6 +134,26 @@ export function loadSchemas(bundle: Bundle): { schemas: Map<string, ConceptSchem
     });
   }
   return { schemas, issues };
+}
+
+/**
+ * OKF v0.2 gives a few frontmatter keys one meaning across every bundle
+ * (SPEC §5). A schema may constrain them only in that meaning: `status`
+ * is the lifecycle (draft | stable | deprecated), and the provenance/trust
+ * families are not domain properties at all. Domain workflow state belongs
+ * in a domain key (`stage:`, `state:`, ...).
+ */
+function reservedPropertyProblem(prop: string, spec: PropertySpec): string | null {
+  if (prop === "status") {
+    const values = spec.values ?? [];
+    if (values.every((v) => (LIFECYCLE_VALUES as readonly string[]).includes(v))) return null;
+    return `property 'status' is the OKF v0.2 lifecycle (${LIFECYCLE_VALUES.join(" | ")}); ` +
+      `put domain states (${values.filter((v) => !(LIFECYCLE_VALUES as readonly string[]).includes(v)).join(", ")}) under another key such as \`stage\``;
+  }
+  if (["sources", "generated", "verified", "stale_after", "usage_window"].includes(prop)) {
+    return `property '${prop}' is an OKF v0.2 provenance/trust/lifecycle field with a fixed shape - a schema should not redefine it`;
+  }
+  return null;
 }
 
 function isDateValue(v: unknown): boolean {

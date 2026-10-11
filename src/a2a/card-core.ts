@@ -34,8 +34,12 @@ export function buildAgentCardFromBundle(bundle: Bundle, config: InstanceConfig)
   const agents = agentsFromBundle(bundle);
 
   const index = getConcept(bundle, "index.md");
+  // OKF v0.2 index files carry no frontmatter (SPEC §8): the title is the
+  // body's first H1. A legacy `title:` key still wins where present.
   const meshTitle =
-    (typeof index?.frontmatter.title === "string" && index.frontmatter.title) || "AnimaMesh instance";
+    (typeof index?.frontmatter.title === "string" && index.frontmatter.title) ||
+    index?.body.match(/^#\s+(.+?)\s*$/m)?.[1] ||
+    "AnimaMesh instance";
   const persona = config.identity?.persona?.name;
 
   const skills: AgentCardSkill[] = [];

@@ -1,7 +1,6 @@
 ---
 type: decision
 title: "Cloud tier is the DEFAULT runtime"
-status: active
 date: 2026-04-02
 ---
 

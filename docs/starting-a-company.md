@@ -51,9 +51,9 @@ git-tracked plain files:
 | `animamesh.config.json` | the pairing: `engine.ref` pin + `engine.repo` (defect filing target), `cognition.overrides`, delivery, direction agent, identity/persona, activation gates, `localAgents` (interactive export selection/model mapping) |
 | `bundle/constitution.md` | immutable hard limits (machine-read by the gates) |
 | `bundle/facts/ decisions/ events/` | stable / dated-immutable / append-only knowledge |
-| `bundle/agents/*.md` | each agent as a concept file (level · model · harness · optional `sources:` · optional `web:`) |
+| `bundle/agents/*.md` | each agent as a concept file (level · model · harness · optional `context-sources:` · optional `web:`) |
 | `bundle/ops/` | scaffolded by init: `calendar.md` (what agents wake to check), `watch-list.md` (research focus), `schedule.md` (overrides and one-shot wakes); `nags.md` is opt-in afterwards — read into every prompt when present, reminders that repeat until done |
-| `bundle/index.md` + `log.md` | reserved (log is append-only) |
+| `bundle/index.md` + `log.md` | reserved (OKF v0.2: root index declares `okf_version`; log is date-grouped, newest first) |
 | `ledger/actions.jsonl` | the append-only action ledger (audit seam) |
 | `approvals/` `reports/` `drafts/` | the "needs you" gate + run artifacts |
 | `cloud/` | this company's `wrangler.jsonc` deploy configs |
@@ -121,11 +121,14 @@ grown instance looks like afterwards, see
 House rules that keep the bundle trustworthy as it grows:
 
 - One concept per file; corrections to events are new events; superseded
-  decisions are new dated decisions. `log.md` is append-only.
-- Facts carry `status:` — an unverified fact is a lead, not something to
-  file with the government. Verify against source documents before relying
-  on it, and never state a corporate fact from model recall: read the
-  concept.
+  decisions are new dated decisions. `log.md` entries are never rewritten;
+  new ones go on top (newest first).
+- Facts carry OKF v0.2 provenance and trust: `sources:` says where a fact
+  came from, `verified:` who checked it against what. A fact with no
+  `verified:` is a lead, not something to file with the government. Verify
+  against source documents before relying on it, and never state a
+  corporate fact from model recall: read the concept. The full writing
+  conventions are in [okf-v0.2.md](okf-v0.2.md).
 - The constitution is edited by the principal, by hand, with a decision
   entry — never by an AI session.
 
@@ -169,9 +172,9 @@ the hard way:
   none). A refused budget is stated in the agent's own prompt, so it
   reports the gap instead of imagining fetches.
 
-For live document context, add `sources: [onedrive]`, `sources:
-[google-drive]`, `sources: [github-docs]`, or a mix, to only the agents that
-need it. The harness inlines a current read-only listing during prompt
+For live document context, add `context-sources: [onedrive]`,
+`context-sources: [google-drive]`, `context-sources: [github-docs]`, or a mix,
+to only the agents that need it. The harness inlines a current read-only listing during prompt
 assembly. A missing or failed source is surfaced as an explicit context gap
 and does not abort the run. Listings carry metadata, not document bodies;
 an agent asks for a specific file with a `read-request`.
@@ -266,7 +269,7 @@ flow, in order:
    pivot changes (a research agent's subjects, a chief of staff's framing).
    Frontmatter and duties are editable; the git history is the promotion
    record.
-5. **Log and validate.** One append-only `log.md` entry telling the story,
+5. **Log and validate.** One new `log.md` entry (top of today's group) telling the story,
    then `pnpm cli validate` must stay PASS before committing.
 
 Because both runtimes read the same repo, the entire mesh operates under

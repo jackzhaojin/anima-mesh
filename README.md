@@ -65,10 +65,13 @@ Objects, repository, and secrets from this public engine.
   is down. There is no monolith coordinator, no shared work queue, no phase
   loop — coordination happens through judgment over shared state.
 - **The shared state is a brain repo** — a git-backed
-  [OKF](https://github.com/GoogleCloudPlatform/knowledge-catalog/tree/main/okf)-style **knowledge bundle**: one
+  [OKF v0.2](https://github.com/GoogleCloudPlatform/open-knowledge-format) **knowledge bundle**: one
   **concept** per file, a declared `type` in YAML frontmatter, reserved
-  `index.md` and `log.md`, and relative links forming a **machine-checked
-  knowledge graph** (the conformance pass verifies every link resolves).
+  `index.md` and `log.md`, links forming a **machine-checked knowledge
+  graph** (the conformance pass verifies every link resolves), and v0.2's
+  provenance, trust, and lifecycle fields (`sources:`, `verified:`,
+  `status:`, `stale_after:`) so every agent can tell a checked fact from a
+  lead and a current one from a stale one.
   Facts, decisions, events, the compliance calendar, the constitution, and
   every agent's own definition are concepts; so are front-office records —
   a CRM contact is a `crm-person` concept, not a row in someone else's SaaS.
@@ -87,7 +90,7 @@ your-brain/                      ← private instance (yours, never public)
   animamesh.config.json          ← the pairing: paths, identity, engine pin,
                                     brain kind + links to other brains
   bundle/                        ← the knowledge bundle — the ONE seam
-    index.md · log.md            ← reserved files
+    index.md · log.md            ← reserved files (okf_version; log newest first)
     constitution.md              ← immutable hard limits (machine-read gates)
     facts/ decisions/ events/    ← stable / dated-immutable / append-only
     ops/calendar.md              ← what agents wake up to check
@@ -108,7 +111,18 @@ Everything an instance knows is a **concept**; every concept declares a
 **type**; the **conformance pass** (`pnpm cli validate`, profiles `okf` and
 `animamesh`) enforces the shape — reserved files present, frontmatter
 parseable, `type` declared, agent concepts carrying their chokepoint fields,
-and the relative-link **knowledge graph resolving**. The checker is
+and the relative-link **knowledge graph resolving**.
+
+Since **v2.2** the format is **OKF v0.2**, which matters because agents keep
+writing the brain. Each concept can say where it came from (`sources:`), who
+wrote it (`generated:`), who checked it against what (`verified:`, by a
+`human:` or a machine actor), whether it is current (`status: draft |
+stable | deprecated`), and when it goes stale (`stale_after:`). The engine
+derives trust tiers from those fields in code, names stale, draft, and
+deprecated knowledge in every agent's context, and reports it with
+`anima-mesh okf trust`. `anima-mesh okf migrate` upgrades an older brain.
+The writing conventions for AI sessions are in
+[docs/okf-v0.2.md](docs/okf-v0.2.md). The checker is
 deliberately type-agnostic beyond that: a new operational domain is a folder
 of new concept types under the same validator, and every agent can read it
 the moment it exists — no schema migration, no plugin, no vendor API.
@@ -134,7 +148,7 @@ someone's world (`person`, `org`, `team`, or `group`), and brains connect
   before any prompt sees them.
 - **Brains link, and both sides must agree.** `member-of`/`has-member`,
   `child-of`/`parent-of`, `peer-of`: a link is live only when both configs
-  declare it with inverse relations. A hub that declares `sources: [brains]`
+  declare it with inverse relations. A hub that declares `context-sources: [brains]`
   sees what each linked brain shares with it, read-only, every run.
 - **The owner of the data decides what crosses.** `share:` markings grant a
   concept to an audience (deny by default); `markings:` like `finance` or
@@ -303,6 +317,7 @@ separately credentialed dashboard Worker, and one evidence commit per run.
 | [docs/ontology.md](docs/ontology.md) | Concept-type schemas, the ontology view, and the mapping to Palantir's Ontology |
 | [CHANGELOG.md](CHANGELOG.md) | Each minor release line: its value, maturity, and operator upgrade steps |
 | [docs/engine-vs-instance.md](docs/engine-vs-instance.md) | The sorting rule: what belongs in this public engine vs a private brain |
+| [docs/okf-v0.2.md](docs/okf-v0.2.md) | OKF v0.2 in AnimaMesh: provenance, trust, lifecycle; how AI writes a memory file; migrating |
 | [docs/okf-crm-domain.md](docs/okf-crm-domain.md) | The CRM domain shelf: typed concepts, lifecycle stages, compliance screens as data |
 | [docs/learnings/](docs/learnings/README.md) | Hard-won platform knowledge (vendor gateways, Workers egress, …) with evidence |
 | [CLAUDE.md](CLAUDE.md) | Working agreements for AI coding sessions in this repo |
@@ -340,7 +355,9 @@ harness choice. `anthropic-api-key` and `claude-agent-sdk-api-key` run
 Claude on metered API credits, and `codex` and `openai-codex` run on a
 ChatGPT plan. Subprocesses never pick up a stray exported key. A
 subscription Codex agent runs on the laptop only, because chatgpt.com
-blocks Cloudflare Workers egress.
+blocks Cloudflare Workers egress. **v2.2** moves every brain to OKF v0.2:
+provenance, trust tiers, lifecycle, and staleness as frontmatter the engine
+reads, a newest-first log, and `okf trust` / `okf migrate`.
 
 The cloud tier introduced in v0.3 is the primary execution path; the CLI
 remains the bootstrap, operator, and subprocess-harness path. The 0.x lines

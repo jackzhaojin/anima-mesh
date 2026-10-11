@@ -9,7 +9,7 @@ heartbeat: weekly
 whitelist: []
 # Opt-in read source: the company's SharePoint/OneDrive library, read-only
 # over Microsoft Graph — the harness inlines its listing into the prompt.
-sources: [onedrive]
+context-sources: [onedrive]
 commercial: false
 date: 2026-03-10
 ---

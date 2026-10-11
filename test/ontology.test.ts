@@ -28,7 +28,7 @@ const commitmentSchema = (strict: boolean) =>
       title: "Commitment",
       strict,
       properties: {
-        status: { kind: "enum", values: ["planned", "confirmed", "delivered"], required: true },
+        stage: { kind: "enum", values: ["planned", "confirmed", "delivered"], required: true },
         date: { kind: "date", required: true },
         with: { kind: "link", target: "person" },
         tags: { kind: "list", of: "enum", values: ["talk", "family"] },
@@ -51,7 +51,7 @@ describe("concept-type schemas", () => {
       "people/kim.md": concept("person", {}, "# Kim\n"),
       "commitments/talk.md": concept(
         "commitment",
-        { status: "confirmed", date: "2026-11-02", with: "../people/kim.md", tags: ["talk"], paid: false },
+        { stage: "confirmed", date: "2026-11-02", with: "../people/kim.md", tags: ["talk"], paid: false },
         "# A talk\n",
       ),
       "facts/free-form.md": concept("fact", { anything: 1 }, "# No schema, no checks\n"),
@@ -66,15 +66,15 @@ describe("concept-type schemas", () => {
       "facts/not-a-person.md": concept("fact", {}, "# Fact\n"),
       "commitments/bad.md": concept(
         "commitment",
-        { status: "maybe", with: "../facts/not-a-person.md", tags: ["talk", "nope"], paid: "yes" },
+        { stage: "maybe", with: "../facts/not-a-person.md", tags: ["talk", "nope"], paid: "yes" },
         "# Bad\n",
       ),
-      "commitments/dangling.md": concept("commitment", { status: "planned", date: "soon", with: "../people/ghost.md" }, "# D\n"),
+      "commitments/dangling.md": concept("commitment", { stage: "planned", date: "soon", with: "../people/ghost.md" }, "# D\n"),
     });
     const messages = checkSchemas(bundle).map((i) => `${i.path}: ${i.message}`);
     expect(messages).toEqual(
       expect.arrayContaining([
-        expect.stringMatching(/bad\.md: commitment\.status must be one of planned \| confirmed \| delivered/),
+        expect.stringMatching(/bad\.md: commitment\.stage must be one of planned \| confirmed \| delivered/),
         expect.stringMatching(/bad\.md: commitment\.date is required/),
         expect.stringMatching(/bad\.md: commitment\.with link .* points at a 'fact', expected 'person'/),
         expect.stringMatching(/bad\.md: commitment\.tags must be one of talk \| family, got "nope"/),
@@ -90,7 +90,7 @@ describe("concept-type schemas", () => {
   it("non-strict schemas warn without failing the bundle", async () => {
     const bundle = await bundleWith({
       "ontology/commitment.md": commitmentSchema(false),
-      "commitments/bad.md": concept("commitment", { status: "maybe" }, "# Bad\n"),
+      "commitments/bad.md": concept("commitment", { stage: "maybe" }, "# Bad\n"),
     });
     const report = checkConformance(bundle, "animamesh");
     expect(report.ok).toBe(true);
@@ -117,8 +117,8 @@ describe("the ontology view", () => {
     const bundle = await bundleWith({
       "ontology/commitment.md": commitmentSchema(false),
       "people/kim.md": concept("person", { share: ["org"] }, "# Kim\n"),
-      "commitments/one.md": concept("commitment", { status: "planned", date: "2026-11-02" }, "With [Kim](../people/kim.md); see brain://org/ops/calendar.md.\n"),
-      "commitments/two.md": concept("commitment", { status: "planned", date: "2026-11-03" }, "With [Kim](../people/kim.md).\n"),
+      "commitments/one.md": concept("commitment", { stage: "planned", date: "2026-11-02" }, "With [Kim](../people/kim.md); see brain://org/ops/calendar.md.\n"),
+      "commitments/two.md": concept("commitment", { stage: "planned", date: "2026-11-03" }, "With [Kim](../people/kim.md).\n"),
     });
     const view = buildOntology(bundle);
     const byType = Object.fromEntries(view.types.map((t) => [t.type, t]));

@@ -35,10 +35,18 @@ pnpm build         # emit dist/ (tsconfig.build.json)
 
 ```
 src/
-  okf/          frontmatter parse/serialize · bundle loader · conformance
-                (profiles: "okf" base, "animamesh" adds constitution/agent rules)
-                · schema.ts (concept-type schemas: the ontology contract) ·
-                ontology.ts (derived type catalog + link graph)
+  okf/          OKF v0.2 (v2.2.0; docs/okf-v0.2.md). frontmatter parse/
+                serialize · bundle loader · conformance (profiles: "okf" =
+                SPEC §11, families as warnings; "animamesh" adds root index/
+                log, constitution/agent rules) · trust.ts (Workers-safe:
+                actors, trust tiers, lifecycle, stale_after, provenance,
+                family checks, trustDigest) · log.ts (newest-first
+                addLogEntry, checkLog, convertLegacyLog - every log writer
+                goes through it) · migrate.ts (`okf migrate`: mechanical
+                v0.1→v0.2 only, never guesses trust) · schema.ts
+                (concept-type schemas: the ontology contract; `status` is
+                reserved for lifecycle) · ontology.ts (derived type catalog
+                + link graph)
   ledger/       append-only JSONL ledger + integrity/completeness assertions
   gates/        ApprovalStore (file-based needs-you) · gatekeeper (constitution
                 gates + ladder enforcement — GateViolation on any breach)
@@ -107,7 +115,7 @@ src/
   init/         interview (file/flags/interactive/agentic) · scaffoldBrain
                 (acceptance test: its own output must pass conformance)
   cli.ts        init/validate/run/gate/report/deliver/heartbeat/card/
-                export-local/defect/brains/ontology/connect/templates -
+                export-local/defect/brains/ontology/okf/connect/templates -
                 main(argv) → exit code,
                 driven in-process by tests; `github:owner/repo#ref`
                 instance scheme runs against a remote brain
