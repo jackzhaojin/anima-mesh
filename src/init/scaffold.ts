@@ -52,6 +52,10 @@ const DEFAULT_AGENTS = ["compliance-ops"];
 /** A person brain starts with its hub and its obligations keeper (person variants). */
 const DEFAULT_PERSON_AGENTS = ["chief-of-staff", "compliance-ops"];
 
+function localDay(now: Date): string {
+  return [now.getFullYear(), String(now.getMonth() + 1).padStart(2, "0"), String(now.getDate()).padStart(2, "0")].join("-");
+}
+
 function slugOf(text: string): string {
   return text
     .toLowerCase()
@@ -75,8 +79,10 @@ export async function scaffoldBrain(targetDir: string, answers: InitAnswers): Pr
   if (existsSync(root) && readdirSync(root).length > 0) {
     throw new Error(`target directory ${root} is not empty — init only scaffolds from nothing`);
   }
-  const nowIso = answers.now ?? new Date().toISOString();
-  const date = nowIso.slice(0, 10);
+  // The scaffolding human's calendar day, not UTC's: an evening init in a
+  // western timezone must not date its first event "tomorrow". An injected
+  // clock (tests) is taken literally.
+  const date = answers.now ? answers.now.slice(0, 10) : localDay(new Date());
   const kind: BrainKind = answers.brainKind ?? "org";
   if (!BRAIN_KINDS.includes(kind)) throw new Error(`init: brain kind must be one of ${BRAIN_KINDS.join("|")}`);
   const isPerson = kind === "person";
