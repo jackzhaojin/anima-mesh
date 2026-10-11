@@ -1,5 +1,5 @@
 import { describe, it, expect, afterEach } from "vitest";
-import { rm, readFile, writeFile } from "node:fs/promises";
+import { rm, readFile, readdir, writeFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import * as path from "node:path";
 import { makeTree, concept } from "./helpers.js";
@@ -60,6 +60,11 @@ describe("init --kind person", () => {
     expect(existsSync(path.join(dir, "bundle/facts/person.md"))).toBe(true);
     expect(await readFile(path.join(dir, "bundle/ops/calendar.md"), "utf8")).toContain("Obligations calendar");
     expect(checkConformance(await loadBundle(path.join(dir, "bundle")), "animamesh").ok).toBe(true);
+    // The interactive tier names the brain for what it models, too.
+    const [artifact] = await readdir(path.join(dir, ".claude/agents"));
+    const local = await readFile(path.join(dir, ".claude/agents", artifact!), "utf8");
+    expect(local).toContain("an AnimaMesh personal brain (`ada` - Ada Lovelace)");
+    expect(local).not.toContain("company-of-0");
   });
 
   it("rejects an unknown kind and a reserved id", async () => {

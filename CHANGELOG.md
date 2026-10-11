@@ -3,7 +3,7 @@
 AnimaMesh is pre-1.0, so this history is organized by **minor release line**:
 the capability boundary operators actually adopt. Patch tags are deliberately
 rolled into the value and maturity of their minor rather than narrated one by
-one. The latest tag is **v0.18.0**.
+one. The latest tag is **v0.18.1**.
 
 ## Upgrade procedure
 
@@ -32,8 +32,17 @@ The ledger remains append-only; never "migrate" it by editing old entries.
 
 ## [v0.18.x] - layered and multi-player brains: the mesh of brains
 
-**Latest tag: v0.18.0 · 2026-10-10** *(planned minor: the operator asked for
+**Latest tag: v0.18.1 · 2026-10-10** *(planned minor: the operator asked for
 two new feature lines, layering and multi-player, before the work started)*
+
+**v0.18.1 - the interactive tier names the brain too.** `export-local`
+artifacts opened with "an AnimaMesh company-of-0 mesh" for every brain; they
+now use the same kind-aware phrase as scheduled runs ("an AnimaMesh personal
+brain (`<id>` - <name>)" for a person brain). Also in the v0.18.0 line before
+tagging: a new brain is dated by the local calendar day (not UTC), `gate`
+without `--by` decides as the principal's member record, and a person brain
+may list its own principal as a member without a link warning.
+Re-run `anima-mesh export-local` to refresh existing artifacts.
 
 **The limit it removes.** One brain meant one company and one human. A
 person who runs a company, sits on a team inside it, and has a life outside
