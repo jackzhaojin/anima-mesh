@@ -348,7 +348,7 @@ async function buildDirectionPrompt(
 
   return [
     preamble,
-    await bundleContext(store, config),
+    await bundleContext(store, config, sourceCtx.now),
     // Issue #5: direction runs edit the same working artifacts scheduled runs
     // read (e.g. prep packs via draft-request) — they need the same declared
     // reads, or a "refresh that pack" direction runs blind on the current one.

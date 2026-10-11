@@ -1,7 +1,6 @@
 ---
 type: constitution
 title: "Constitution — immutable hard limits"
-status: active
 date: 2026-03-10
 immutable: true
 ---

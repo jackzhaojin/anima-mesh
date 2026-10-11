@@ -1,7 +1,5 @@
 ---
-type: index
-title: "Copperline Labs — brain bundle index"
-date: 2026-03-10
+okf_version: "0.2"
 ---
 
 # Brain bundle — index

@@ -1,8 +1,8 @@
 ---
 type: cabinet
 title: "EIN assignment letter (CP 575)"
-status: verified
 date: 2025-09-22
+verified: { by: claude-code/claude-sonnet-5, at: 2026-03-18T00:00:00-04:00, note: librarian read of the cabinet original }
 ---
 
 # EIN assignment letter

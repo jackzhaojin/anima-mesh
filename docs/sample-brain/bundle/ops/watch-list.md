@@ -1,7 +1,6 @@
 ---
 type: watch-list
 title: "Research-watch subjects"
-status: active
 date: 2026-03-10
 ---
 

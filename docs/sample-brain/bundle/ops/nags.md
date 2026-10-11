@@ -1,7 +1,6 @@
 ---
 type: nags
 title: "Active nags — surfaced every heartbeat until done"
-status: active
 date: 2026-07-02
 ---
 

@@ -1,9 +1,10 @@
 ---
 type: fact
 title: "Corporate identity"
-status: verified
 date: 2026-03-18
-sources: [cabinet/2025-09-15-certificate-of-incorporation.md]
+sources:
+  - { id: certificate, resource: /cabinet/2025-09-15-certificate-of-incorporation.md, title: Certificate of Incorporation }
+verified: { by: claude-code/claude-sonnet-5, at: 2026-03-18T00:00:00-04:00, note: librarian read of the cabinet original }
 ---
 
 # Corporate identity

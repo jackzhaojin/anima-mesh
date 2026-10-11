@@ -6,7 +6,7 @@ import { gmailSection, calendarSection, driveSection } from "./google.js";
 
 /**
  * Source registry — Workers-safe (fetch-based sources only, injected env).
- * An agent opts in via `sources:` in its concept frontmatter; the harness
+ * An agent opts in via `context-sources:` in its concept frontmatter; the harness
  * inlines each source's context section at prompt-assembly time.
  *
  * Failure posture: a source that is declared but unconfigured or unreachable

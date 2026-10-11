@@ -17,11 +17,27 @@ ones above it).
   `conceptsByType`), Workers-safe: the okf/ instance of the core/node split
   (disk walking stays in `bundle.ts`; remote loading in
   `instance/store-github.ts`).
-- `conformance.ts` — the validator. Profile `okf` = reserved `index.md` +
-  `log.md`, every concept parses and has a `type`. Profile `animamesh` adds:
-  constitution present and `immutable: true`, decisions/events dated, agent
-  concepts declare `model`/`harness`/`level`. Broken relative links are
+- `conformance.ts` — the validator. Profile `okf` = OKF v0.2 SPEC §11: every
+  non-reserved concept parses and has a `type`; `index.md`/`log.md` (reserved
+  at any level) are structure, not concepts; the v0.2 families, index/log
+  shape, and the root `okf_version` are warnings (the spec forbids rejecting
+  on them). Profile `animamesh` adds: root index + log present, constitution
+  present and `immutable: true`, decisions/events dated, agent concepts
+  declare `model`/`harness`/`level` (and warns on read-source opt-ins still
+  under `sources:`). Broken links, relative or `/bundle-relative`, are
   warnings, not errors.
+- `trust.ts` - OKF v0.2 consumer side (v2.2.0), Workers-safe: `parseActor`
+  (`human:` / `process:` / `<producer>/<version>`), `trustTier` (derived from
+  `verified`, a bare mapping is a one-element list), `lifecycle`, `isStale`,
+  `provenance`, `generatedAt` (falls back to v0.1 `timestamp`),
+  `checkFamilies` (the warnings), `trustDigest` (behind `okf trust` and the
+  harness's *Knowledge trust* section).
+- `log.ts` - OKF v0.2 log files: `addLogEntry` (newest first, top of the
+  day's `## YYYY-MM-DD` group; every engine log writer uses it), `checkLog`,
+  and `convertLegacyLog` (moves entries, never rewrites their words).
+- `migrate.ts` - `okf migrate`: the mechanical v0.1→v0.2 rewrite, line-level
+  so YAML comments survive; everything needing judgment (who verified,
+  free-text provenance, domain `status`) is reported, never guessed.
 - `schema.ts` - the ontology layer (v2.0): `concept-type` concepts declare a
   type's properties (kinds, required, enums, lists, typed links);
   `checkSchemas` enforces them (warnings, errors when `strict: true`) and
@@ -233,7 +249,7 @@ default the store to the local directory and register subprocess providers.
 
 The inverse of channels: document stores an agent's prompt is assembled
 *from*, read-only by construction (adapters expose listing + content reads,
-nothing else). Agents opt in per-concept via `sources:` frontmatter;
+nothing else). Agents opt in per-concept via `context-sources:` frontmatter;
 `run-core` inlines each declared source's section at prompt-assembly time, so
 L1 runs still need no tool access. Failure posture: unconfigured or
 unreachable sources become honest prompt sections ("do not guess at cabinet

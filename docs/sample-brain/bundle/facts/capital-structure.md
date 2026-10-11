@@ -1,7 +1,6 @@
 ---
 type: fact
 title: "Capital structure — founding events"
-status: unverified
 date: 2026-03-18
 ---
 

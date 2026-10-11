@@ -1,8 +1,8 @@
 ---
 type: cabinet
 title: "Certificate of Incorporation — Copperline Labs, Inc."
-status: verified
 date: 2025-09-15
+verified: { by: claude-code/claude-sonnet-5, at: 2026-03-18T00:00:00-04:00, note: librarian read of the cabinet original }
 ---
 
 # Certificate of Incorporation

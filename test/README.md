@@ -14,6 +14,16 @@ everything builds in temp dirs via `helpers.ts` and runs against
   conformance catches missing index/log, missing `type`, non-immutable
   constitutions, undated decisions, agent concepts without chokepoint fields;
   broken links warn without failing.
+- **okf-v02.test.ts** - OKF v0.2 (v2.2.0): actor parsing, offset-required
+  datetimes, trust tiers (a malformed `verified` never forges one),
+  lifecycle default and staleness, every family warning (and the spec's own
+  example staying clean); reserved files aren't concepts; `okf_version`;
+  `/bundle-relative` links; agent `context-sources:` and the legacy warning;
+  schemas can't give `status` domain values; newest-first log writing,
+  legacy log conversion that keeps every word and is idempotent; `okf
+  migrate` (comments survive, judgment calls reported, migrated bundle
+  validates clean, CLI dry-run vs `--write`); the harness's Knowledge trust
+  section; the agent card titling from the index H1.
 - **ledger-gates.test.ts** — the safety layer as behavior: ledgers only grow;
   corruption is detected; approvals are terminal; the ladder blocks
   above-level actions; gated types without a *matching approved* record throw

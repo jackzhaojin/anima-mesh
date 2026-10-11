@@ -1,13 +1,21 @@
 import type { Bundle, Concept } from "./bundle-core.js";
 import { conceptsByType, getConcept } from "./bundle-core.js";
 import { checkSchemas } from "./schema.js";
+import { checkFamilies, isReservedFile, OKF_VERSION } from "./trust.js";
+import { checkLog } from "./log.js";
 
 /**
  * Conformance profiles:
- *  - `okf`       — the OKF v0.1 minimal surface: index.md + log.md reserved,
- *                  every concept has parseable frontmatter with a `type`.
- *  - `animamesh` — okf plus the engine's operating requirements: a constitution
- *                  concept marked immutable, and dated decisions/events.
+ *  - `okf`       - OKF v0.2 (SPEC §11): every non-reserved `.md` has parseable
+ *                  frontmatter with a non-empty `type`. `index.md`/`log.md` are
+ *                  reserved at any level and are NOT concepts; their §8/§9
+ *                  structure, the provenance/trust/lifecycle families (§5),
+ *                  and the declared `okf_version` are checked as warnings -
+ *                  the spec makes them soft guidance a consumer must not
+ *                  reject on.
+ *  - `animamesh` - okf plus the engine's operating requirements: root
+ *                  index.md + log.md present, a constitution concept marked
+ *                  immutable, dated decisions/events, agent chokepoint fields.
  *
  * The same check validates a hand-built brain and the output of `init` —
  * the engine is tested by the same act that demos it.
@@ -74,12 +82,40 @@ export function checkConformance(
   const warn = (rule: string, message: string, p?: string) =>
     issues.push({ level: "warning", rule, message, path: p });
 
-  // R1/R2 — reserved files exist at the bundle root.
-  if (!getConcept(bundle, "index.md")) err("okf/index", "bundle is missing reserved index.md at its root");
-  if (!getConcept(bundle, "log.md")) err("okf/log", "bundle is missing reserved log.md at its root");
+  // R1/R2 - reserved files (SPEC §3.1, §8, §9): structure, not concepts.
+  for (const c of bundle.concepts.filter((x) => isReservedFile(x.relPath))) {
+    if (c.parseError) {
+      err("okf/frontmatter-parse", `frontmatter failed to parse: ${c.parseError}`, c.relPath);
+      continue;
+    }
+    if (c.relPath.endsWith("log.md")) {
+      for (const i of checkLog(c.body, { hadFrontmatter: !c.missingFrontmatter })) warn(i.rule, i.message, c.relPath);
+      continue;
+    }
+    const keys = Object.keys(c.frontmatter);
+    const allowed = c.relPath === "index.md" ? ["okf_version"] : [];
+    const extra = keys.filter((k) => !allowed.includes(k));
+    if (extra.length > 0) {
+      warn(
+        "okf/index-frontmatter",
+        `index files carry no frontmatter${c.relPath === "index.md" ? " except `okf_version`" : ""} (found: ${extra.join(", ")})`,
+        c.relPath,
+      );
+    }
+  }
+  const rootIndex = getConcept(bundle, "index.md");
+  if (rootIndex && !rootIndex.parseError) {
+    const declared = rootIndex.frontmatter.okf_version;
+    if (declared === undefined) {
+      warn("okf/version", `bundle-root index.md does not declare \`okf_version: "${OKF_VERSION}"\``, "index.md");
+    } else if (String(declared) !== OKF_VERSION) {
+      warn("okf/version", `bundle declares okf_version ${JSON.stringify(declared)}; this engine reads OKF ${OKF_VERSION} (best-effort)`, "index.md");
+    }
+  }
 
-  // R3 — every concept parses and declares a type.
+  // R3 - every concept parses and declares a type.
   for (const c of bundle.concepts) {
+    if (isReservedFile(c.relPath)) continue;
     if (c.parseError) {
       err("okf/frontmatter-parse", `frontmatter failed to parse: ${c.parseError}`, c.relPath);
       continue;
@@ -93,16 +129,30 @@ export function checkConformance(
     }
   }
 
-  // R4 — relative markdown links resolve (warning: knowledge graphs drift).
+  // R4 - markdown links resolve (warning: knowledge graphs drift, and SPEC
+  // §6.1 says a broken link is not-yet-written knowledge, never malformed).
+  // Bundle-relative `/x.md` links (the form v0.2 recommends) resolve from
+  // the bundle root.
+  const relPaths = new Set(bundle.concepts.map((x) => x.relPath));
   for (const c of bundle.concepts) {
-    if (c.parseError || c.missingFrontmatter) continue;
+    if (c.parseError || (c.missingFrontmatter && !isReservedFile(c.relPath))) continue;
     for (const match of c.body.matchAll(LINK_RE)) {
       const target = match[1]!;
-      if (/^[a-z]+:\/\//i.test(target) || target.startsWith("/")) continue;
+      if (/^[a-z]+:\/\//i.test(target)) continue;
+      if (target.startsWith("/")) {
+        if (!relPaths.has(target.slice(1))) warn("okf/broken-link", `bundle-relative link does not resolve: ${target}`, c.relPath);
+        continue;
+      }
       if (!linkExists(c, target)) {
         warn("okf/broken-link", `relative link does not resolve: ${target}`, c.relPath);
       }
     }
+  }
+
+  // R6 - the OKF v0.2 provenance / trust / lifecycle / computation families.
+  for (const c of bundle.concepts) {
+    if (isReservedFile(c.relPath) || c.parseError || c.missingFrontmatter) continue;
+    for (const i of checkFamilies(c)) warn(i.rule, i.message, i.path);
   }
 
   // R5 - the ontology: concepts whose type declares a schema (a
@@ -111,6 +161,11 @@ export function checkConformance(
   issues.push(...checkSchemas(bundle));
 
   if (profile === "animamesh") {
+    // A0 - the engine reads the root index and log every run (bundle context,
+    // the agent card, brains sync): OKF makes them optional, AnimaMesh does not.
+    if (!getConcept(bundle, "index.md")) err("okf/index", "bundle is missing reserved index.md at its root");
+    if (!getConcept(bundle, "log.md")) err("okf/log", "bundle is missing reserved log.md at its root");
+
     // A1 — a constitution concept exists and is marked immutable.
     const constitutions = conceptsByType(bundle, "constitution");
     if (constitutions.length === 0) {
@@ -138,6 +193,15 @@ export function checkConformance(
       const level = c.frontmatter.level;
       if (level !== "L1" && level !== "L2" && level !== "L3" && level !== "L4") {
         err("animamesh/agent-level", "agent concept must declare level L1|L2|L3|L4", c.relPath);
+      }
+      // v2.2.0: OKF v0.2 reserves `sources:` for provenance; the read-source
+      // opt-in is `context-sources:`. Legacy string entries still work.
+      if (Array.isArray(c.frontmatter.sources) && c.frontmatter.sources.some((x) => typeof x === "string")) {
+        warn(
+          "animamesh/agent-context-sources",
+          "read-source opt-ins moved to `context-sources:` (OKF v0.2 `sources:` is provenance) - `anima-mesh okf migrate` rewrites it",
+          c.relPath,
+        );
       }
     }
 

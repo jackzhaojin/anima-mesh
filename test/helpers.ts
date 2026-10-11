@@ -25,11 +25,11 @@ export function concept(type: string, extra: Record<string, unknown>, body: stri
   return `---\n${fmLines.join("\n")}\n---\n\n${body}\n`;
 }
 
-/** Smallest bundle that passes the `okf` profile. */
+/** Smallest OKF v0.2 bundle the engine accepts: a declared root index and a log, no concepts. */
 export function minimalOkfFiles(): Record<string, string> {
   return {
-    "index.md": concept("index", {}, "# Index\n"),
-    "log.md": concept("log", {}, "# Log\n"),
+    "index.md": '---\nokf_version: "0.2"\n---\n\n# Index\n',
+    "log.md": "# Log\n",
   };
 }
 

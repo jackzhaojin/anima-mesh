@@ -83,7 +83,7 @@ continued, and a gateway that refuses the tool degrades the run — correcting
 the agent mid-prompt and marking `degraded` — instead of failing the beat.
 
 **External context** crosses a separate, read-only seam. An agent opts in with
-`sources:` in its concept frontmatter; prompt assembly fetches a current listing
+`context-sources:` in its concept frontmatter; prompt assembly fetches a current listing
 from `onedrive` (Microsoft Graph) or `github-docs` (GitHub REST in Workers, or a
 local working tree on the Node tier) and inlines it before cognition runs.
 Source adapters cannot write. An unavailable source becomes an explicit gap in

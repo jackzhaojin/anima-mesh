@@ -27,6 +27,8 @@ import { inspectBrains, syncInherited } from "./brains/inspect.js";
 import { brainIssues, assertMayDecide, BRAIN_KINDS } from "./brains/core.js";
 import { connectGoogle } from "./connect/google.js";
 import { buildOntology, formatOntology } from "./okf/ontology.js";
+import { trustDigest, OKF_VERSION } from "./okf/trust.js";
+import { migrateBundle } from "./okf/migrate.js";
 import type { BrainKind } from "./instance/config-core.js";
 import { execFileSync } from "node:child_process";
 import { writeFileSync } from "node:fs";
@@ -66,6 +68,8 @@ export async function main(argv: string[], io: { log: (s: string) => void; error
         return await cmdConnect(rest, io);
       case "ontology":
         return await cmdOntology(rest, io);
+      case "okf":
+        return await cmdOkf(rest, io);
       case "templates":
         io.log(listAgentTemplates().join("\n"));
         return 0;
@@ -106,6 +110,9 @@ function usage(): string {
     "  anima-mesh brains [--instance dir]          who this brain is, its links, who can see what",
     "  anima-mesh brains sync [--instance dir]     materialize ancestor constitutions (child brains)",
     "  anima-mesh ontology [--instance dir]        type catalog, schemas, link types, cross-brain refs",
+    "  anima-mesh okf trust [--instance dir]       OKF v0.2 trust tiers, lifecycle, stale + unattributed concepts",
+    "  anima-mesh okf migrate [--instance dir] [--write]",
+    "                        OKF v0.1 -> v0.2 mechanical rewrite (dry run unless --write); lists what needs judgment",
     "  anima-mesh connect google [--instance dir] [--port N] [--no-open]",
     "                        one-time READ-ONLY Gmail + Calendar + Drive consent for the principal",
     "  anima-mesh templates",
@@ -440,6 +447,60 @@ async function cmdOntology(args: string[], io: { log: (s: string) => void }): Pr
   const brain = instance?.config.brain;
   io.log(formatOntology(buildOntology(bundle), brain ? `${brain.id} (${brain.kind})` : path.basename(target)));
   return 0;
+}
+
+async function cmdOkf(args: string[], io: { log: (s: string) => void; error: (s: string) => void }): Promise<number> {
+  const positional = args.filter((a, i) => !a.startsWith("--") && args[i - 1] !== "--instance");
+  const sub = positional[0];
+  const target = path.resolve(flag(args, "instance") ?? positional[1] ?? ".");
+  const instance = existsSync(path.join(target, CONFIG_FILENAME)) ? loadInstance(target) : undefined;
+  const bundleDir = instance?.bundleDir ?? target;
+  if (sub === "trust") {
+    const bundle = await loadBundle(bundleDir);
+    const d = trustDigest(bundle);
+    const lines = [
+      `OKF v${OKF_VERSION} trust - ${d.total} concept(s)`,
+      `  tiers:     ${d.tiers["human-reviewed"]} human-reviewed · ${d.tiers["machine-confirmed"]} machine-confirmed · ${d.tiers.unverified} unverified`,
+      `  lifecycle: ${d.lifecycle.stable} stable · ${d.lifecycle.draft} draft · ${d.lifecycle.deprecated} deprecated`,
+      `  provenance: ${d.total - d.unattributed.length} attributed (sources or generated) · ${d.unattributed.length} unattributed`,
+    ];
+    const show = (label: string, cs: { relPath: string }[]) => {
+      if (cs.length) lines.push("", `${label} (${cs.length}):`, ...cs.map((c) => `  ${c.relPath}`));
+    };
+    show("stale (past stale_after)", d.stale);
+    show("draft", d.drafts);
+    show("deprecated", d.deprecated);
+    io.log(lines.join("\n"));
+    return 0;
+  }
+  if (sub === "migrate") {
+    const files = new Map<string, string>();
+    const walk = (dir: string, rel: string) => {
+      for (const e of readdirSync(dir, { withFileTypes: true })) {
+        if (e.name.startsWith(".") || e.name === "node_modules") continue;
+        const abs = path.join(dir, e.name);
+        const r = rel ? `${rel}/${e.name}` : e.name;
+        if (e.isDirectory()) walk(abs, r);
+        else if (e.isFile() && e.name.endsWith(".md")) files.set(r, readFileSync(abs, "utf8"));
+      }
+    };
+    walk(bundleDir, "");
+    const result = migrateBundle(files);
+    const write = hasFlag(args, "write");
+    for (const c of result.changes) io.log(`${write ? "changed" : "would change"} ${c.path}: ${c.what}`);
+    if (write) for (const [rel, text] of result.files) writeFileSync(path.join(bundleDir, rel), text, "utf8");
+    if (result.leftovers.length) {
+      io.log(`\nneeds judgment (${result.leftovers.length}) - the mechanical pass never guesses trust or provenance:`);
+      for (const l of result.leftovers) io.log(`  [${l.rule}] ${l.path}: ${l.detail}`);
+    }
+    io.log(
+      `\n${result.files.size} file(s) ${write ? "rewritten" : "would be rewritten (dry run - pass --write)"}; ` +
+        `${result.leftovers.length} leftover(s). Then: anima-mesh validate${instance ? ` ${target}` : ""}`,
+    );
+    return 0;
+  }
+  io.error("okf: use `okf trust` or `okf migrate [--write]`");
+  return 2;
 }
 
 async function cmdConnect(args: string[], io: { log: (s: string) => void; error: (s: string) => void }): Promise<number> {

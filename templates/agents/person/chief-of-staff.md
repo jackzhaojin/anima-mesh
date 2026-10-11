@@ -12,7 +12,7 @@ whitelist: []
 # person belongs to share back (an employer, a company they run, a team).
 # Each one is an honest gap until configured - `anima-mesh connect google`
 # for the account, `links` in animamesh.config.json for the brains.
-sources: [brains, gmail, google-calendar]
+context-sources: [brains, gmail, google-calendar]
 commercial: false
 ---
 

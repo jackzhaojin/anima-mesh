@@ -65,7 +65,7 @@ the example file shows the shape.
 | `DISCORD_BOT_TOKEN` / `DISCORD_DM_USER_ID` | brief + failure DMs; the direction sender gate |
 | `BEAT_TRIGGER_TOKEN` | gates manual `POST /beat` (mint with `openssl rand -hex 32`) |
 | `GMAIL_CLIENT_ID` / `GMAIL_CLIENT_SECRET` / `GMAIL_REFRESH_TOKEN` / `AGENT_EMAIL` | only if the email surfaces are on. **Publish the OAuth consent screen to "In Production" first** — a screen left in "Testing" expires every refresh token after 7 days ([learning](learnings/2026-07-12-google-oauth-testing-expiry.md)) |
-| `MSGRAPH_CLIENT_ID` / `MSGRAPH_REFRESH_TOKEN` (+ `MSGRAPH_CLIENT_SECRET` for confidential clients) | the 'onedrive' read source (agents opting in via `sources:` frontmatter); delegated read-only consent; validate with bearer-gated `GET /graph/check` |
+| `MSGRAPH_CLIENT_ID` / `MSGRAPH_REFRESH_TOKEN` (+ `MSGRAPH_CLIENT_SECRET` for confidential clients) | the 'onedrive' read source (agents opting in via `context-sources:` frontmatter); delegated read-only consent; validate with bearer-gated `GET /graph/check` |
 | `GITHUB_DOCS_TOKEN` | the 'github-docs' read source: fine-grained PAT, Contents READ-ONLY on the docs repo only (falls back to `GITHUB_TOKEN`; public repos need none); validate with bearer-gated `GET /docs/check` |
 
 The web Worker's contract is in

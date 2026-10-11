@@ -57,6 +57,12 @@ run **writes real files** here (`reports/`, `ledger/`);
 - **Everything auditable is append-only** — [bundle/log.md](bundle/log.md),
   `bundle/events/`, `ledger/actions.jsonl`. History is never rewritten;
   corrections are new entries.
+- **Facts say where they came from and who checked them** (OKF v0.2).
+  [bundle/facts/corporate-identity.md](bundle/facts/corporate-identity.md)
+  cites its cabinet original under `sources:` and records the librarian's
+  read of it under `verified:`. A fact without `verified:` is a lead.
+  `pnpm cli okf trust docs/sample-brain` rolls this up
+  ([docs/okf-v0.2.md](../okf-v0.2.md)).
 - **Writes are propose → dispose.** An L3 agent ends its report with a fenced
   request block; the harness applies it through a whitelist gate and ledgers
   it. See the end of

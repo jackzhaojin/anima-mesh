@@ -2,6 +2,8 @@ import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 
 import * as path from "node:path";
 import { loadBundle } from "../okf/bundle.js";
 import { checkConformance, type ConformanceReport } from "../okf/conformance.js";
+import { addLogEntry } from "../okf/log.js";
+import { OKF_VERSION } from "../okf/trust.js";
 import { CONFIG_FILENAME, type InstanceConfig } from "../instance/config.js";
 import type { BrainKind } from "../instance/config-core.js";
 import { BRAIN_KINDS, isSlug, RESERVED_TOKENS } from "../brains/core.js";
@@ -83,6 +85,9 @@ export async function scaffoldBrain(targetDir: string, answers: InitAnswers): Pr
   // western timezone must not date its first event "tomorrow". An injected
   // clock (tests) is taken literally.
   const date = answers.now ? answers.now.slice(0, 10) : localDay(new Date());
+  // OKF v0.2 provenance (SPEC §5.2, §7): every concept init writes says who
+  // wrote it and when. Nothing is `verified` - init confirms nothing.
+  const generated = `generated: { by: anima-mesh/${engineVersionTag()}, at: ${new Date(answers.now ?? Date.now()).toISOString()} }`;
   const kind: BrainKind = answers.brainKind ?? "org";
   if (!BRAIN_KINDS.includes(kind)) throw new Error(`init: brain kind must be one of ${BRAIN_KINDS.join("|")}`);
   const isPerson = kind === "person";
@@ -149,10 +154,10 @@ export async function scaffoldBrain(targetDir: string, answers: InitAnswers): Pr
   const agentLinks = agents.map((a) => `| [agents/${a}.md](agents/${a}.md) | ${a} (L1) |`).join("\n");
   put(
     "bundle/index.md",
-    `---\ntype: index\ntitle: "${answers.orgName} — brain bundle index"\ndate: ${date}\n---\n\n` +
+    `---\nokf_version: "${OKF_VERSION}"\n---\n\n` +
       `# ${answers.orgName} — bundle index\n\n` +
-      `Single source of truth for the ${answers.orgName} mesh. One concept per file;\n` +
-      `\`type\` required; [log.md](log.md) is append-only.\n\n` +
+      `Single source of truth for the ${answers.orgName} mesh, an OKF v${OKF_VERSION} bundle. One concept per\n` +
+      `file; \`type\` required; this index and [log.md](log.md) (newest first) are reserved.\n\n` +
       `| Concept | What it holds |\n|---|---|\n` +
       `| [constitution.md](constitution.md) | Immutable hard limits — agents may not modify |\n` +
       `| [${factsRel}](${factsRel}) | ${isPerson ? "Who this person is - stable facts" : "The organization's stable facts"} |\n` +
@@ -164,14 +169,17 @@ export async function scaffoldBrain(targetDir: string, answers: InitAnswers): Pr
 
   put(
     "bundle/log.md",
-    `---\ntype: log\ntitle: "Bundle log — append-only"\n---\n\n# Bundle log\n\n` +
-      `- **${date}** — Brain scaffolded by \`anima-mesh init\` (engine ${config.engine!.ref}). ` +
-      `Agents: ${agents.join(", ")}. All facts start unverified until confirmed against source documents.\n`,
+    addLogEntry(
+      "# Bundle log\n\nWhat changed in this bundle, grouped by date, newest first (OKF v0.2 §9).\n",
+      date,
+      `- **Creation**: Brain scaffolded by \`anima-mesh init\` (engine ${config.engine!.ref}). ` +
+        `Agents: ${agents.join(", ")}. Every fact starts unverified until confirmed against source documents.`,
+    ),
   );
 
   put(
     "bundle/constitution.md",
-    `---\ntype: constitution\ntitle: "Constitution — immutable hard limits"\ndate: ${date}\nimmutable: true\n` +
+    `---\ntype: constitution\ntitle: "Constitution — immutable hard limits"\ndate: ${date}\nimmutable: true\n${generated}\n` +
       `gated-actions: ["money-movement", "government-filing", "external-publishing", "credential-exposure", "access-expansion"]\n---\n\n` +
       `# Constitution\n\n**No agent may modify this file.** Enforcement lives in the harness, never in a prompt.\n\n` +
       `## Gated actions — never without explicit approval by ${answers.principalName}\n\n` +
@@ -185,7 +193,7 @@ export async function scaffoldBrain(targetDir: string, answers: InitAnswers): Pr
 
   put(
     `bundle/${factsRel}`,
-    `---\ntype: fact\ntitle: "${isPerson ? "Person" : "Organization"}"\nstatus: unverified\ndate: ${date}\n---\n\n` +
+    `---\ntype: fact\ntitle: "${isPerson ? "Person" : "Organization"}"\ndate: ${date}\n${generated}\n---\n\n` +
       `# ${answers.orgName}\n\n` +
       (answers.description ? `${answers.description.trim()}\n\n` : "") +
       `- **Principal (approval gate):** ${answers.principalName}${answers.principalEmail ? ` <${answers.principalEmail}>` : ""}\n` +
@@ -193,12 +201,13 @@ export async function scaffoldBrain(targetDir: string, answers: InitAnswers): Pr
         ? `- **Mesh persona:** ${persona}${answers.personaEmails?.length ? ` <${answers.personaEmails.join(">, <")}>` : ""} — identity-plural: personas may share a mailbox via aliases\n`
         : "") +
       (answers.timezone ? `- **Timezone:** ${answers.timezone}\n` : "") +
-      `\n> Every fact here starts \`unverified\`. Verify against source documents (a librarian pass), then flip the status.\n`,
+      `\n> Every fact here starts unverified (no \`verified:\` key). Confirm it against a source document, then\n` +
+      `> record the check: \`verified: { by: human:<id>, at: <ISO datetime> }\` plus the document under \`sources:\`.\n`,
   );
 
   put(
     "bundle/ops/calendar.md",
-    `---\ntype: calendar\ntitle: "${isPerson ? "Obligations calendar" : "Compliance calendar"}"\nstatus: active\ndate: ${date}\n---\n\n` +
+    `---\ntype: calendar\ntitle: "${isPerson ? "Obligations calendar" : "Compliance calendar"}"\ndate: ${date}\n${generated}\n---\n\n` +
       `# ${isPerson ? "Obligations calendar" : "Compliance calendar"}\n\n` +
       `The obligations the principal never again carries in their head. Agents read\nthis every heartbeat.\n\n` +
       `## Hard deadlines\n\n| Due | Item | State |\n|---|---|---|\n| _yyyy-mm-dd_ | _add your first hard deadline_ | not started |\n\n` +
@@ -208,7 +217,7 @@ export async function scaffoldBrain(targetDir: string, answers: InitAnswers): Pr
 
   put(
     "bundle/ops/watch-list.md",
-    `---\ntype: watchlist\ntitle: "Research / competitive watch-list"\nstatus: active\ndate: ${date}\n---\n\n` +
+    `---\ntype: watchlist\ntitle: "Research / competitive watch-list"\ndate: ${date}\n${generated}\n---\n\n` +
       `# Watch-list\n\nSubjects the research/watch agent digests so signals surface without scanning.\n\n- _add your first watch subject_\n`,
   );
 
@@ -229,7 +238,7 @@ export async function scaffoldBrain(targetDir: string, answers: InitAnswers): Pr
 
   put(
     `bundle/events/${date}-instance-created.md`,
-    `---\ntype: event\ntitle: "Instance created"\nstatus: verified\ndate: ${date}\n---\n\n` +
+    `---\ntype: event\ntitle: "Instance created"\ndate: ${date}\n${generated}\n---\n\n` +
       `# Event: instance created — ${date}\n\nScaffolded by \`anima-mesh init\` for ${answers.orgName}. Append-only; corrections are new events.\n`,
   );
 

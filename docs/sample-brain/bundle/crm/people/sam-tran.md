@@ -1,7 +1,6 @@
 ---
 type: crm-person
 title: "Sam Tran — Head of Product, Harborlight Media"
-status: active
 date: 2026-06-01
 ---
 

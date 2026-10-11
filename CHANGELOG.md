@@ -3,7 +3,7 @@
 This history is organized by **minor release line** (and, from 2.0, major):
 the capability boundary operators actually adopt. Patch tags are deliberately
 rolled into the value and maturity of their minor rather than narrated one by
-one. The latest tag is **v2.1.1**.
+one. The latest tag is **v2.2.0**.
 
 ## Upgrade procedure
 
@@ -29,6 +29,57 @@ The ledger remains append-only; never "migrate" it by editing old entries.
 ## [Unreleased]
 
 - Nothing yet.
+
+## [v2.2.x] - OKF v0.2: provenance, trust, and lifecycle the engine can read
+
+**Latest tag: v2.2.0 · 2026-10-11**
+
+A minor, planned with the operator. Every brain becomes an
+[Open Knowledge Format v0.2](https://github.com/GoogleCloudPlatform/open-knowledge-format)
+bundle, which matters because agents keep writing the brain. Until now "is
+this fact safe to rely on" was an LLM reading an overloaded `status:` and
+free-text `verified-by:` / `reported-by:` / `source:` keys. v0.2 turns
+that into fields the engine reads in code
+([docs/okf-v0.2.md](docs/okf-v0.2.md)):
+
+- **Provenance and trust:** `sources: [{ id, resource, title, author }]`,
+  `generated: { by, at }`, `verified: [{ by, at }]`, with the actor
+  convention (`human:<id>`, `process:<id>`, `<harness>/<model>`). Trust
+  tiers (unverified, machine-confirmed, human-reviewed) are derived, never
+  stored. **Lifecycle:** `status` now means `draft | stable | deprecated`
+  only (absent means stable), and `stale_after` is an absolute instant.
+- **Agents see it.** Every run's bundle context gains a *Knowledge trust*
+  section naming stale, draft, and deprecated concepts with the tier counts
+  (only when the bundle records any). It is advisory; no gate reads a tier.
+- **Conformance** follows SPEC §11. `index.md` / `log.md` are reserved at
+  any level and are no longer concepts. The root index declares
+  `okf_version: "0.2"`. Logs are `## YYYY-MM-DD` groups, newest first. Every
+  v0.2 family is checked as a warning, `/bundle-relative` links resolve, and
+  the `animamesh` profile (not `okf`) now requires root index + log.
+- **New CLI:** `anima-mesh okf trust` (tiers, lifecycle, provenance
+  coverage, stale/draft/deprecated lists) and `anima-mesh okf migrate
+  [--write]` (the mechanical v0.1 to v0.2 rewrite; it lists judgment calls
+  and never guesses a `verified`).
+- **Writers emit v0.2:** `init` (okf_version, newest-first log,
+  `generated:` everywhere, facts start with no `verified`), `brains sync`
+  (provenance on materialized constitutions, newest-first log entries).
+- **Ontology:** a `concept-type` that gives `status` domain values gets
+  `ontology/reserved-property`; domain lifecycles move to `stage:`.
+
+**Breaking-ish (warnings, not failures):** an agent's read-source opt-in is
+now `context-sources:`, because v0.2 reserves `sources:` for provenance.
+Legacy string `sources:` on agents keeps working and warns.
+
+*Upgrade:* pin v2.2.0, then
+`pnpm cli okf migrate --instance <brain>` (dry run) and `--write`. Work
+the "needs judgment" list with the mapping table in
+[docs/okf-v0.2.md](docs/okf-v0.2.md#migrating-a-v01-era-brain) (git
+co-author lines say which model performed a historical check), then fix
+any "newest last" wording in the log intro and "OKF v0.1" wording in the
+root index. `pnpm cli validate` should reach 0 warnings. Point the
+instance's `CLAUDE.md` / `AGENTS.md` writing conventions at
+`docs/okf-v0.2.md`. Re-run `export-local` if the hub's concept changed. No
+Worker config or secret changes. Ledger untouched.
 
 ## [v2.1.x] - Google Drive, read-only; billing as a harness choice
 

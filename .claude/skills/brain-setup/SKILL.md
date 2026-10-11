@@ -133,9 +133,12 @@ Walk the user through, in order (each exists for a reason — say the reason):
    with `pnpm cli export-local` ([docs/local-agents.md](../../../docs/local-agents.md)).
 5. **Seed the bundle.** The scaffold leaves deliberate placeholders: the
    compliance calendar's first hard deadline, the watch-list's first subject,
-   and `facts/organization.md` marked `status: unverified` until checked
-   against source documents. Point the user at them — an empty calendar
-   makes a boring brief.
+   and `facts/organization.md`, unverified (no `verified:` key) until
+   checked against source documents. Point the user at them — an empty
+   calendar makes a boring brief. Every memory file after that follows
+   the OKF v0.2 writing conventions in
+   [docs/okf-v0.2.md](../../../docs/okf-v0.2.md): copy that pointer into
+   the new brain's `CLAUDE.md` / `AGENTS.md`.
 6. **Cloud tier, when ready.** The same brain runs from Cloudflare Workers
    with the laptop closed — hand them
    [docs/deploying-cloud.md](../../../docs/deploying-cloud.md). Not a

@@ -44,7 +44,10 @@ specifics (those live in each instance's own repo — see the boundary doc).
     roles; the principal's Gmail and Calendar as redacted read-only sources
 12. [ontology.md](ontology.md) - concept-type schemas, the ontology view, and
     how the bundle maps to Palantir's Ontology
-13. [learnings/](learnings/README.md) - hard-won platform knowledge with
+13. [okf-v0.2.md](okf-v0.2.md) - OKF v0.2 (v2.2): provenance, trust tiers,
+    lifecycle, staleness; **the conventions every AI session follows when it
+    writes a memory file**; migrating an older brain
+14. [learnings/](learnings/README.md) - hard-won platform knowledge with
     evidence; **check here first when a vendor edge misbehaves**
 
 Upgrading, or wondering when a behavior changed? [../CHANGELOG.md](../CHANGELOG.md)

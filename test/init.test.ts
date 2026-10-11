@@ -47,6 +47,14 @@ describe("agentic init — the acceptance test from the PRD", () => {
     const report = checkConformance(bundle, "animamesh");
     expect(report.ok).toBe(true);
     expect(report.issues.filter((i) => i.level === "error")).toHaveLength(0);
+    // OKF v0.2 (v2.2.0): init output is spec-clean, not merely error-free.
+    expect(report.issues.filter((i) => i.rule.startsWith("okf/"))).toEqual([]);
+    expect(readFileSync(path.join(target, "bundle/index.md"), "utf8")).toMatch(/^---\nokf_version: "0\.2"\n---/);
+    expect(readFileSync(path.join(target, "bundle/log.md"), "utf8")).toMatch(/^# Bundle log[\s\S]*\n## 2026-07-05\n/);
+    const facts = bundle.concepts.find((c) => c.frontmatter.type === "fact")!;
+    expect(facts.frontmatter.status).toBeUndefined();
+    expect(facts.frontmatter.verified).toBeUndefined();
+    expect(facts.frontmatter.generated).toMatchObject({ by: expect.stringMatching(/^anima-mesh\//), at: "2026-07-05T12:00:00.000Z" });
 
     // Reserved files + constitution marked immutable (the PRD's exact wording).
     expect(existsSync(path.join(target, "bundle/index.md"))).toBe(true);

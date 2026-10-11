@@ -98,9 +98,10 @@ describe("conformance — okf profile", () => {
     expect(report.issues.filter((i) => i.level === "error")).toHaveLength(0);
   });
 
-  it("fails on missing index.md / log.md", async () => {
-    const bundle = await loadBundle(await tree({ "log.md": concept("log", {}, "") }));
-    const report = checkConformance(bundle, "okf");
+  it("OKF v0.2 makes index.md / log.md optional; the animamesh profile still requires them", async () => {
+    const bundle = await loadBundle(await tree({ "log.md": "# Log\n", "a.md": concept("fact", {}, "A") }));
+    expect(checkConformance(bundle, "okf").ok).toBe(true);
+    const report = checkConformance(bundle, "animamesh");
     expect(report.ok).toBe(false);
     expect(report.issues.map((i) => i.rule)).toContain("okf/index");
   });
