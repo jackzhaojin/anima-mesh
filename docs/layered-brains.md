@@ -194,8 +194,14 @@ org is bound by the org brain's own gates.
 
 With members declared, `anima-mesh gate approve|deny --by <id|email>` is
 checked in code: only an owner or approver member may decide, and the record
-stores the member id. Without a `members` block a brain is single-player:
-the principal alone, as owner, exactly as before.
+stores the member id (without `--by`, the principal's own member record
+decides). Without a `members` block a brain is single-player: the principal
+alone, as owner, exactly as before.
+
+What is enforced today is the approval decision. Direction senders and
+dashboard logins still come from the Workers' own allowlists
+(`DISCORD_DM_USER_ID`, `DIRECTION_GMAIL_ALLOWED_FROM`, `WEB_ALLOWED_EMAILS`);
+deriving those from member roles is on the roadmap below.
 
 **The brain is the unit of access control.** A git repo cannot hide one file
 from someone who can clone it, so per-person visibility inside one brain is
