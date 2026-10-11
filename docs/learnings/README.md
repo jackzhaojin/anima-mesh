@@ -35,3 +35,5 @@ that instance's own repo, not here (see
 | 2026-07-22 | [An acknowledged-but-unapplied order is the worst state](2026-07-22-acknowledged-but-unapplied.md) |
 | 2026-07-22 | [Every mutable surface a beat writes must ride the beat's own commit](2026-07-22-beat-writes-own-commit.md) |
 | 2026-08-01 | [Non-streaming Messages calls hard-cap generation at ~100s (HTTP 524)](2026-08-01-cloudflare-524-stream-messages.md) |
+| 2026-10-11 | [chatgpt.com blocks Cloudflare Workers egress: subscription Codex is laptop-tier](2026-10-11-chatgpt-codex-blocks-workers.md) |
+| 2026-10-11 | [Refreshing a shared Codex login breaks the other Codex surfaces using it](2026-10-11-shared-codex-login-refresh.md) |

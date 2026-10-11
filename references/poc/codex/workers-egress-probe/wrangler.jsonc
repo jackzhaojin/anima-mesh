@@ -1,0 +1,6 @@
+{
+  "name": "anima-mesh-codex-egress-probe",
+  "main": "src/index.js",
+  "compatibility_date": "2026-07-01"
+  // Secrets come from .dev.vars (git-ignored): CODEX_ACCESS_TOKEN, CODEX_ACCOUNT_ID.
+}

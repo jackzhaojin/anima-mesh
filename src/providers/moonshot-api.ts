@@ -17,9 +17,9 @@ export interface ApiProviderContext {
   /** Test seam: override the 429/5xx backoff schedule (ms per retry). */
   retryDelaysMs?: number[];
   /**
-   * `openai-codex` only: where fresh ChatGPT-plan tokens come from. Rotating
-   * refresh tokens need ONE serialized, persisting owner — the Worker's
-   * HeartbeatDO, or the laptop's codex auth.json (see codex-auth.ts).
+   * `openai-codex` only: where the ChatGPT-plan access token comes from.
+   * Node entrypoints pass the read-only auth.json borrower
+   * (codex-auth-file.ts); the engine never refreshes a Codex login.
    */
   codexAuth?: CodexAuthSource;
 }

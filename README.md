@@ -178,8 +178,9 @@ someone's world (`person`, `org`, `team`, or `group`), and brains connect
   deterministic code; the model only writes the report).
 - **The model chokepoint.** Each agent concept declares its `model` and
   `harness`; swapping vendors is a config edit, never a rebuild. Shipped
-  harnesses: `moonshot-api`, `anthropic-api`, `anthropic-api-key`, and
-  `openai-codex` (pure fetch — the ones a cloud beat may run), `claude-code`
+  harnesses: `moonshot-api`, `anthropic-api`, and `anthropic-api-key` (pure
+  fetch — the ones a cloud beat may run), `openai-codex` (pure fetch, but
+  laptop-tier: chatgpt.com blocks Cloudflare Workers egress), `claude-code`
   (headless CLI), `claude-agent-sdk` and `claude-agent-sdk-api-key`
   (subprocess, laptop-tier by architecture), `codex` (headless Codex CLI),
   `opencode` (any opencode-configured model), `fake` (deterministic, for

@@ -6,6 +6,7 @@ This folder groups Codex SDK proofs of concept in one place, similar to `referen
 
 - `hello-world`: the smallest possible Codex SDK example.
 - `streaming-tools-poc`: a more advanced example that streams events, surfaces tagged item types, and demonstrates command and file-change activity.
+- `workers-egress-probe`: a throwaway Worker (run on Cloudflare's edge with `wrangler dev --remote`) that showed `chatgpt.com` blocks Workers egress, so the `openai-codex` harness is laptop-tier.
 
 ## Notes
 

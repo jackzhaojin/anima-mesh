@@ -33,15 +33,7 @@ export {
   anthropicApiKeyProvider,
 } from "./anthropic-api.js";
 export { createOpenAICodexProvider, openaiCodexProvider } from "./openai-codex.js";
-export {
-  codexAuthSource,
-  staticCodexAuth,
-  memoryTokenStore,
-  type CodexAuth,
-  type CodexAuthSource,
-  type CodexTokens,
-  type CodexTokenStore,
-} from "./codex-auth.js";
+export { staticCodexAuth, type CodexAuth, type CodexAuthSource } from "./codex-auth.js";
 
 /**
  * The provider registry core — Workers-safe: only fetch-based providers are
@@ -74,7 +66,10 @@ const contextualFactories = new Map<string, (ctx: ApiProviderContext) => AgentWo
  * The harnesses a cloud beat may run. Everything else is subprocess-bound —
  * laptop-tier by architecture, skipped with reason by the cloud heartbeat.
  * Deliberately NOT including `claude-agent-sdk[-api-key]` or `codex`: both
- * spawn a CLI, which no Worker hosts.
+ * spawn a CLI, which no Worker hosts. Nor `openai-codex`, though it is pure
+ * fetch: chatgpt.com 403s Cloudflare Workers egress by IP ("Unable to load
+ * site … VPN"), probed 2026-10-11 — a cloud beat would fail on every run
+ * (docs/learnings/2026-10-11-chatgpt-codex-blocks-workers.md).
  *
  * Billing is part of the harness name, so the brain picks it per agent:
  * `anthropic-api` = Claude subscription, `anthropic-api-key` = metered API
@@ -84,7 +79,6 @@ export const CLOUD_HARNESSES: ReadonlySet<string> = new Set([
   "moonshot-api",
   "anthropic-api",
   "anthropic-api-key",
-  "openai-codex",
 ]);
 
 /**

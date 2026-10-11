@@ -105,6 +105,13 @@ describe("cognition.overrides", () => {
     expect(down.skipped[0]!.reason).toContain("laptop-tier harness (claude-code)");
   });
 
+  it("an openai-codex agent is skipped by a cloud beat with a reason — chatgpt.com blocks Workers egress", async () => {
+    const root = await makeInstance({}, { harness: "openai-codex", model: "gpt-5.5" });
+    const beat = await heartbeat({ instanceRoot: root, cloudTier: true, dryRun: true });
+    expect(beat.due).toEqual([]);
+    expect(beat.skipped[0]!.reason).toContain("laptop-tier harness (openai-codex)");
+  });
+
   it("directions honor the override too — one knob for every entry point", async () => {
     const root = await makeInstance({ ...OVERRIDE, direction: { agent: "scout" } });
     const fake = new FakeProvider(() => ({ text: "directed via override" }));

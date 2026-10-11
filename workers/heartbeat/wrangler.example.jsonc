@@ -47,10 +47,10 @@
   // standing PAT in GITHUB_TOKEN, used when no App var is set (a
   // long-lived PAT is a first-class setup, v0.11.2); plus
   // BEAT_TRIGGER_TOKEN;
-  // cognition uses MOONSHOT_API_KEY, CLAUDE_CODE_OAUTH_TOKEN,
-  // ANTHROPIC_API_KEY (anthropic-api-key: metered credits), and/or
-  // CODEX_REFRESH_TOKEN (openai-codex: a DEDICATED `codex login`'s token;
-  // rotations live in HeartbeatDO storage - docs/deploying-cloud.md);
+  // cognition uses MOONSHOT_API_KEY, CLAUDE_CODE_OAUTH_TOKEN, and/or
+  // ANTHROPIC_API_KEY (anthropic-api-key: metered credits). No Codex
+  // secret: chatgpt.com blocks Workers egress, so Codex is laptop-tier
+  // (docs/learnings/2026-10-11-chatgpt-codex-blocks-workers.md);
   // Discord surfaces use DISCORD_BOT_TOKEN and DISCORD_DM_USER_ID;
   // for inbound email also GMAIL_CLIENT_ID, GMAIL_CLIENT_SECRET,
   // GMAIL_REFRESH_TOKEN (needs gmail.modify scope), AGENT_EMAIL;

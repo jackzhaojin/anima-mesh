@@ -27,7 +27,9 @@ registerContextualFactory("opencode", createOpencodeProvider);
 registerContextualFactory("claude-agent-sdk", createClaudeAgentSdkProvider);
 registerContextualFactory("claude-agent-sdk-api-key", createClaudeAgentSdkApiKeyProvider);
 
-// `openai-codex` on the laptop refreshes through the Codex CLI's own auth.json
+// `openai-codex` on the laptop BORROWS the Codex login in auth.json read-only
+// and never refreshes it (codex-auth-file.ts: refreshing a shared login broke
+// the desktop app's copy, live 2026-10-11)
 // (rotating refresh tokens need a persisting owner — codex-auth.ts). The
 // Workers-safe registration in index.ts stays static-token-only.
 registerProvider(createOpenAICodexProvider({ codexAuth: fileCodexAuth() }));
@@ -38,7 +40,7 @@ registerContextualFactory("openai-codex", (ctx) =>
 export { claudeCodeProvider, createClaudeCodeProvider } from "./claude-code.js";
 export { opencodeProvider, createOpencodeProvider } from "./opencode.js";
 export { codexProvider, codexExecArgs, parseCodexEvents } from "./codex.js";
-export { fileCodexAuth, authJsonTokenStore, codexAuthJsonPath } from "./codex-auth-file.js";
+export { fileCodexAuth, codexAuthJsonPath } from "./codex-auth-file.js";
 export {
   claudeAgentSdkProvider,
   createClaudeAgentSdkProvider,

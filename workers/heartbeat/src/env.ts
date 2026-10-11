@@ -13,7 +13,6 @@ export interface Env {
   BEAT_TIMEZONE: string; // IANA, e.g. "America/New_York"
   BEAT_HOUR: string; // "8"
   MOONSHOT_BASE_URL?: string; // set when the key is endpoint-scoped (subscription keys)
-  CODEX_BASE_URL?: string; // openai-codex endpoint override; default the ChatGPT-plan Codex endpoint
   DISCORD_PUBLIC_KEY?: string; // the Discord app's Ed25519 verify key (public info); absent = /interactions is 404
   DIRECTION_DAILY_CAP?: string; // max direction runs per local day; default 20 (decision Q4)
   DIRECTION_GMAIL_POLL_MINUTES?: string; // Gmail poll cadence; 0/absent = inbound email off (decision Q3b)
@@ -42,8 +41,6 @@ export interface Env {
   BEAT_TRIGGER_TOKEN: string;
   CLAUDE_CODE_OAUTH_TOKEN?: string; // subscription OAuth for anthropic-api; plain fetch, no SDK
   ANTHROPIC_API_KEY?: string; // Console API key for anthropic-api-key: METERED credits, capped by the Console spend limit
-  CODEX_REFRESH_TOKEN?: string; // openai-codex seed: a DEDICATED `codex login`'s refresh token; rotations live in HeartbeatDO storage
-  CODEX_ACCOUNT_ID?: string; // optional: ChatGPT account id (otherwise read from the token claims)
   GMAIL_CLIENT_ID?: string; // persona Gmail OAuth (inbound poll + reply); send scope exists, modify needs re-consent
   GMAIL_CLIENT_SECRET?: string;
   GMAIL_REFRESH_TOKEN?: string;
@@ -78,9 +75,6 @@ export function envRecord(env: Env): Record<string, string | undefined> {
     DISCORD_DM_USER_ID: env.DISCORD_DM_USER_ID,
     CLAUDE_CODE_OAUTH_TOKEN: env.CLAUDE_CODE_OAUTH_TOKEN,
     ANTHROPIC_API_KEY: env.ANTHROPIC_API_KEY,
-    CODEX_REFRESH_TOKEN: env.CODEX_REFRESH_TOKEN,
-    CODEX_ACCOUNT_ID: env.CODEX_ACCOUNT_ID,
-    CODEX_BASE_URL: env.CODEX_BASE_URL,
     GMAIL_CLIENT_ID: env.GMAIL_CLIENT_ID,
     GMAIL_CLIENT_SECRET: env.GMAIL_CLIENT_SECRET,
     GMAIL_REFRESH_TOKEN: env.GMAIL_REFRESH_TOKEN,

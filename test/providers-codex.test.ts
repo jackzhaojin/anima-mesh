@@ -3,14 +3,8 @@ import { readFileSync, writeFileSync } from "node:fs";
 import * as path from "node:path";
 import { codexExecArgs, parseCodexEvents } from "../src/providers/codex.js";
 import { createOpenAICodexProvider } from "../src/providers/openai-codex.js";
-import {
-  codexAuthSource,
-  memoryTokenStore,
-  staticCodexAuth,
-  accountIdFrom,
-  CODEX_TOKEN_URL,
-} from "../src/providers/codex-auth.js";
-import { authJsonTokenStore } from "../src/providers/codex-auth-file.js";
+import { staticCodexAuth, accountIdFrom } from "../src/providers/codex-auth.js";
+import { fileCodexAuth } from "../src/providers/codex-auth-file.js";
 import { resolveProvider, CLOUD_HARNESSES } from "../src/providers/index.js";
 import "../src/providers/node-providers.js";
 import { makeTree } from "./helpers.js";
@@ -211,98 +205,68 @@ describe("openai-codex (ChatGPT-plan Codex over fetch)", () => {
     expect(fetchImpl.mock.calls[0]![0]).toBe("https://fake-codex.test/responses");
   });
 
-  it("under-claims web search until it has been probed live", () => {
-    expect(createOpenAICodexProvider({ env: {} }).capabilities).toEqual({ fileReads: false, webSearch: false });
+  it("declares server-side web search (probed live 2026-10-11), but sends the tool only with a budget", async () => {
+    expect(createOpenAICodexProvider({ env: {} }).capabilities).toEqual({ fileReads: false, webSearch: true });
+    const fetchImpl = vi.fn().mockImplementation(async () => sse(...completed("ok")));
+    const provider = createOpenAICodexProvider({ env: {}, fetchImpl, codexAuth: fixedAuth() });
+    await provider.run({ prompt: "p", cwd: "/" });
+    expect(JSON.parse(fetchImpl.mock.calls[0]![1].body).tools).toEqual([]);
+    await provider.run({ prompt: "p", cwd: "/", webSearchMaxUses: 3 });
+    expect(JSON.parse(fetchImpl.mock.calls[1]![1].body).tools).toEqual([{ type: "web_search" }]);
   });
 
-  it("is a cloud harness, and names the login it is missing", () => {
-    expect(CLOUD_HARNESSES.has("openai-codex")).toBe(true);
+  it("surfaces each search the endpoint ran (the live event shape)", async () => {
+    const fetchImpl = vi.fn().mockResolvedValue(
+      sse(
+        {
+          type: "response.output_item.done",
+          item: { type: "web_search_call", action: { type: "search", query: "top headline today" } },
+        },
+        ...completed("cited answer"),
+      ),
+    );
+    const notes: string[] = [];
+    const provider = createOpenAICodexProvider({ env: {}, fetchImpl, codexAuth: fixedAuth() });
+    const result = await provider.run({ prompt: "p", cwd: "/", webSearchMaxUses: 2, onProgress: (n) => notes.push(n) });
+    expect(result.text).toBe("cited answer");
+    expect(notes).toContain("openai-codex → web search: top headline today");
+    expect(notes.at(-1)).toBe("openai-codex: done (1 web search)");
+  });
+
+  it("degrades honestly when the endpoint refuses the search tool — never a silent clean run", async () => {
+    const fetchImpl = vi
+      .fn()
+      .mockResolvedValueOnce(new Response('{"detail":"Unsupported tool type: web_search"}', { status: 400 }))
+      .mockResolvedValueOnce(sse(...completed("report without the sweep")));
+    const provider = createOpenAICodexProvider({ env: {}, fetchImpl, codexAuth: fixedAuth() });
+    const result = await provider.run({ prompt: "check the news", cwd: "/", webSearchMaxUses: 2 });
+    const retry = JSON.parse(fetchImpl.mock.calls[1]![1].body);
+    expect(retry.tools).toEqual([]);
+    expect(retry.input[0].content[0].text).toContain("Web search is NOT available for this run");
+    expect(result.degraded).toContain("rejected server-side web search");
+  });
+
+  it("an unrelated 400 is not mistaken for a tool rejection", async () => {
+    const fetchImpl = vi.fn().mockResolvedValue(new Response('{"detail":"Unsupported parameter: max_tool_calls"}', { status: 400 }));
+    const provider = createOpenAICodexProvider({ env: {}, fetchImpl, codexAuth: fixedAuth() });
+    await expect(provider.run({ prompt: "p", cwd: "/", webSearchMaxUses: 1 })).rejects.toThrow(/HTTP 400.*max_tool_calls/);
+    expect(fetchImpl).toHaveBeenCalledTimes(1);
+  });
+
+  it("is laptop-tier (Workers egress is blocked), and names the login it is missing", () => {
+    expect(CLOUD_HARNESSES.has("openai-codex")).toBe(false);
     expect(() => createOpenAICodexProvider({ env: {} }).assertConfigured()).toThrow(/codex login.*CODEX_REFRESH_TOKEN/);
     expect(() => createOpenAICodexProvider({ env: { CODEX_REFRESH_TOKEN: "rt" } }).assertConfigured()).not.toThrow();
   });
 });
 
-/**
- * Rotating refresh tokens: the property under test is "never present a spent
- * refresh token" — persist before use, serialize refreshes, honor re-seeds.
- */
-describe("codex auth — rotating ChatGPT refresh tokens", () => {
-  const refreshOk = (n: number) =>
-    new Response(JSON.stringify({ access_token: access(3600, `acct-${n}`), refresh_token: `rt-${n}` }), {
-      status: 200,
-    });
-
-  it("seeds from CODEX_REFRESH_TOKEN, refreshes, and persists the ROTATED token", async () => {
-    const store = memoryTokenStore();
-    const fetchImpl = vi.fn().mockResolvedValue(refreshOk(2));
-    const source = codexAuthSource(store, { env: { CODEX_REFRESH_TOKEN: "rt-1" }, fetchImpl, now: () => NOW });
-
-    const auth = await source();
-
-    const [url, init] = fetchImpl.mock.calls[0]!;
-    expect(url).toBe(CODEX_TOKEN_URL);
-    const form = new URLSearchParams(init.body);
-    expect(form.get("grant_type")).toBe("refresh_token");
-    expect(form.get("refresh_token")).toBe("rt-1");
-    expect(form.get("client_id")).toBe("app_EMoamEEZ73f0CkXaXp7hrann");
-    expect(auth.accountId).toBe("acct-2");
-    expect((await store.load())?.refreshToken).toBe("rt-2");
-    expect((await store.load())?.seededFrom).toBe("rt-1");
-  });
-
-  it("reuses a fresh access token without touching the refresh token", async () => {
-    const store = memoryTokenStore({ refreshToken: "rt-9", accessToken: access(3600) });
-    const fetchImpl = vi.fn();
-    const auth = await codexAuthSource(store, { env: {}, fetchImpl, now: () => NOW })();
-    expect(auth.accountId).toBe("acct-1");
-    expect(fetchImpl).not.toHaveBeenCalled();
-  });
-
-  it("refreshes inside the expiry skew, and on force even when exp looks fine", async () => {
-    const store = memoryTokenStore({ refreshToken: "rt-1", accessToken: access(60) });
-    const fetchImpl = vi.fn().mockImplementation(async () => refreshOk(2));
-    const source = codexAuthSource(store, { env: {}, fetchImpl, now: () => NOW });
-    await source();
-    expect(fetchImpl).toHaveBeenCalledTimes(1);
-    await source({ force: true });
-    expect(fetchImpl).toHaveBeenCalledTimes(2);
-    expect(new URLSearchParams(fetchImpl.mock.calls[1]![1].body).get("refresh_token")).toBe("rt-2");
-  });
-
-  it("concurrent callers share ONE refresh — a second would present a spent token", async () => {
-    const store = memoryTokenStore({ refreshToken: "rt-1" });
-    let n = 1;
-    const fetchImpl = vi.fn().mockImplementation(async () => refreshOk(++n));
-    const source = codexAuthSource(store, { env: {}, fetchImpl, now: () => NOW });
-    const [a, b] = await Promise.all([source(), source()]);
-    expect(fetchImpl).toHaveBeenCalledTimes(1);
-    expect(a.accessToken).toBe(b.accessToken);
-  });
-
-  it("a re-seeded secret (new dedicated login) replaces the stored chain", async () => {
-    const store = memoryTokenStore({ refreshToken: "rt-old-chain", seededFrom: "seed-old", accessToken: access(3600) });
-    const fetchImpl = vi.fn().mockResolvedValue(refreshOk(5));
-    await codexAuthSource(store, { env: { CODEX_REFRESH_TOKEN: "seed-new" }, fetchImpl, now: () => NOW })();
-    expect(new URLSearchParams(fetchImpl.mock.calls[0]![1].body).get("refresh_token")).toBe("seed-new");
-    expect((await store.load())?.seededFrom).toBe("seed-new");
-  });
-
-  it("names a spent refresh token and the dedicated-login fix", async () => {
-    const store = memoryTokenStore({ refreshToken: "rt-1" });
-    const fetchImpl = vi.fn().mockResolvedValue(
-      new Response('{"error":"invalid_grant","error_description":"refresh_token_reused"}', { status: 400 }),
-    );
-    const err = (await codexAuthSource(store, { env: {}, fetchImpl, now: () => NOW })().catch((e: Error) => e)) as Error;
-    expect(err.message).toContain("already spent or revoked");
-    expect(err.message).toContain("OWN `codex login`");
-    expect((await store.load())?.refreshToken).toBe("rt-1"); // nothing overwritten on failure
-  });
-
-  it("with no store, only a static access token is used — never a refresh it cannot remember", async () => {
+describe("codex auth helpers (Workers-safe)", () => {
+  it("with no context, only a static access token is used — never refreshed", async () => {
     const live = staticCodexAuth({ env: { CODEX_ACCESS_TOKEN: access(3600, "acct-s") }, now: () => NOW });
     expect((await live()).accountId).toBe("acct-s");
     const expired = staticCodexAuth({ env: { CODEX_ACCESS_TOKEN: access(-10) }, now: () => NOW });
-    await expect(expired()).rejects.toThrow(/no persistent token store/);
+    await expect(expired()).rejects.toThrow(/never refreshes/);
+    await expect(live({ force: true })).rejects.toThrow(/never refreshes/);
   });
 
   it("reads the account id from either token's auth claim", () => {
@@ -311,35 +275,51 @@ describe("codex auth — rotating ChatGPT refresh tokens", () => {
   });
 });
 
-describe("codex auth.json store (laptop: shares the CLI's own login)", () => {
-  it("round-trips tokens and preserves every field it does not own", async () => {
+describe("laptop Codex login: borrowed read-only, never refreshed", () => {
+  const authFile = async (tokens: Record<string, unknown>) => {
     const root = await makeTree({
-      "auth.json": JSON.stringify({
-        OPENAI_API_KEY: null,
-        tokens: { id_token: "id-1", access_token: "at-1", refresh_token: "rt-1", account_id: "acct-1" },
-        last_refresh: "2026-01-01T00:00:00Z",
-      }),
+      "auth.json": JSON.stringify({ auth_mode: "chatgpt", OPENAI_API_KEY: null, tokens, last_refresh: "x" }),
     });
-    const file = path.join(root, "auth.json");
-    const store = authJsonTokenStore(file);
-    expect(await store.load()).toEqual({
-      refreshToken: "rt-1",
-      accessToken: "at-1",
-      idToken: "id-1",
-      accountId: "acct-1",
-    });
+    return { root, file: path.join(root, "auth.json") };
+  };
 
-    await store.save({ refreshToken: "rt-2", accessToken: "at-2", accountId: "acct-1" });
-    const written = JSON.parse(readFileSync(file, "utf8"));
-    expect(written.OPENAI_API_KEY).toBeNull();
-    expect(written.tokens).toEqual({ id_token: "id-1", access_token: "at-2", refresh_token: "rt-2", account_id: "acct-1" });
-    expect(written.last_refresh).not.toBe("2026-01-01T00:00:00Z");
+  it("hands out the CLI's access token and account, and never writes the shared file", async () => {
+    const { root, file } = await authFile({ access_token: access(3600, "acct-cli"), refresh_token: "rt-cli", account_id: "acct-cli" });
+    const before = readFileSync(file, "utf8");
+    const fetchImpl = vi.fn();
+    vi.stubGlobal("fetch", fetchImpl);
+    try {
+      const auth = await fileCodexAuth({ CODEX_HOME: root }, () => NOW)();
+      expect(auth).toEqual({ accessToken: access(3600, "acct-cli"), accountId: "acct-cli" });
+    } finally {
+      vi.unstubAllGlobals();
+    }
+    expect(fetchImpl).not.toHaveBeenCalled(); // no refresh grant, ever
+    expect(readFileSync(file, "utf8")).toBe(before);
   });
 
-  it("a missing auth.json reads as no login, never as an error", async () => {
-    const root = await makeTree({});
-    expect(await authJsonTokenStore(path.join(root, "auth.json")).load()).toBeUndefined();
-    writeFileSync(path.join(root, "auth.json"), JSON.stringify({ OPENAI_API_KEY: "sk-key-login" }));
-    expect(await authJsonTokenStore(path.join(root, "auth.json")).load()).toBeUndefined();
+  it("re-reads per call, so a refresh Codex did itself is picked up", async () => {
+    const { root, file } = await authFile({ access_token: access(3600, "acct-1"), refresh_token: "rt" });
+    const source = fileCodexAuth({ CODEX_HOME: root }, () => NOW);
+    expect((await source()).accountId).toBe("acct-1");
+    writeFileSync(file, JSON.stringify({ tokens: { access_token: access(7200, "acct-2"), refresh_token: "rt2" } }));
+    expect((await source()).accountId).toBe("acct-2");
+  });
+
+  it("an expired token names the fix (use Codex once) instead of refreshing a shared login", async () => {
+    const { root } = await authFile({ access_token: access(-60), refresh_token: "rt" });
+    await expect(fileCodexAuth({ CODEX_HOME: root }, () => NOW)()).rejects.toThrow(/expired.*open Codex.*never refreshes/);
+  });
+
+  it("a 401-forced call fails with the fix rather than spending the refresh token", async () => {
+    const { root } = await authFile({ access_token: access(3600), refresh_token: "rt" });
+    await expect(fileCodexAuth({ CODEX_HOME: root }, () => NOW)({ force: true })).rejects.toThrow(/rejected.*never refreshes/);
+  });
+
+  it("no auth.json, or an API-key login, reads as no ChatGPT login", async () => {
+    const empty = await makeTree({});
+    await expect(fileCodexAuth({ CODEX_HOME: empty })()).rejects.toThrow(/no Codex login.*codex login/);
+    writeFileSync(path.join(empty, "auth.json"), JSON.stringify({ OPENAI_API_KEY: "sk-key-login" }));
+    await expect(fileCodexAuth({ CODEX_HOME: empty })()).rejects.toThrow(/no Codex login/);
   });
 });
