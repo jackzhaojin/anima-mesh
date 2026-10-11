@@ -28,18 +28,9 @@ The ledger remains append-only; never "migrate" it by editing old entries.
 
 ## [Unreleased]
 
-- **Docs: pair every brain with a document store.** `starting-a-company.md`
-  now recommends that almost every brain pair with one store for its
-  documents of record (personal Google Drive or OneDrive; Google Workspace
-  My Drive or shared drives; SharePoint, OneDrive, or Teams files), maps
-  each to the read-only source that reaches it today (`google-drive`,
-  `onedrive`, `github-docs`), and sets the division of labor: the store
-  holds the document, the brain holds what matters about it and links the
-  path. The `brain-setup` skill asks for the store as its own step;
-  `layered-brains.md` points person brains at their own Drive. No code
-  change.
+- Nothing yet.
 
-## [v2.1.0] - Google Drive, read-only, on the principal's Google client
+## [v2.1.x] - Google Drive, read-only; billing as a harness choice
 
 **Latest tag: v2.1.1 · 2026-10-11**
 
@@ -69,6 +60,14 @@ refreshing it from outside broke the ChatGPT desktop app's copy
 ([learning](docs/learnings/2026-10-11-shared-codex-login-refresh.md)).
 *Upgrade:* nothing required; no new Worker secret.
 
+Also in v2.1.1 (docs only): `starting-a-company.md` recommends pairing almost
+every brain with one document store (personal Google Drive or OneDrive;
+Workspace My Drive or shared drives; SharePoint, OneDrive, or Teams files),
+maps each to the read-only source that reaches it (`google-drive`,
+`onedrive`, `github-docs`), and sets the split: the store holds the
+document, the brain holds what matters about it and links the path. The
+`brain-setup` skill asks for the store as its own step.
+
 **v2.1.0 · 2026-10-10.**
 
 **`google-drive` read source** on the same Google OAuth client as `gmail`
@@ -86,7 +85,7 @@ must add `drive.readonly` there and re-verify), re-run
 Worker secret. Until then the Drive section names the scope gap; Gmail and
 Calendar keep working on the old token.
 
-## [v2.0.0] - the mesh of brains: layered and multi-player
+## [v2.0.x] - the mesh of brains: layered and multi-player
 
 **Latest tag: v2.0.1 · 2026-10-11** *(v2.0.0 was an operator-chosen major.
 The pre-release cuts v0.18.0 and v0.18.1, tagged earlier the same day, are

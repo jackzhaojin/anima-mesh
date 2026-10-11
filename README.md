@@ -334,6 +334,14 @@ company; now a brain is a layer, and the engine reasons across layers. A
 brain without a `brain` block runs exactly as it did on 0.17, so the upgrade
 itself is a pin bump.
 
+Since 2.0: **v2.1** adds the `google-drive` read source on the same
+read-only Google consent as Gmail and Calendar. **v2.1.1** makes billing a
+harness choice. `anthropic-api-key` and `claude-agent-sdk-api-key` run
+Claude on metered API credits, and `codex` and `openai-codex` run on a
+ChatGPT plan. Subprocesses never pick up a stray exported key. A
+subscription Codex agent runs on the laptop only, because chatgpt.com
+blocks Cloudflare Workers egress.
+
 The cloud tier introduced in v0.3 is the primary execution path; the CLI
 remains the bootstrap, operator, and subprocess-harness path. The 0.x lines
 before 2.0 extend one theme, **nothing the mesh cannot do is ever silent**:
