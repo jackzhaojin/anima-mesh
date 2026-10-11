@@ -22,7 +22,7 @@ describe("consent URL", () => {
     expect(verifier.length).toBeGreaterThanOrEqual(43);
     const url = new URL(buildConsentUrl({ clientId: "cid", redirectUri: "http://127.0.0.1:5555/callback", state: "st", codeChallenge: challenge, loginHint: "p@example.test" }));
     expect(url.searchParams.get("scope")).toBe(
-      "https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/calendar.readonly",
+      "https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/calendar.readonly https://www.googleapis.com/auth/drive.readonly",
     );
     expect(url.searchParams.get("access_type")).toBe("offline");
     expect(url.searchParams.get("prompt")).toBe("consent");
@@ -79,6 +79,7 @@ describe("the loopback flow end to end", () => {
       }
       if (url.includes("/gmail/v1/users/me/profile")) return Response.json({ emailAddress: "p@example.test" });
       if (url.includes("/calendarList")) return Response.json({ items: [] });
+      if (url.includes("/drive/v3/about")) return Response.json({ user: { emailAddress: "p@example.test" } });
       return new Response("nope", { status: 404 });
     });
     let browser: Promise<Response> | undefined;
@@ -105,6 +106,9 @@ describe("the loopback flow end to end", () => {
     expect(result.account).toBe("p@example.test");
     expect(loadInstanceEnv(root).GOOGLE_READ_REFRESH_TOKEN).toBe("SECRET-REFRESH-VALUE");
     expect(logs.join("\n")).not.toContain("SECRET-REFRESH-VALUE");
+    // the principal unticked Drive on the consent screen: stored, but said out loud
+    expect(result.missing).toEqual(["https://www.googleapis.com/auth/drive.readonly"]);
+    expect(logs.join("\n")).toMatch(/consent left out https:\/\/www\.googleapis\.com\/auth\/drive\.readonly/);
   });
 
   it("a forged callback (wrong state) stores nothing", async () => {

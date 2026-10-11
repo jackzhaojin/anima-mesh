@@ -8,18 +8,20 @@ import { GOOGLE_READ_SCOPES } from "../sources/google.js";
 
 /**
  * `anima-mesh connect google` - the one-time consent that lets a brain READ
- * its principal's Gmail and Calendar (Node-only, laptop act).
+ * its principal's Gmail, Calendar, and Drive (Node-only, laptop act).
  *
  * The OAuth "installed app" flow with PKCE and a loopback redirect: a
  * one-shot server on 127.0.0.1 receives the code, the code is exchanged for
  * a refresh token, and the token is written straight into the instance's
  * `.env.local` (mode 600) - never printed, never logged, never committed.
- * Scopes are fixed to gmail.readonly + calendar.readonly; there is no flag
- * to widen them.
+ * Scopes are fixed to gmail.readonly + calendar.readonly + drive.readonly;
+ * there is no flag to widen them. Re-running it after the scope list grows
+ * replaces the one refresh token with one that carries every scope.
  *
  * Prerequisite (the principal's act, in Google Cloud Console): an OAuth
  * client of type "Desktop app" in a project whose consent screen is In
- * Production (Testing-mode refresh tokens die after 7 days), with
+ * Production (Testing-mode refresh tokens die after 7 days) and the Gmail,
+ * Calendar, and Drive APIs enabled, with
  * GOOGLE_READ_CLIENT_ID and GOOGLE_READ_CLIENT_SECRET placed in the
  * instance's .env.local.
  */
@@ -134,6 +136,8 @@ export interface ConnectGoogleOptions {
 export interface ConnectGoogleResult {
   account?: string;
   scopes: string[];
+  /** Read scopes asked for but not granted (the principal unticked them on the consent screen). */
+  missing: string[];
   envFile: string;
 }
 
@@ -187,7 +191,7 @@ export async function connectGoogle(opts: ConnectGoogleOptions): Promise<Connect
         clearTimeout(timer);
         resolve(got);
       });
-      opts.log("Open this URL to grant READ-ONLY Gmail + Calendar access (gmail.readonly, calendar.readonly):");
+      opts.log("Open this URL to grant READ-ONLY Gmail + Calendar + Drive access (gmail.readonly, calendar.readonly, drive.readonly):");
       opts.log(`  ${url}`);
       if (opts.openBrowser) {
         const opener = process.platform === "darwin" ? "open" : "xdg-open";
@@ -201,7 +205,12 @@ export async function connectGoogle(opts: ConnectGoogleOptions): Promise<Connect
     const envFile = path.join(root, ".env.local");
     upsertEnvValue(envFile, "GOOGLE_READ_REFRESH_TOKEN", tokens.refreshToken);
 
-    // Verify with the fresh access token: whose mailbox, and the calendar answers.
+    const missing = GOOGLE_READ_SCOPES.filter((s) => !tokens.scopes.includes(s));
+    if (missing.length > 0) {
+      opts.log(`warning: consent left out ${missing.join(", ")} - those sources will report a scope gap until connect is re-run`);
+    }
+
+    // Verify with the fresh access token: whose mailbox, and the calendar and drive answer.
     let account: string | undefined;
     const profile = await doFetch("https://gmail.googleapis.com/gmail/v1/users/me/profile", {
       headers: { Authorization: `Bearer ${tokens.accessToken}` },
@@ -210,10 +219,16 @@ export async function connectGoogle(opts: ConnectGoogleOptions): Promise<Connect
     const cal = await doFetch("https://www.googleapis.com/calendar/v3/users/me/calendarList?maxResults=1", {
       headers: { Authorization: `Bearer ${tokens.accessToken}` },
     });
-    if (!profile.ok || !cal.ok) {
-      opts.log(`warning: stored the token, but verification answered gmail=${profile.status} calendar=${cal.status}`);
+    const drive = await doFetch("https://www.googleapis.com/drive/v3/about?fields=user(emailAddress)", {
+      headers: { Authorization: `Bearer ${tokens.accessToken}` },
+    });
+    if (!profile.ok || !cal.ok || !drive.ok) {
+      opts.log(
+        `warning: stored the token, but verification answered gmail=${profile.status} calendar=${cal.status} drive=${drive.status}` +
+          " (403 usually means that API is not enabled in the client's Cloud project)",
+      );
     }
-    return { account, scopes: tokens.scopes, envFile };
+    return { account, scopes: tokens.scopes, missing, envFile };
   } finally {
     server.close();
   }

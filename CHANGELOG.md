@@ -3,7 +3,7 @@
 This history is organized by **minor release line** (and, from 2.0, major):
 the capability boundary operators actually adopt. Patch tags are deliberately
 rolled into the value and maturity of their minor rather than narrated one by
-one. The latest tag is **v2.0.1**.
+one. The latest tag is **v2.1.0**.
 
 ## Upgrade procedure
 
@@ -29,6 +29,25 @@ The ledger remains append-only; never "migrate" it by editing old entries.
 ## [Unreleased]
 
 - Nothing yet.
+
+## [v2.1.0] - Google Drive, read-only, on the principal's Google client
+
+**Tag: v2.1.0 · 2026-10-10**
+
+**`google-drive` read source** on the same Google OAuth client as `gmail`
+and `google-calendar`: `GOOGLE_READ_SCOPES` adds `drive.readonly`, so
+`anima-mesh connect google` now asks for three read-only scopes and mints
+one refresh token for all three sources. The section lists file names
+modified in the last `GDRIVE_READ_DAYS` (default 14), no contents;
+`google-drive: [<file-id>]` read-requests serve Docs/Slides as text,
+Sheets as CSV, text files, and PDFs (extracted), clipped and redacted.
+Connect warns when the principal unticks a scope and verifies Drive too.
+**Upgrade:** enable the Drive API in the client's Cloud project (an
+unverified app used by its owner needs no Data Access entry; a verified app
+must add `drive.readonly` there and re-verify), re-run
+`anima-mesh connect google`, and update the `GOOGLE_READ_REFRESH_TOKEN`
+Worker secret. Until then the Drive section names the scope gap; Gmail and
+Calendar keep working on the old token.
 
 ## [v2.0.0] - the mesh of brains: layered and multi-player
 

@@ -6,7 +6,7 @@ import type { SourceContext } from "../sources/types.js";
 import { readCabinetPath } from "../sources/msgraph.js";
 import { readDocsFile } from "../sources/github-docs.js";
 import { readBrainPath } from "../sources/brains.js";
-import { readGmailMessage } from "../sources/google.js";
+import { readGmailMessage, readDriveFile } from "../sources/google.js";
 
 /**
  * Ask-driven retrieval (v0.17.0) — the third propose/dispose surface beside
@@ -145,6 +145,8 @@ export async function serveReadRequests(opts: {
         content = await readBrainPath(sourceCtx, req.path, { maxChars: room });
       } else if (req.source === "gmail") {
         content = await readGmailMessage(sourceCtx, req.path, { maxChars: room });
+      } else if (req.source === "google-drive") {
+        content = await readDriveFile(sourceCtx, req.path, { maxChars: room });
       } else {
         throw new Error(`the engine cannot serve reads from source '${req.source}'`);
       }
@@ -176,6 +178,7 @@ const EXAMPLE_PATHS: Record<string, string> = {
   "github-docs": "path/in/repo.md",
   brains: "<brain-id>/ops/calendar.md",
   gmail: "<message-id>",
+  "google-drive": "<file-id>",
 };
 
 export function readRequestCapabilityLines(agent: AgentConcept): string[] {

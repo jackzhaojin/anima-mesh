@@ -4,6 +4,8 @@ import {
   gmailSection,
   calendarSection,
   readGmailMessage,
+  driveSection,
+  readDriveFile,
   GOOGLE_READ_SCOPES,
 } from "../src/sources/google.js";
 import { sourceSections } from "../src/sources/registry.js";
@@ -64,10 +66,11 @@ describe("redactSensitive", () => {
 });
 
 describe("read-only by construction", () => {
-  it("consent asks for exactly gmail.readonly + calendar.readonly", () => {
+  it("consent asks for exactly gmail.readonly + calendar.readonly + drive.readonly", () => {
     expect([...GOOGLE_READ_SCOPES]).toEqual([
       "https://www.googleapis.com/auth/gmail.readonly",
       "https://www.googleapis.com/auth/calendar.readonly",
+      "https://www.googleapis.com/auth/drive.readonly",
     ]);
   });
 });
@@ -182,5 +185,69 @@ describe("google-calendar source", () => {
   it("is reachable through the source registry by name", async () => {
     const [section] = await sourceSections(["google-calendar"], { env: {} });
     expect(section).toMatch(/## Calendar \(the principal's Google Calendar, read-only\)[\s\S]*not configured/);
+  });
+});
+
+describe("google-drive source", () => {
+  it("lists recent file names (no contents) with ids, under an UNTRUSTED banner", async () => {
+    const mock = googleFetch([
+      [
+        /\/drive\/v3\/files\?q=/,
+        () =>
+          Response.json({
+            files: [
+              { id: "1AbCdEfGhIjKlMn", name: "Trip plan", mimeType: "application/vnd.google-apps.document", modifiedTime: "2026-10-09T15:00:00Z", ownedByMe: true },
+              { id: "1ZyXwVuTsRqPoNm", name: "Policy 000123456789.pdf", mimeType: "application/pdf", modifiedTime: "2026-10-08T12:00:00Z", ownedByMe: false },
+            ],
+          }),
+      ],
+    ]);
+    const section = await driveSection({
+      env: { ...ENV, GDRIVE_READ_QUERY: "'folder1' in parents" },
+      fetchImpl: mock.fetchImpl,
+      timeZone: "America/New_York",
+      now: new Date("2026-10-10T12:00:00Z"),
+    });
+    expect(section).toContain("UNTRUSTED THIRD-PARTY TEXT");
+    expect(section).toContain("**Trip plan** - Doc · 2026-10-09 11:00 · id `1AbCdEfGhIjKlMn`");
+    expect(section).toContain("PDF · 2026-10-08 08:00 · shared with the principal");
+    expect(section).not.toContain("000123456789");
+    const q = decodeURIComponent(mock.calls.find((u) => u.includes("/files?q="))!);
+    expect(q).toContain("trashed = false");
+    expect(q).toContain("modifiedTime > '2026-09-26T12:00:00.000Z'");
+    expect(q).toContain("('folder1' in parents)");
+  });
+
+  it("a token minted before drive.readonly names the re-consent fix", async () => {
+    const mock = googleFetch([
+      [/\/drive\/v3\/files/, () => new Response('{"error":{"code":403,"details":[{"reason":"ACCESS_TOKEN_SCOPE_INSUFFICIENT"}]}}', { status: 403 })],
+    ]);
+    const section = await driveSection({ env: ENV, fetchImpl: mock.fetchImpl });
+    expect(section).toMatch(/configured but unreachable this run[\s\S]*re-consent: anima-mesh connect google/);
+  });
+
+  it("reads a Doc by export and a PDF by extraction, redacted; refuses binaries and bad ids", async () => {
+    const mock = googleFetch([
+      [/\/files\/1DocDocDocDoc\/export\?mimeType=text%2Fplain/, () => new Response("Gate code: 4821. Card 4111 1111 1111 1111.")],
+      [/\/files\/1DocDocDocDoc\?fields=/, () => Response.json({ id: "1DocDocDocDoc", name: "Notes", mimeType: "application/vnd.google-apps.document" })],
+      [/\/files\/1PdfPdfPdfPdf\?alt=media/, () => new Response(new Uint8Array([1, 2, 3]))],
+      [/\/files\/1PdfPdfPdfPdf\?fields=/, () => Response.json({ id: "1PdfPdfPdfPdf", name: "Lease.pdf", mimeType: "application/pdf", size: "2048" })],
+      [/\/files\/1ZipZipZipZip\?fields=/, () => Response.json({ id: "1ZipZipZipZip", name: "a.zip", mimeType: "application/zip" })],
+    ]);
+    const ctx = { env: ENV, fetchImpl: mock.fetchImpl };
+    const doc = await readDriveFile(ctx, "1DocDocDocDoc", { maxChars: 5000 });
+    expect(doc).toContain("Name: Notes");
+    expect(doc).toContain("Type: Doc");
+    expect(doc).not.toContain("4111");
+    const pdf = await readDriveFile(ctx, "1PdfPdfPdfPdf", { maxChars: 5000, pdfExtractor: async () => "Rent due; SSN 123-45-6789" });
+    expect(pdf).toContain("Rent due");
+    expect(pdf).not.toContain("123-45-6789");
+    await expect(readDriveFile(ctx, "1ZipZipZipZip", { maxChars: 10 })).rejects.toThrow(/only Docs, Sheets, Slides, text, and PDFs/);
+    await expect(readDriveFile(ctx, "../etc/passwd", { maxChars: 10 })).rejects.toThrow(/file id/);
+  });
+
+  it("is reachable through the source registry by name", async () => {
+    const [section] = await sourceSections(["google-drive"], { env: {} });
+    expect(section).toMatch(/## Drive \(the principal's Google Drive, read-only\)[\s\S]*not configured/);
   });
 });

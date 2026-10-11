@@ -209,22 +209,26 @@ not a promise this engine makes. Collaboration is modeled the other way
 round: each person keeps their own person brain, shared work lives in an org,
 team, or group brain they are members of, and markings decide what crosses.
 
-## 7. The principal's own Google account (`gmail`, `google-calendar`)
+## 7. The principal's own Google account (`gmail`, `google-calendar`, `google-drive`)
 
-A person brain's hub usually reads its principal's inbox and calendar:
+A person brain's hub usually reads its principal's inbox, calendar, and
+recent Drive files:
 
 ```yaml
-sources: [brains, gmail, google-calendar]
+sources: [brains, gmail, google-calendar, google-drive]
 ```
 
 These are **not** the persona's mailbox (the `gmail` channel, `GMAIL_*`,
 which sends briefs and receives directions). They are the human's own
-account, read-only by scope: consent asks for `gmail.readonly` and
-`calendar.readonly` and a token with any wider scope is refused.
+account, read-only by scope: consent asks for `gmail.readonly`,
+`calendar.readonly`, and `drive.readonly` on one OAuth client, and a token
+with any wider scope is refused. All three sources share one refresh token.
 
 ```bash
 # once, on the laptop: an OAuth client of type "Desktop app" in a project
-# whose consent screen is In Production; its id/secret go in .env.local as
+# whose consent screen is In Production, with the Gmail, Calendar, and Drive
+# APIs enabled (an unverified app used by its owner needs no Data Access
+# entries); its id/secret go in .env.local as
 # GOOGLE_READ_CLIENT_ID / GOOGLE_READ_CLIENT_SECRET
 anima-mesh connect google --instance <brain>
 ```
@@ -232,6 +236,10 @@ anima-mesh connect google --instance <brain>
 The command runs a loopback PKCE consent, writes `GOOGLE_READ_REFRESH_TOKEN`
 into `.env.local` (mode 600, never printed), and verifies the account. For
 the cloud tier, load the three `GOOGLE_READ_*` values as Worker secrets.
+When the engine adds a scope (as it did with `drive.readonly`), re-run the
+command: the new refresh token replaces the old one, and the cloud secret
+must be updated too. Until then a Drive section names the scope gap and the
+fix instead of failing silently.
 
 Two safety properties live in code:
 
@@ -245,11 +253,15 @@ Two safety properties live in code:
 
 Defaults are least exposure: inbox snippets (not bodies) for the last two
 days without promotions/social/forums, and calendar titles and places for
-14 days ahead, with descriptions and attendee identities off. Knobs:
+14 days ahead, with descriptions and attendee identities off, and Drive
+file NAMES (no contents) modified in the last 14 days. Knobs:
 `GMAIL_READ_QUERY`, `GMAIL_READ_MAX`, `GMAIL_READ_BODIES`,
 `GCAL_READ_CALENDARS`, `GCAL_READ_DAYS_AHEAD`, `GCAL_READ_DAYS_BACK`,
-`GCAL_READ_DESCRIPTIONS`. A `read-request` can open one message in full
-(`gmail: [<message-id>]`), redacted.
+`GCAL_READ_DESCRIPTIONS`, `GDRIVE_READ_DAYS`, `GDRIVE_READ_MAX`,
+`GDRIVE_READ_QUERY` (a Drive `q` clause, e.g. one folder). A `read-request`
+can open one message in full (`gmail: [<message-id>]`) or one Drive file
+(`google-drive: [<file-id>]`: Docs and Slides as text, Sheets as CSV, text
+files, PDFs extracted), redacted.
 
 ## 8. The operator's view
 

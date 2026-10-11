@@ -261,10 +261,12 @@ contents"), never aborted runs.
   from both sides before inlining anything; `readBrainPath` serves
   `brains: [<id>/<path>]` read-requests without becoming an existence
   oracle.
-- `sources/google.ts` - the `gmail` and `google-calendar` sources: the
-  PRINCIPAL's own account (not the persona's mailbox), read-only scopes,
-  `redactSensitive` applied in code to everything inlined, every section
-  framed as untrusted third-party text. Env contract in the module header.
+- `sources/google.ts` - the `gmail`, `google-calendar`, and `google-drive`
+  sources: the PRINCIPAL's own account (not the persona's mailbox),
+  read-only scopes on one OAuth client, `redactSensitive` applied in code to
+  everything inlined, every section framed as untrusted third-party text.
+  Drive lists names only; `readDriveFile` serves `google-drive: [<file-id>]`
+  read-requests. Env contract in the module header.
 - `sources/registry.ts` — `sourceSections(names, ctx)`, the harness's one
   entry point.
 
@@ -285,8 +287,8 @@ contents"), never aborted runs.
 ## connect/ - one-time consents (Node)
 
 - `google.ts` - `anima-mesh connect google`: loopback PKCE consent for
-  `gmail.readonly` + `calendar.readonly`, refusing a token with any wider
-  scope; the refresh token goes straight into `.env.local` (mode 600) and is
+  `gmail.readonly` + `calendar.readonly` + `drive.readonly`, refusing a
+  token with any wider scope and warning on any the principal left out; the refresh token goes straight into `.env.local` (mode 600) and is
   never printed.
 
 ## workers/ — the cloud tier (repo root, own workspaces)
