@@ -107,7 +107,7 @@ function usage(): string {
     "  anima-mesh brains sync [--instance dir]     materialize ancestor constitutions (child brains)",
     "  anima-mesh ontology [--instance dir]        type catalog, schemas, link types, cross-brain refs",
     "  anima-mesh connect google [--instance dir] [--port N] [--no-open]",
-    "                        one-time READ-ONLY Gmail + Calendar consent for the principal",
+    "                        one-time READ-ONLY Gmail + Calendar + Drive consent for the principal",
     "  anima-mesh templates",
   ].join("\n");
 }
@@ -445,7 +445,7 @@ async function cmdOntology(args: string[], io: { log: (s: string) => void }): Pr
 async function cmdConnect(args: string[], io: { log: (s: string) => void; error: (s: string) => void }): Promise<number> {
   const positional = args.filter((a, i) => !a.startsWith("--") && args[i - 1]?.startsWith("--") !== true);
   if (positional[0] !== "google") {
-    io.error("connect: the only connector is `google` (read-only Gmail + Calendar for the principal)");
+    io.error("connect: the only connector is `google` (read-only Gmail + Calendar + Drive for the principal)");
     return 2;
   }
   const port = flag(args, "port");

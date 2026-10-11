@@ -37,7 +37,9 @@
     // "GMAIL_READ_QUERY": "in:inbox newer_than:2d",           // 'gmail' source (the PRINCIPAL's account); default shown in docs
     // "GMAIL_READ_MAX": "20",                                 // messages per run, cap 50
     // "GCAL_READ_CALENDARS": "primary",                       // 'google-calendar' source; comma-separated ids
-    // "GCAL_READ_DAYS_AHEAD": "14"                            // window ahead; GCAL_READ_DAYS_BACK default 1
+    // "GCAL_READ_DAYS_AHEAD": "14",                           // window ahead; GCAL_READ_DAYS_BACK default 1
+    // "GDRIVE_READ_DAYS": "14",                               // 'google-drive' source; files modified in the last N days
+    // "GDRIVE_READ_MAX": "25"                                 // files listed per run, cap 100; GDRIVE_READ_QUERY narrows
   }
   // Secrets (wrangler secret put): brain-repo auth is the GitHub App trio
   // GITHUB_APP_ID, GITHUB_APP_INSTALLATION_ID, GITHUB_APP_PRIVATE_KEY
@@ -71,7 +73,7 @@
   // anthropic-api uses subscription OAuth over plain fetch;
   // ANTHROPIC_API_KEY is not used by this adapter.
   // v2.0 (docs/layered-brains.md): the principal's own Google account for
-  // the 'gmail' / 'google-calendar' read sources - GOOGLE_READ_CLIENT_ID,
+  // the 'gmail' / 'google-calendar' / 'google-drive' read sources - GOOGLE_READ_CLIENT_ID,
   // GOOGLE_READ_CLIENT_SECRET, GOOGLE_READ_REFRESH_TOKEN (read-only scopes,
   // minted on the laptop by `anima-mesh connect google`); and one
   // BRAIN_LINK_<ID>_TOKEN per linked brain read over GitHub (a fine-grained

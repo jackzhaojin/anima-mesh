@@ -3,7 +3,7 @@
 This history is organized by **minor release line** (and, from 2.0, major):
 the capability boundary operators actually adopt. Patch tags are deliberately
 rolled into the value and maturity of their minor rather than narrated one by
-one. The latest tag is **v2.0.2**.
+one. The latest tag is **v2.1.1**.
 
 ## Upgrade procedure
 
@@ -28,34 +28,69 @@ The ledger remains append-only; never "migrate" it by editing old entries.
 
 ## [Unreleased]
 
-- Nothing yet.
+- **Docs: pair every brain with a document store.** `starting-a-company.md`
+  now recommends that almost every brain pair with one store for its
+  documents of record (personal Google Drive or OneDrive; Google Workspace
+  My Drive or shared drives; SharePoint, OneDrive, or Teams files), maps
+  each to the read-only source that reaches it today (`google-drive`,
+  `onedrive`, `github-docs`), and sets the division of labor: the store
+  holds the document, the brain holds what matters about it and links the
+  path. The `brain-setup` skill asks for the store as its own step;
+  `layered-brains.md` points person brains at their own Drive. No code
+  change.
+
+## [v2.1.0] - Google Drive, read-only, on the principal's Google client
+
+**Latest tag: v2.1.1 · 2026-10-11**
+
+**v2.1.1 - billing is a harness choice: API credits and Codex.** Four new
+harnesses, each picked per agent with `harness:` or a `cognition.overrides`
+entry like every other, all verified live on 2026-10-11:
+
+- `anthropic-api-key`: Claude on a Console `ANTHROPIC_API_KEY` (metered
+  credits), cloud and laptop, with the same streaming and server-side web
+  search as `anthropic-api`.
+- `claude-agent-sdk-api-key`: the Agent SDK on the same key, laptop (the
+  path `references/poc/claude/claude-api-poc` proved). It refuses any run
+  the SDK reports as billed elsewhere.
+- `codex`: the Codex CLI on the local ChatGPT login (`codex exec --json`,
+  read-only sandbox, `web_search` only when `web:` budgets it), laptop.
+- `openai-codex`: ChatGPT-plan Codex over fetch, with server-side web
+  search. **Laptop-tier, a known limitation:** chatgpt.com 403s Cloudflare
+  Workers egress by IP, so a cloud beat skips these agents with a reason
+  ([learning](docs/learnings/2026-10-11-chatgpt-codex-blocks-workers.md)).
+
+Guards: the subscription harnesses strip a stray exported
+`ANTHROPIC_API_KEY` from their subprocesses (the CLI would otherwise prefer
+it and bill credits; v2.0.1 had also let an instance-env key reach
+`claude-code`, which this release withdraws). The engine never refreshes a
+Codex login: the laptop borrows `~/.codex/auth.json` read-only, because
+refreshing it from outside broke the ChatGPT desktop app's copy
+([learning](docs/learnings/2026-10-11-shared-codex-login-refresh.md)).
+*Upgrade:* nothing required; no new Worker secret.
+
+**v2.1.0 · 2026-10-10.**
+
+**`google-drive` read source** on the same Google OAuth client as `gmail`
+and `google-calendar`: `GOOGLE_READ_SCOPES` adds `drive.readonly`, so
+`anima-mesh connect google` now asks for three read-only scopes and mints
+one refresh token for all three sources. The section lists file names
+modified in the last `GDRIVE_READ_DAYS` (default 14), no contents;
+`google-drive: [<file-id>]` read-requests serve Docs/Slides as text,
+Sheets as CSV, text files, and PDFs (extracted), clipped and redacted.
+Connect warns when the principal unticks a scope and verifies Drive too.
+**Upgrade:** enable the Drive API in the client's Cloud project (an
+unverified app used by its owner needs no Data Access entry; a verified app
+must add `drive.readonly` there and re-verify), re-run
+`anima-mesh connect google`, and update the `GOOGLE_READ_REFRESH_TOKEN`
+Worker secret. Until then the Drive section names the scope gap; Gmail and
+Calendar keep working on the old token.
 
 ## [v2.0.0] - the mesh of brains: layered and multi-player
 
-**Latest tag: v2.0.2 · 2026-10-11** *(v2.0.0 was an operator-chosen major.
+**Latest tag: v2.0.1 · 2026-10-11** *(v2.0.0 was an operator-chosen major.
 The pre-release cuts v0.18.0 and v0.18.1, tagged earlier the same day, are
 folded into it and withdrawn.)*
-
-**v2.0.2 - billing is a harness choice: API credits and Codex.** Four new
-harnesses, each picked per agent with `harness:` or a `cognition.overrides`
-entry like every other: `anthropic-api-key` (Claude on a Console
-`ANTHROPIC_API_KEY`, metered credits, cloud and laptop, same streaming and
-server-side web search as `anthropic-api`), `claude-agent-sdk-api-key` (the
-Agent SDK on the same key, laptop; the path
-`references/poc/claude/claude-api-poc` proved, and it refuses any run the SDK
-reports as billed elsewhere), `codex` (the Codex CLI on the local ChatGPT
-login, `codex exec --json`, read-only sandbox, laptop), and `openai-codex`
-(ChatGPT-plan Codex over fetch, cloud and laptop). Two guards come with it:
-the subscription harnesses now strip a stray exported `ANTHROPIC_API_KEY`
-from their subprocesses (the CLI would otherwise prefer it and bill
-credits; v2.0.1 had also let an instance-env `ANTHROPIC_API_KEY` reach
-`claude-code`, which this release withdraws), and Codex's rotating refresh tokens have exactly one owner per
-tier (HeartbeatDO storage on the Worker, the CLI's own `auth.json` on the
-laptop). *Upgrade:* nothing required. To use `openai-codex` on Workers, add
-the `CODEX_REFRESH_TOKEN` secret from a dedicated login
-([deploying-cloud.md](docs/deploying-cloud.md#codex-on-the-worker)); its
-request shape is unprobed from Workers egress, so treat the first beat as
-the probe.
 
 **v2.0.1 - the CLI harnesses fail readably and use the instance's Claude
 token.** `claude -p` prints auth failures ("OAuth session expired") to

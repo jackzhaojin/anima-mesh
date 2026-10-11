@@ -30,6 +30,9 @@ export interface Env {
   GCAL_READ_DAYS_AHEAD?: string; // default 14
   GCAL_READ_DAYS_BACK?: string; // default 1
   GCAL_READ_DESCRIPTIONS?: string; // "true" inlines clipped event descriptions
+  GDRIVE_READ_DAYS?: string; // 'google-drive' source: files modified in the last N days; default 14
+  GDRIVE_READ_MAX?: string; // files listed per run; default 25, cap 100
+  GDRIVE_READ_QUERY?: string; // extra Drive q clause ANDed onto the listing
   // -- secrets --
   GITHUB_APP_ID?: string; // GitHub App auth (preferred): all three or none
   GITHUB_APP_INSTALLATION_ID?: string;
@@ -50,7 +53,7 @@ export interface Env {
   MSGRAPH_REFRESH_TOKEN?: string;
   GITHUB_DOCS_TOKEN?: string; // fine-grained PAT, Contents READ-ONLY on the docs repo; falls back to GITHUB_TOKEN
   GITHUB_DEFECTS_TOKEN?: string; // PAT with Issues R/W on the ENGINE repo — the STANDARD posture (v0.11.2): set it and leak-clean defect reports auto-file as issues
-  GOOGLE_READ_CLIENT_ID?: string; // the PRINCIPAL's Google account, READ-ONLY (gmail.readonly + calendar.readonly) - 'gmail' / 'google-calendar' sources
+  GOOGLE_READ_CLIENT_ID?: string; // the PRINCIPAL's Google account, READ-ONLY (gmail/calendar/drive .readonly) - 'gmail' / 'google-calendar' / 'google-drive' sources
   GOOGLE_READ_CLIENT_SECRET?: string;
   GOOGLE_READ_REFRESH_TOKEN?: string; // minted on the laptop by `anima-mesh connect google`
   // BRAIN_LINK_<ID>_TOKEN (one per linked brain, any number): a READ-ONLY
@@ -100,6 +103,9 @@ export function envRecord(env: Env): Record<string, string | undefined> {
     GCAL_READ_DAYS_AHEAD: env.GCAL_READ_DAYS_AHEAD,
     GCAL_READ_DAYS_BACK: env.GCAL_READ_DAYS_BACK,
     GCAL_READ_DESCRIPTIONS: env.GCAL_READ_DESCRIPTIONS,
+    GDRIVE_READ_DAYS: env.GDRIVE_READ_DAYS,
+    GDRIVE_READ_MAX: env.GDRIVE_READ_MAX,
+    GDRIVE_READ_QUERY: env.GDRIVE_READ_QUERY,
     ...Object.fromEntries(
       Object.entries(env as unknown as Record<string, unknown>).filter(
         (entry): entry is [string, string] => LINK_TOKEN_RE.test(entry[0]) && typeof entry[1] === "string",
