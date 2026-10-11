@@ -178,11 +178,18 @@ someone's world (`person`, `org`, `team`, or `group`), and brains connect
   deterministic code; the model only writes the report).
 - **The model chokepoint.** Each agent concept declares its `model` and
   `harness`; swapping vendors is a config edit, never a rebuild. Shipped
-  harnesses: `moonshot-api` and `anthropic-api` (pure fetch — the two a cloud
-  beat may run), `claude-code` (headless CLI), `claude-agent-sdk`
-  (subprocess, laptop-tier by architecture), `opencode` (any
-  opencode-configured model), `fake` (deterministic, for the regression
-  suite). An instance can redirect a declared harness at runtime via
+  harnesses: `moonshot-api`, `anthropic-api`, and `anthropic-api-key` (pure
+  fetch — the ones a cloud beat may run), `openai-codex` (pure fetch, but
+  laptop-tier: chatgpt.com blocks Cloudflare Workers egress), `claude-code`
+  (headless CLI), `claude-agent-sdk` and `claude-agent-sdk-api-key`
+  (subprocess, laptop-tier by architecture), `codex` (headless Codex CLI),
+  `opencode` (any opencode-configured model), `fake` (deterministic, for
+  the regression suite). **Billing is part of the harness name**, so the
+  brain chooses it per agent: `anthropic-api` / `claude-agent-sdk` /
+  `claude-code` bill the Claude subscription, the `*-api-key` pair bills
+  metered API credits, `codex` / `openai-codex` bill the ChatGPT plan's Codex
+  quota, and `moonshot-api` bills Kimi. A credential that happens to be
+  exported in the shell never moves a run from one to another. An instance can redirect a declared harness at runtime via
   `animamesh.config.json → cognition.overrides` — vendor trouble becomes a
   config edit, with the agent's declared identity untouched. Providers also
   **declare their capabilities** (file reads, web search), and the prompt
@@ -316,7 +323,7 @@ conformance and complete a full agent run against the fake provider.
 
 ## Status
 
-v2.0.1 (2026-10-10). Package name on npm to be confirmed; pinned consumers
+v2.1.1 (2026-10-11). Package name on npm to be confirmed; pinned consumers
 reference the repo by tag. **2.0 is the mesh of brains**: person, org, team,
 and group brains linked by mutual consent, owner-decided `share:` grants,
 mandatory `markings:`, inherited law down a containment chain, member roles
@@ -326,6 +333,14 @@ major version because it changes what the engine is for: one brain was one
 company; now a brain is a layer, and the engine reasons across layers. A
 brain without a `brain` block runs exactly as it did on 0.17, so the upgrade
 itself is a pin bump.
+
+Since 2.0: **v2.1** adds the `google-drive` read source on the same
+read-only Google consent as Gmail and Calendar. **v2.1.1** makes billing a
+harness choice. `anthropic-api-key` and `claude-agent-sdk-api-key` run
+Claude on metered API credits, and `codex` and `openai-codex` run on a
+ChatGPT plan. Subprocesses never pick up a stray exported key. A
+subscription Codex agent runs on the laptop only, because chatgpt.com
+blocks Cloudflare Workers egress.
 
 The cloud tier introduced in v0.3 is the primary execution path; the CLI
 remains the bootstrap, operator, and subprocess-harness path. The 0.x lines

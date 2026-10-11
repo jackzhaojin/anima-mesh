@@ -61,7 +61,7 @@ the example file shows the shape.
 | `GITHUB_APP_ID` / `GITHUB_APP_INSTALLATION_ID` / `GITHUB_APP_PRIVATE_KEY` | read + commit the brain via GitHub App installation tokens (preferred — all three or none). The key must be **PKCS#8**: convert GitHub's download once with `openssl pkcs8 -topk8 -nocrypt -in downloaded.pem -out app.pem`, then **pipe it** (`wrangler secret put GITHUB_APP_PRIVATE_KEY < app.pem`) — interactive paste mangles newlines |
 | `GITHUB_TOKEN` | first-class alternative: a standing PAT, used only when no App var is set. A partial App trio fails loudly rather than falling back |
 | `GITHUB_DEFECTS_TOKEN` | Issues read/write on the **public engine repo** — lets leak-clean `defect-report`s file directly as engine issues (issue-first, v0.11.4). Unset ⇒ defects fall back to private drafts |
-| `MOONSHOT_API_KEY` and/or `CLAUDE_CODE_OAUTH_TOKEN` | cognition (whatever the agents' effective harnesses need). Only `anthropic-api` (`CLAUDE_CODE_OAUTH_TOKEN`) grants `web: <n>` search budgets on Workers |
+| `MOONSHOT_API_KEY`, `CLAUDE_CODE_OAUTH_TOKEN`, `ANTHROPIC_API_KEY` | cognition, whichever the agents' effective harnesses need: `moonshot-api`, `anthropic-api` (subscription), `anthropic-api-key` (metered API credits; cap spend in the Console). No Codex secret: Codex is laptop-tier ([why](#codex-is-laptop-tier-a-known-limitation)). The two Anthropic harnesses grant `web: <n>` search budgets on Workers |
 | `DISCORD_BOT_TOKEN` / `DISCORD_DM_USER_ID` | brief + failure DMs; the direction sender gate |
 | `BEAT_TRIGGER_TOKEN` | gates manual `POST /beat` (mint with `openssl rand -hex 32`) |
 | `GMAIL_CLIENT_ID` / `GMAIL_CLIENT_SECRET` / `GMAIL_REFRESH_TOKEN` / `AGENT_EMAIL` | only if the email surfaces are on. **Publish the OAuth consent screen to "In Production" first** — a screen left in "Testing" expires every refresh token after 7 days ([learning](learnings/2026-07-12-google-oauth-testing-expiry.md)) |
@@ -87,6 +87,23 @@ redirect URI derives from the request origin, so it becomes
 Register exactly that URI on the Google OAuth client. (The `workers.dev`
 route is disabled automatically once a custom domain exists — one hostname,
 one origin, one redirect URI.)
+
+## Codex is laptop-tier (a known limitation)
+
+There is no Codex secret to set here. `openai-codex` (your ChatGPT plan,
+over fetch) works from a laptop, but `chatgpt.com` answers every request
+from a Cloudflare Worker with an HTML 403, *"Unable to load site … If you
+are using a VPN, try turning it off"*, keyed on the Worker's egress IP.
+Headers do not change it. Probed 2026-10-11 from a real edge
+(`references/poc/codex/workers-egress-probe`); details in the
+[learning](learnings/2026-10-11-chatgpt-codex-blocks-workers.md). opencode's
+ChatGPT login calls the same endpoint, so it is blocked the same way.
+
+So agents on `openai-codex` or `codex` are skipped by the cloud beat with a
+stated reason and run on the laptop heartbeat. For cloud cognition use
+`anthropic-api` (subscription) or `anthropic-api-key` (metered credits),
+which both answer Workers, or reroute a Codex agent for the cloud with a
+`cognition.overrides` entry.
 
 ## Deploy and verify
 

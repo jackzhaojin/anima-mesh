@@ -1,5 +1,9 @@
 import { describe, it, expect, vi } from "vitest";
-import { createAnthropicApiProvider, thinkingOffFields } from "../src/providers/anthropic-api.js";
+import {
+  createAnthropicApiProvider,
+  createAnthropicApiKeyProvider,
+  thinkingOffFields,
+} from "../src/providers/anthropic-api.js";
 import { resolveProvider, CLOUD_HARNESSES } from "../src/providers/index.js";
 
 /** A Messages-API-shaped success payload. */
@@ -442,5 +446,88 @@ describe("anthropic-api — retry budget shape (JSON seam)", () => {
     const result = await provider.run({ prompt: "p", cwd: "/", webSearchMaxUses: 3 });
     expect(result.text).toBe("a\nb");
     expect(fetchImpl).toHaveBeenCalledTimes(4);
+  });
+});
+
+/**
+ * `anthropic-api-key` — the same Messages implementation on a Console API
+ * key: metered credits. The brain picks it by harness name; what must never
+ * happen is the two billing paths bleeding into each other.
+ */
+describe("anthropic-api-key — metered API credits", () => {
+  const KEY_ENV = { ANTHROPIC_API_KEY: "sk-ant-api03-test-not-real" };
+
+  it("authenticates with x-api-key: no bearer, no OAuth beta, no CLI identity block", async () => {
+    const fetchImpl = vi.fn().mockResolvedValue(okResponse("billed report"));
+    const provider = createAnthropicApiKeyProvider({ env: KEY_ENV, fetchImpl });
+
+    const result = await provider.run({ prompt: "p", cwd: "/", model: "claude-haiku-4-5" });
+
+    const [url, init] = fetchImpl.mock.calls[0]!;
+    expect(url).toBe("https://api.anthropic.com/v1/messages");
+    expect(init.headers["x-api-key"]).toBe("sk-ant-api03-test-not-real");
+    expect(init.headers.authorization).toBeUndefined();
+    expect(init.headers["anthropic-beta"]).toBeUndefined(); // haiku-4-5 takes no fallback
+    expect(init.headers["anthropic-version"]).toBe("2023-06-01");
+    const body = JSON.parse(init.body);
+    expect(body.stream).toBe(true);
+    expect(JSON.stringify(body.system)).not.toContain("Claude Code");
+    expect(body.system).toHaveLength(1);
+    expect(result.text).toBe("billed report");
+    expect(provider.name).toBe("anthropic-api-key");
+  });
+
+  it("keeps the refusal-fallback beta (public API beta) without the OAuth one", async () => {
+    const fetchImpl = vi.fn().mockResolvedValue(okResponse());
+    const provider = createAnthropicApiKeyProvider({ env: KEY_ENV, fetchImpl });
+    await provider.run({ prompt: "p", cwd: "/" }); // default claude-sonnet-5-5
+    expect(fetchImpl.mock.calls[0]![1].headers["anthropic-beta"]).toBe("server-side-fallback-2026-07-01");
+  });
+
+  it("the two harnesses never read each other's credential", () => {
+    const oauthOnly = createAnthropicApiKeyProvider({ env: { ...ENV, ANTHROPIC_API_KEY: "" }, fetchImpl: vi.fn() });
+    expect(() => oauthOnly.assertConfigured()).toThrow(/anthropic-api-key harness: ANTHROPIC_API_KEY is not set/);
+    const keyOnly = createAnthropicApiProvider({ env: { ...KEY_ENV, CLAUDE_CODE_OAUTH_TOKEN: "" }, fetchImpl: vi.fn() });
+    expect(() => keyOnly.assertConfigured()).toThrow(/CLAUDE_CODE_OAUTH_TOKEN/);
+  });
+
+  it("names exhausted credits as an account condition, not a bad request — and does not retry it", async () => {
+    const fetchImpl = vi.fn().mockImplementation(async () =>
+      new Response(
+        '{"type":"error","error":{"type":"invalid_request_error","message":"Your credit balance is too low to access the Anthropic API."}}',
+        { status: 400 },
+      ),
+    );
+    const provider = createAnthropicApiKeyProvider({ env: KEY_ENV, fetchImpl, retryDelaysMs: [0, 0] });
+    const err = (await provider.run({ prompt: "p", cwd: "/" }).catch((e: Error) => e)) as Error;
+    expect(err.message).toContain("anthropic-api-key → HTTP 400");
+    expect(err.message).toContain("API credits exhausted");
+    expect(err.message).not.toContain("sk-ant-api03-test-not-real");
+    expect(fetchImpl).toHaveBeenCalledTimes(1);
+  });
+
+  it("a 429 points at the Console limits, never at the subscription window", async () => {
+    const fetchImpl = vi.fn().mockImplementation(async () => new Response("rate limited", { status: 429 }));
+    const provider = createAnthropicApiKeyProvider({ env: KEY_ENV, fetchImpl, retryDelaysMs: [0] });
+    const err = (await provider.run({ prompt: "p", cwd: "/" }).catch((e: Error) => e)) as Error;
+    expect(err.message).toContain("spend limit");
+    expect(err.message).not.toContain("Claude Code sessions");
+  });
+
+  it("carries server-side web search like its OAuth sibling", async () => {
+    const fetchImpl = vi.fn().mockResolvedValue(okResponse());
+    const provider = createAnthropicApiKeyProvider({ env: KEY_ENV, fetchImpl });
+    expect(provider.capabilities?.webSearch).toBe(true);
+    await provider.run({ prompt: "p", cwd: "/", webSearchMaxUses: 3 });
+    expect(JSON.parse(fetchImpl.mock.calls[0]![1].body).tools).toEqual([
+      { type: "web_search_20250305", name: "web_search", max_uses: 3 },
+    ]);
+  });
+
+  it("is a cloud harness, resolvable with an injected context", () => {
+    expect(CLOUD_HARNESSES.has("anthropic-api-key")).toBe(true);
+    const provider = resolveProvider("anthropic-api-key", { env: KEY_ENV });
+    expect(provider.name).toBe("anthropic-api-key");
+    expect(() => provider.assertConfigured()).not.toThrow();
   });
 });

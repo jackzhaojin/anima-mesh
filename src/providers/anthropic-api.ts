@@ -8,8 +8,18 @@ import type {
 import type { ApiProviderContext } from "./moonshot-api.js";
 
 /**
- * Claude via the Messages API over the SUBSCRIPTION OAuth token — pure
- * fetch, no subprocess, no filesystem: Workers-capable Claude cognition.
+ * Claude via the Messages API — pure fetch, no subprocess, no filesystem:
+ * Workers-capable Claude cognition. Two harnesses share this one
+ * implementation and differ ONLY in how the request is authenticated (and
+ * so billed); the brain picks per agent with `harness:` or a
+ * `cognition.overrides` entry:
+ *
+ * - `anthropic-api`     — the SUBSCRIPTION OAuth token (quota, not spend).
+ * - `anthropic-api-key` — a Console API key (ANTHROPIC_API_KEY): metered
+ *   API credits, billed per token. No identity block, no OAuth beta; the
+ *   spend ceiling is the Console's own spend limit, not anything here.
+ *
+ * The subscription path, in detail:
  *
  * Auth: CLAUDE_CODE_OAUTH_TOKEN (the `claude setup-token` credential) as a
  * Bearer with the `oauth-2025-04-20` beta header — the same wire calls the
@@ -68,9 +78,10 @@ export function thinkingOffFields(model: string): Record<string, unknown> {
 // the overage billing lane (org-disabled → bare 429 "Error", no quota
 // headers). Bisected live 2026-07-12; matches anthropics/claude-code#40515.
 const IDENTITY = "You are Claude Code, Anthropic's official CLI for Claude.";
+const WORKER_LINE = "You are an agent worker in an AnimaMesh mesh; return only your report body as markdown.";
 const SYSTEM_BLOCKS = [
   { type: "text", text: IDENTITY },
-  { type: "text", text: "You are an agent worker in an AnimaMesh mesh; return only your report body as markdown." },
+  { type: "text", text: WORKER_LINE },
 ];
 // Server-side web search: the API runs the searches and returns results in
 // the SAME response — no client tool loop, no subprocess, so it works
@@ -241,7 +252,65 @@ function isToolRejection(status: number, body: string): boolean {
   return b.includes("web_search") || b.includes("tool");
 }
 
-export function createAnthropicApiProvider(ctx: ApiProviderContext = {}): AgentWorkerProvider {
+/** What separates the two Claude-over-fetch harnesses: credential, headers, system shape. */
+interface AnthropicAuthMode {
+  name: string;
+  envVar: string;
+  headers(credential: string, fallback: boolean): Record<string, string>;
+  system: Array<{ type: string; text: string }>;
+  /** Appended to a 429/400 body so the operator can tell quota from spend. */
+  annotate(status: number, res: Response, body: string): string;
+}
+
+const OAUTH_MODE: AnthropicAuthMode = {
+  name: "anthropic-api",
+  envVar: "CLAUDE_CODE_OAUTH_TOKEN",
+  headers: (token, fallback) => ({
+    authorization: `Bearer ${token}`,
+    "anthropic-beta": fallback ? `${OAUTH_BETA},${FALLBACK_BETA}` : OAUTH_BETA,
+  }),
+  system: SYSTEM_BLOCKS,
+  annotate(status, res) {
+    if (status !== 429) return "";
+    // The subscription's unified window is SHARED with Claude Code
+    // sessions — a bare "rate_limit_error" is undiagnosable without
+    // these (the 2026-07-12 /direct triage lesson).
+    const util = res.headers.get("anthropic-ratelimit-unified-5h-status");
+    const reset = Number(res.headers.get("anthropic-ratelimit-unified-5h-reset"));
+    const detail = [
+      util ? `5h window: ${util}` : null,
+      Number.isFinite(reset) && reset > 0 ? `resets ${new Date(reset * 1000).toISOString()}` : null,
+    ].filter(Boolean);
+    if (detail.length) return ` [${detail.join(", ")} — quota is shared with Claude Code sessions]`;
+    // No quota headers at all = the OAuth gateway rejected the
+    // REQUEST SHAPE (overage-lane routing), not the quota — the
+    // 2026-07-12 root cause. Should not recur with block-form
+    // system prompts, but if it does, name it.
+    return " [no quota headers — the OAuth gateway rejected the request shape, not the quota; verify the system identity block]";
+  },
+};
+
+const API_KEY_MODE: AnthropicAuthMode = {
+  name: "anthropic-api-key",
+  envVar: "ANTHROPIC_API_KEY",
+  // A plain API key: x-api-key, no OAuth beta. The refusal-fallback beta is
+  // a public API beta, so it rides here too.
+  headers: (key, fallback) => ({ "x-api-key": key, ...(fallback ? { "anthropic-beta": FALLBACK_BETA } : {}) }),
+  // No identity sentence: that is the OAuth gateway's requirement, and an
+  // API-key request has no business claiming to be the CLI.
+  system: [{ type: "text", text: WORKER_LINE }],
+  annotate(status, _res, body) {
+    // Metered credits run out; that 400 is an account condition, not a
+    // malformed request — say so instead of leaving a bare invalid_request.
+    if (status === 400 && /credit balance/i.test(body)) {
+      return " [API credits exhausted — top up or raise the Console spend limit; this harness bills API credits, not the subscription]";
+    }
+    if (status === 429) return " [API-key rate limit or spend limit — see the Console's Limits page]";
+    return "";
+  },
+};
+
+function createAnthropicProvider(mode: AnthropicAuthMode, ctx: ApiProviderContext): AgentWorkerProvider {
   const env = ctx.env ?? {};
   const doFetch = ctx.fetchImpl ?? fetch;
   const retryDelays = ctx.retryDelaysMs ?? DEFAULT_RETRY_DELAYS_MS;
@@ -255,22 +324,23 @@ export function createAnthropicApiProvider(ctx: ApiProviderContext = {}): AgentW
   };
 
   return {
-    name: "anthropic-api",
+    name: mode.name,
     capabilities,
 
     assertConfigured(): void {
-      if (!getEnv(env, "CLAUDE_CODE_OAUTH_TOKEN")) {
+      if (!getEnv(env, mode.envVar)) {
         throw new Error(
-          "anthropic-api harness: CLAUDE_CODE_OAUTH_TOKEN is not set — add it to the instance .env.local (laptop) or Worker secrets (cloud)",
+          `${mode.name} harness: ${mode.envVar} is not set — add it to the instance .env.local (laptop) or Worker secrets (cloud)`,
         );
       }
     },
 
     async run(opts: ProviderRunOptions): Promise<ProviderResult> {
-      const token = getEnv(env, "CLAUDE_CODE_OAUTH_TOKEN");
+      const token = getEnv(env, mode.envVar);
       if (!token) {
-        throw new Error("anthropic-api harness: CLAUDE_CODE_OAUTH_TOKEN is not set");
+        throw new Error(`${mode.name} harness: ${mode.envVar} is not set`);
       }
+      const label = mode.name;
       const model = opts.model ?? DEFAULT_MODEL;
       const base = (getEnv(env, "ANTHROPIC_BASE_URL") ?? DEFAULT_BASE_URL).replace(/\/+$/, "");
       const endpoint = `${base}/v1/messages`;
@@ -297,7 +367,7 @@ export function createAnthropicApiProvider(ctx: ApiProviderContext = {}): AgentW
       const collected: string[] = [];
       let turns = 0;
 
-      progress(`anthropic-api: starting (${model}${webEnabled ? `, web search ≤${webUses}` : ""})`);
+      progress(`${label}: starting (${model}${webEnabled ? `, web search ≤${webUses}` : ""})`);
       for (let attempt = 0; ; attempt++) {
         const body = JSON.stringify({
           model,
@@ -307,7 +377,7 @@ export function createAnthropicApiProvider(ctx: ApiProviderContext = {}): AgentW
           stream: true,
           ...(disableThinking ? thinkingOffFields(model) : {}),
           ...(fallback ? { fallbacks: "default" } : {}),
-          system: SYSTEM_BLOCKS,
+          system: mode.system,
           ...(webEnabled
             ? { tools: [{ type: WEB_SEARCH_TOOL_TYPE, name: "web_search", max_uses: webUses }] }
             : {}),
@@ -318,9 +388,8 @@ export function createAnthropicApiProvider(ctx: ApiProviderContext = {}): AgentW
           res = await doFetch(endpoint, {
             method: "POST",
             headers: {
-              authorization: `Bearer ${token}`,
+              ...mode.headers(token, fallback),
               "anthropic-version": ANTHROPIC_VERSION,
-              "anthropic-beta": fallback ? `${OAUTH_BETA},${FALLBACK_BETA}` : OAUTH_BETA,
               "content-type": "application/json",
             },
             body,
@@ -328,7 +397,7 @@ export function createAnthropicApiProvider(ctx: ApiProviderContext = {}): AgentW
           });
         } catch (err) {
           if (err instanceof DOMException && err.name === "TimeoutError") {
-            throw new Error(`anthropic-api run timed out after ${timeoutMs}ms`);
+            throw new Error(`${label} run timed out after ${timeoutMs}ms`);
           }
           throw err;
         }
@@ -339,7 +408,7 @@ export function createAnthropicApiProvider(ctx: ApiProviderContext = {}): AgentW
             json = await readMessage(res);
           } catch (err) {
             if (err instanceof DOMException && err.name === "TimeoutError") {
-              throw new Error(`anthropic-api run timed out after ${timeoutMs}ms`);
+              throw new Error(`${label} run timed out after ${timeoutMs}ms`);
             }
             // A cut or errored stream is transient the same way a 5xx is —
             // nothing was committed (messages state only advances on a fully
@@ -348,12 +417,12 @@ export function createAnthropicApiProvider(ctx: ApiProviderContext = {}): AgentW
             if (attempt < retryDelays.length) {
               const delay = retryDelays[attempt]!;
               progress(
-                `anthropic-api: stream failed (${msg}) — retry ${attempt + 1}/${retryDelays.length} in ${delay}ms`,
+                `${label}: stream failed (${msg}) — retry ${attempt + 1}/${retryDelays.length} in ${delay}ms`,
               );
               await sleep(delay);
               continue;
             }
-            throw new Error(`anthropic-api → stream failed after retries: ${msg}`);
+            throw new Error(`${label} → stream failed after retries: ${msg}`);
           }
           const text = (json.content ?? [])
             .filter((b) => b.type === "text" && typeof b.text === "string")
@@ -368,7 +437,7 @@ export function createAnthropicApiProvider(ctx: ApiProviderContext = {}): AgentW
             if (text) collected.push(text);
             messages = [...messages, { role: "assistant", content: json.content ?? [] }];
             attempt = -1; // HTTP retry budget is per request, not per turn
-            progress(`anthropic-api: server tool paused the turn — continuing (${turns}/${MAX_TURNS})`);
+            progress(`${label}: server tool paused the turn — continuing (${turns}/${MAX_TURNS})`);
             continue;
           }
           // Still paused with the turn budget spent: the sweep never
@@ -376,7 +445,7 @@ export function createAnthropicApiProvider(ctx: ApiProviderContext = {}): AgentW
           // beats a thrown-away one — but never as a clean run.
           if (json.stop_reason === "pause_turn") {
             const gathered = [...collected, text].filter(Boolean).join("\n").trim();
-            progress(`anthropic-api: turn limit (${MAX_TURNS}) reached mid-search — returning partial output`);
+            progress(`${label}: turn limit (${MAX_TURNS}) reached mid-search — returning partial output`);
             return {
               text: gathered,
               raw: json,
@@ -393,15 +462,16 @@ export function createAnthropicApiProvider(ctx: ApiProviderContext = {}): AgentW
               // thinking off, spelled the way this model accepts it (see
               // thinkingOffFields; a model that rejects it 400s honestly below).
               disableThinking = true;
-              progress("anthropic-api: thinking consumed the output budget, retrying with thinking off");
+              progress(`${label}: thinking consumed the output budget, retrying with thinking off`);
               continue;
             }
             throw new Error(
-              `anthropic-api → response contained no text blocks (stop_reason: ${json.stop_reason ?? "unknown"}, blocks: ${types})`,
+              `${label} → response contained no text blocks (stop_reason: ${json.stop_reason ?? "unknown"}, blocks: ${types})`,
             );
           }
-          progress("anthropic-api: done");
-          // costUsd deliberately unset: subscription quota, not metered spend.
+          progress(`${label}: done`);
+          // costUsd deliberately unset: subscription quota (oauth) or spend
+          // whose pricing drifts (api key) — the ledger stores tokens.
           return {
             text: [...collected, text].join("\n").trim(),
             raw: json,
@@ -424,7 +494,7 @@ export function createAnthropicApiProvider(ctx: ApiProviderContext = {}): AgentW
           messages = [{ role: "user", content: userPrompt }];
           collected.length = 0;
           attempt = -1;
-          progress(`anthropic-api: web search unavailable — rerunning without it and telling the agent so`);
+          progress(`${label}: web search unavailable — rerunning without it and telling the agent so`);
           continue;
         }
         // An HTML body is an edge/WAF block page, not an API error — name it
@@ -432,41 +502,32 @@ export function createAnthropicApiProvider(ctx: ApiProviderContext = {}): AgentW
         let errBody = raw.trimStart().startsWith("<")
           ? "(HTML block page from the endpoint's edge — this network is blocked from calling the endpoint; the API itself was never reached)"
           : raw.slice(0, 200);
-        if (res.status === 429) {
-          // The subscription's unified window is SHARED with Claude Code
-          // sessions — a bare "rate_limit_error" is undiagnosable without
-          // these (the 2026-07-12 /direct triage lesson).
-          const util = res.headers.get("anthropic-ratelimit-unified-5h-status");
-          const reset = Number(res.headers.get("anthropic-ratelimit-unified-5h-reset"));
-          const detail = [
-            util ? `5h window: ${util}` : null,
-            Number.isFinite(reset) && reset > 0 ? `resets ${new Date(reset * 1000).toISOString()}` : null,
-          ].filter(Boolean);
-          if (detail.length) {
-            errBody += ` [${detail.join(", ")} — quota is shared with Claude Code sessions]`;
-          } else {
-            // No quota headers at all = the OAuth gateway rejected the
-            // REQUEST SHAPE (overage-lane routing), not the quota — the
-            // 2026-07-12 root cause. Should not recur with block-form
-            // system prompts, but if it does, name it.
-            errBody +=
-              " [no quota headers — the OAuth gateway rejected the request shape, not the quota; verify the system identity block]";
-          }
-        }
+        errBody += mode.annotate(res.status, res, raw);
         const retryable = res.status === 429 || res.status >= 500;
         if (retryable && attempt < retryDelays.length) {
           const retryAfter = Number(res.headers.get("retry-after"));
           const delay =
             Number.isFinite(retryAfter) && retryAfter > 0 ? retryAfter * 1000 : retryDelays[attempt]!;
-          progress(`anthropic-api: HTTP ${res.status}, retry ${attempt + 1}/${retryDelays.length} in ${delay}ms`);
+          progress(`${label}: HTTP ${res.status}, retry ${attempt + 1}/${retryDelays.length} in ${delay}ms`);
           await sleep(delay);
           continue;
         }
-        throw new Error(`anthropic-api → HTTP ${res.status}: ${errBody}`);
+        throw new Error(`${label} → HTTP ${res.status}: ${errBody}`);
       }
     },
   };
 }
 
-/** Default instance: env falls back to process.env (laptop CLI convenience). */
+/** `anthropic-api`: Claude on the subscription OAuth token (quota). */
+export function createAnthropicApiProvider(ctx: ApiProviderContext = {}): AgentWorkerProvider {
+  return createAnthropicProvider(OAUTH_MODE, ctx);
+}
+
+/** `anthropic-api-key`: Claude on a Console API key (metered API credits). */
+export function createAnthropicApiKeyProvider(ctx: ApiProviderContext = {}): AgentWorkerProvider {
+  return createAnthropicProvider(API_KEY_MODE, ctx);
+}
+
+/** Default instances: env falls back to process.env (laptop CLI convenience). */
 export const anthropicApiProvider = createAnthropicApiProvider();
+export const anthropicApiKeyProvider = createAnthropicApiKeyProvider();

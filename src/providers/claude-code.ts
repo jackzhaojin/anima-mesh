@@ -1,13 +1,16 @@
 import { spawn, spawnSync } from "node:child_process";
 import type { AgentWorkerProvider, ProviderRunOptions, ProviderResult } from "./types.js";
 import type { ApiProviderContext } from "./moonshot-api.js";
-import { CLI_AUTH_ENV, failureDetail, subprocessEnv } from "./subprocess-env.js";
+import { CLI_AUTH_ENV, CLI_STRIP_ENV, failureDetail, subprocessEnv } from "./subprocess-env.js";
 
 /**
  * Claude Code headless (`claude -p`) — the default harness for high-trust
  * jobs. Auth rides on the local claude login or CLAUDE_CODE_OAUTH_TOKEN,
- * from the shell or the instance env (only the auth keys in CLI_AUTH_ENV
- * cross from the instance; see subprocess-env.ts).
+ * from the shell or the instance env (only CLAUDE_CODE_OAUTH_TOKEN crosses
+ * from the instance; see subprocess-env.ts). An exported ANTHROPIC_API_KEY
+ * is stripped from the subprocess: the CLI would prefer it and silently bill
+ * API credits. Metered Claude is the `*-api-key` harnesses' job, chosen by
+ * the brain, never by the shell.
  */
 const DEFAULT_TIMEOUT_MS = 15 * 60 * 1000;
 
@@ -40,7 +43,7 @@ export function createClaudeCodeProvider(ctx: ApiProviderContext = {}): AgentWor
       return new Promise<ProviderResult>((resolve, reject) => {
         const proc = spawn("claude", args, {
           cwd: opts.cwd,
-          env: subprocessEnv(instanceEnv, CLI_AUTH_ENV["claude-code"] ?? []),
+          env: subprocessEnv(instanceEnv, CLI_AUTH_ENV["claude-code"] ?? [], CLI_STRIP_ENV["claude-code"]),
           stdio: ["ignore", "pipe", "pipe"],
         });
         let stdout = "";

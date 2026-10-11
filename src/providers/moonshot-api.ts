@@ -1,5 +1,6 @@
 import { getEnv } from "../instance/env-core.js";
 import type { AgentWorkerProvider, ProviderRunOptions, ProviderResult } from "./types.js";
+import type { CodexAuthSource } from "./codex-auth.js";
 
 /**
  * Moonshot (Kimi) via the OpenAI-compatible chat completions API — pure
@@ -15,6 +16,12 @@ export interface ApiProviderContext {
   fetchImpl?: typeof fetch;
   /** Test seam: override the 429/5xx backoff schedule (ms per retry). */
   retryDelaysMs?: number[];
+  /**
+   * `openai-codex` only: where the ChatGPT-plan access token comes from.
+   * Node entrypoints pass the read-only auth.json borrower
+   * (codex-auth-file.ts); the engine never refreshes a Codex login.
+   */
+  codexAuth?: CodexAuthSource;
 }
 
 // Open-platform default; MOONSHOT_BASE_URL overrides (e.g. the

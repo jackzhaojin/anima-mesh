@@ -7,16 +7,30 @@
  * credentials never land in an agent subprocess's environment.
  */
 export const CLI_AUTH_ENV: Readonly<Record<string, readonly string[]>> = {
-  "claude-code": ["CLAUDE_CODE_OAUTH_TOKEN", "ANTHROPIC_API_KEY"],
-  opencode: ["MOONSHOT_API_KEY", "ANTHROPIC_API_KEY"],
+  "claude-code": ["CLAUDE_CODE_OAUTH_TOKEN"],
+  opencode: ["MOONSHOT_API_KEY"],
 };
 
-/** Shell env, with the listed keys taken from the instance env when it sets them. */
+/**
+ * Shell keys a subscription harness must NOT inherit. `claude` prefers an
+ * API key over the subscription login, so an exported one would silently
+ * bill API credits; metered Claude is the `*-api-key` harnesses' choice.
+ */
+export const CLI_STRIP_ENV: Readonly<Record<string, readonly string[]>> = {
+  "claude-code": ["ANTHROPIC_API_KEY", "ANTHROPIC_AUTH_TOKEN"],
+};
+
+/**
+ * Shell env minus `strip`, with the `keys` taken from the instance env when
+ * it sets them.
+ */
 export function subprocessEnv(
   instanceEnv: Record<string, string | undefined>,
   keys: readonly string[],
+  strip: readonly string[] = [],
 ): NodeJS.ProcessEnv {
   const env: NodeJS.ProcessEnv = { ...process.env };
+  for (const key of strip) delete env[key];
   for (const key of keys) {
     const value = instanceEnv[key];
     if (value) env[key] = value;

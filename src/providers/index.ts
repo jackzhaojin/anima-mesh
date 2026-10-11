@@ -5,7 +5,13 @@ import {
   moonshotApiProvider,
   type ApiProviderContext,
 } from "./moonshot-api.js";
-import { createAnthropicApiProvider, anthropicApiProvider } from "./anthropic-api.js";
+import {
+  createAnthropicApiProvider,
+  anthropicApiProvider,
+  createAnthropicApiKeyProvider,
+  anthropicApiKeyProvider,
+} from "./anthropic-api.js";
+import { createOpenAICodexProvider, openaiCodexProvider } from "./openai-codex.js";
 
 export type {
   AgentWorkerProvider,
@@ -20,17 +26,26 @@ export {
   moonshotApiProvider,
   type ApiProviderContext,
 } from "./moonshot-api.js";
-export { createAnthropicApiProvider, anthropicApiProvider } from "./anthropic-api.js";
+export {
+  createAnthropicApiProvider,
+  anthropicApiProvider,
+  createAnthropicApiKeyProvider,
+  anthropicApiKeyProvider,
+} from "./anthropic-api.js";
+export { createOpenAICodexProvider, openaiCodexProvider } from "./openai-codex.js";
+export { staticCodexAuth, type CodexAuth, type CodexAuthSource } from "./codex-auth.js";
 
 /**
  * The provider registry core — Workers-safe: only fetch-based providers are
- * imported here. Subprocess providers (claude-code, opencode,
- * claude-agent-sdk) live in node-providers.ts, which Node entrypoints
+ * imported here. Subprocess providers (claude-code, opencode, codex,
+ * claude-agent-sdk[-api-key]) live in node-providers.ts, which Node entrypoints
  * import for its registration side effect; nothing under workers/ may.
  */
 const registry = new Map<string, AgentWorkerProvider>([
   ["moonshot-api", moonshotApiProvider],
   ["anthropic-api", anthropicApiProvider],
+  ["anthropic-api-key", anthropicApiKeyProvider],
+  ["openai-codex", openaiCodexProvider],
   ["fake", new FakeProvider()],
 ]);
 
@@ -43,15 +58,28 @@ const registry = new Map<string, AgentWorkerProvider>([
 const contextualFactories = new Map<string, (ctx: ApiProviderContext) => AgentWorkerProvider>([
   ["moonshot-api", createMoonshotApiProvider],
   ["anthropic-api", createAnthropicApiProvider],
+  ["anthropic-api-key", createAnthropicApiKeyProvider],
+  ["openai-codex", createOpenAICodexProvider],
 ]);
 
 /**
  * The harnesses a cloud beat may run. Everything else is subprocess-bound —
  * laptop-tier by architecture, skipped with reason by the cloud heartbeat.
- * Deliberately NOT including `claude-agent-sdk`: the SDK spawns a bundled
- * CLI, which no Worker hosts.
+ * Deliberately NOT including `claude-agent-sdk[-api-key]` or `codex`: both
+ * spawn a CLI, which no Worker hosts. Nor `openai-codex`, though it is pure
+ * fetch: chatgpt.com 403s Cloudflare Workers egress by IP ("Unable to load
+ * site … VPN"), probed 2026-10-11 — a cloud beat would fail on every run
+ * (docs/learnings/2026-10-11-chatgpt-codex-blocks-workers.md).
+ *
+ * Billing is part of the harness name, so the brain picks it per agent:
+ * `anthropic-api` = Claude subscription, `anthropic-api-key` = metered API
+ * credits, `openai-codex` = ChatGPT-plan Codex quota, `moonshot-api` = Kimi.
  */
-export const CLOUD_HARNESSES: ReadonlySet<string> = new Set(["moonshot-api", "anthropic-api"]);
+export const CLOUD_HARNESSES: ReadonlySet<string> = new Set([
+  "moonshot-api",
+  "anthropic-api",
+  "anthropic-api-key",
+]);
 
 /**
  * Resolve a harness name (from an agent concept's `harness:` field) to a

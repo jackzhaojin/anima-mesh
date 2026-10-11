@@ -3,7 +3,7 @@
 This history is organized by **minor release line** (and, from 2.0, major):
 the capability boundary operators actually adopt. Patch tags are deliberately
 rolled into the value and maturity of their minor rather than narrated one by
-one. The latest tag is **v2.1.0**.
+one. The latest tag is **v2.1.1**.
 
 ## Upgrade procedure
 
@@ -28,20 +28,47 @@ The ledger remains append-only; never "migrate" it by editing old entries.
 
 ## [Unreleased]
 
-- **Docs: pair every brain with a document store.** `starting-a-company.md`
-  now recommends that almost every brain pair with one store for its
-  documents of record (personal Google Drive or OneDrive; Google Workspace
-  My Drive or shared drives; SharePoint, OneDrive, or Teams files), maps
-  each to the read-only source that reaches it today (`google-drive`,
-  `onedrive`, `github-docs`), and sets the division of labor: the store
-  holds the document, the brain holds what matters about it and links the
-  path. The `brain-setup` skill asks for the store as its own step;
-  `layered-brains.md` points person brains at their own Drive. No code
-  change.
+- Nothing yet.
 
-## [v2.1.0] - Google Drive, read-only, on the principal's Google client
+## [v2.1.x] - Google Drive, read-only; billing as a harness choice
 
-**Tag: v2.1.0 · 2026-10-10**
+**Latest tag: v2.1.1 · 2026-10-11**
+
+**v2.1.1 - billing is a harness choice: API credits and Codex.** Four new
+harnesses, each picked per agent with `harness:` or a `cognition.overrides`
+entry like every other, all verified live on 2026-10-11:
+
+- `anthropic-api-key`: Claude on a Console `ANTHROPIC_API_KEY` (metered
+  credits), cloud and laptop, with the same streaming and server-side web
+  search as `anthropic-api`.
+- `claude-agent-sdk-api-key`: the Agent SDK on the same key, laptop (the
+  path `references/poc/claude/claude-api-poc` proved). It refuses any run
+  the SDK reports as billed elsewhere.
+- `codex`: the Codex CLI on the local ChatGPT login (`codex exec --json`,
+  read-only sandbox, `web_search` only when `web:` budgets it), laptop.
+- `openai-codex`: ChatGPT-plan Codex over fetch, with server-side web
+  search. **Laptop-tier, a known limitation:** chatgpt.com 403s Cloudflare
+  Workers egress by IP, so a cloud beat skips these agents with a reason
+  ([learning](docs/learnings/2026-10-11-chatgpt-codex-blocks-workers.md)).
+
+Guards: the subscription harnesses strip a stray exported
+`ANTHROPIC_API_KEY` from their subprocesses (the CLI would otherwise prefer
+it and bill credits; v2.0.1 had also let an instance-env key reach
+`claude-code`, which this release withdraws). The engine never refreshes a
+Codex login: the laptop borrows `~/.codex/auth.json` read-only, because
+refreshing it from outside broke the ChatGPT desktop app's copy
+([learning](docs/learnings/2026-10-11-shared-codex-login-refresh.md)).
+*Upgrade:* nothing required; no new Worker secret.
+
+Also in v2.1.1 (docs only): `starting-a-company.md` recommends pairing almost
+every brain with one document store (personal Google Drive or OneDrive;
+Workspace My Drive or shared drives; SharePoint, OneDrive, or Teams files),
+maps each to the read-only source that reaches it (`google-drive`,
+`onedrive`, `github-docs`), and sets the split: the store holds the
+document, the brain holds what matters about it and links the path. The
+`brain-setup` skill asks for the store as its own step.
+
+**v2.1.0 · 2026-10-10.**
 
 **`google-drive` read source** on the same Google OAuth client as `gmail`
 and `google-calendar`: `GOOGLE_READ_SCOPES` adds `drive.readonly`, so
@@ -58,11 +85,11 @@ must add `drive.readonly` there and re-verify), re-run
 Worker secret. Until then the Drive section names the scope gap; Gmail and
 Calendar keep working on the old token.
 
-## [v2.0.0] - the mesh of brains: layered and multi-player
+## [v2.0.x] - the mesh of brains: layered and multi-player
 
-**Latest tag: v2.0.1 · 2026-10-10** *(v2.0.0 an operator-chosen major. The
-pre-release cuts v0.18.0 and v0.18.1, tagged earlier the same day, are
-folded into this release and withdrawn.)*
+**Latest tag: v2.0.1 · 2026-10-11** *(v2.0.0 was an operator-chosen major.
+The pre-release cuts v0.18.0 and v0.18.1, tagged earlier the same day, are
+folded into it and withdrawn.)*
 
 **v2.0.1 - the CLI harnesses fail readably and use the instance's Claude
 token.** `claude -p` prints auth failures ("OAuth session expired") to

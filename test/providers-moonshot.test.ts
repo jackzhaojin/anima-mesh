@@ -158,8 +158,12 @@ describe("provider registry", () => {
   });
 
   it("CLOUD_HARNESSES contains exactly the fetch-only harnesses", () => {
-    expect([...CLOUD_HARNESSES].sort()).toEqual(["anthropic-api", "moonshot-api"]);
+    expect([...CLOUD_HARNESSES].sort()).toEqual(["anthropic-api", "anthropic-api-key", "moonshot-api"]);
     expect(CLOUD_HARNESSES.has("claude-agent-sdk")).toBe(false);
+    expect(CLOUD_HARNESSES.has("claude-agent-sdk-api-key")).toBe(false);
+    expect(CLOUD_HARNESSES.has("codex")).toBe(false);
+    // Pure fetch, but chatgpt.com 403s Workers egress by IP (probed 2026-10-11).
+    expect(CLOUD_HARNESSES.has("openai-codex")).toBe(false);
     expect(CLOUD_HARNESSES.has("claude-code")).toBe(false);
     expect(CLOUD_HARNESSES.has("opencode")).toBe(false);
   });

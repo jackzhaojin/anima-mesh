@@ -1,5 +1,9 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { createClaudeAgentSdkProvider } from "../src/providers/claude-agent-sdk.js";
+import {
+  createClaudeAgentSdkProvider,
+  createClaudeAgentSdkApiKeyProvider,
+  sdkChildEnv,
+} from "../src/providers/claude-agent-sdk.js";
 
 /**
  * The SDK is mocked at the module boundary — these tests must never spawn
@@ -32,6 +36,7 @@ beforeEach(() => {
   queryMock.mockReset();
   // Hermetic: a real token in the shell env must not mask the negative tests.
   vi.stubEnv("CLAUDE_CODE_OAUTH_TOKEN", "");
+  vi.stubEnv("ANTHROPIC_API_KEY", "");
 });
 afterEach(() => {
   vi.unstubAllEnvs();
@@ -115,5 +120,59 @@ describe("claude-agent-sdk provider", () => {
     await expect(provider.run({ prompt: "p", cwd: "/", timeoutMs: 30 })).rejects.toThrow(
       /timed out after 30ms/,
     );
+  });
+});
+
+/**
+ * Billing is the harness's choice, never the shell's: the bundled CLI
+ * prefers ANTHROPIC_API_KEY over an OAuth token, so each mode strips the
+ * other's credential, and the api-key mode verifies the SDK's own report.
+ */
+describe("claude-agent-sdk billing modes", () => {
+  const KEY_ENV = { ANTHROPIC_API_KEY: "sk-ant-api03-test-not-real" };
+  const init = (apiKeySource: string) => ({ type: "system", subtype: "init", apiKeySource, model: "claude-haiku-4-5" });
+
+  it("the subscription mode strips a stray exported API key from the subprocess", async () => {
+    vi.stubEnv("ANTHROPIC_API_KEY", "sk-ant-api03-stray-shell-key");
+    queryMock.mockReturnValue(streamOf(resultMessage()));
+    await createClaudeAgentSdkProvider({ env: ENV }).run({ prompt: "p", cwd: "/" });
+    const { options } = queryMock.mock.calls[0]![0];
+    expect(options.env.CLAUDE_CODE_OAUTH_TOKEN).toBe("test-oauth-token-not-real");
+    expect(options.env.ANTHROPIC_API_KEY).toBeUndefined();
+  });
+
+  it("the api-key mode passes only the key — an OAuth token in the shell never rides along", async () => {
+    vi.stubEnv("CLAUDE_CODE_OAUTH_TOKEN", "shell-oauth-token");
+    queryMock.mockReturnValue(streamOf(init("ANTHROPIC_API_KEY"), resultMessage()));
+    const provider = createClaudeAgentSdkApiKeyProvider({ env: KEY_ENV });
+    const result = await provider.run({ prompt: "p", cwd: "/" });
+    const { options } = queryMock.mock.calls[0]![0];
+    expect(options.env.ANTHROPIC_API_KEY).toBe("sk-ant-api03-test-not-real");
+    expect(options.env.CLAUDE_CODE_OAUTH_TOKEN).toBeUndefined();
+    expect(options.allowedTools).toEqual(["Read", "Grep", "Glob"]);
+    expect(result.costUsd).toBe(0.0123);
+    expect(provider.name).toBe("claude-agent-sdk-api-key");
+  });
+
+  it("refuses a run the SDK reports as billed to anything but the API key (the PoC's assertion)", async () => {
+    queryMock.mockReturnValue(streamOf(init("none"), resultMessage()));
+    const provider = createClaudeAgentSdkApiKeyProvider({ env: KEY_ENV });
+    await expect(provider.run({ prompt: "p", cwd: "/" })).rejects.toThrow(/authenticated with 'none', not ANTHROPIC_API_KEY/);
+  });
+
+  it("assertConfigured names ANTHROPIC_API_KEY and the PoC", () => {
+    expect(() => createClaudeAgentSdkApiKeyProvider({ env: {} }).assertConfigured()).toThrow(
+      /ANTHROPIC_API_KEY.*claude-api-poc/,
+    );
+  });
+
+  it("sdkChildEnv drops every competing credential and keeps the rest", () => {
+    const env = sdkChildEnv("ANTHROPIC_API_KEY", "k", {
+      PATH: "/bin",
+      ANTHROPIC_AUTH_TOKEN: "bearer",
+      CLAUDE_CODE_OAUTH_TOKEN: "oauth",
+      ANTHROPIC_API_KEY: "old",
+    });
+    expect(env).toEqual({ PATH: "/bin", ANTHROPIC_API_KEY: "k" });
   });
 });

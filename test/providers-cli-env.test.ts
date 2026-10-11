@@ -15,6 +15,7 @@ import { failureDetail, subprocessEnv } from "../src/providers/subprocess-env.js
  */
 const FAKE_CLAUDE = `#!/bin/sh
 if [ -n "$GOOGLE_READ_REFRESH_TOKEN" ]; then echo "leaked a non-auth secret"; exit 3; fi
+if [ -n "$ANTHROPIC_API_KEY$ANTHROPIC_AUTH_TOKEN" ]; then echo "would bill API credits"; exit 4; fi
 if [ "$CLAUDE_CODE_OAUTH_TOKEN" = "instance-token-not-real" ]; then echo "brief via instance auth"; exit 0; fi
 echo "Failed to authenticate: OAuth session expired and could not be refreshed"
 exit 1
@@ -44,6 +45,8 @@ function hermeticShell(): void {
   vi.stubEnv("CLAUDE_CODE_OAUTH_TOKEN", "");
   vi.stubEnv("MOONSHOT_API_KEY", "");
   vi.stubEnv("GOOGLE_READ_REFRESH_TOKEN", "");
+  vi.stubEnv("ANTHROPIC_API_KEY", "");
+  vi.stubEnv("ANTHROPIC_AUTH_TOKEN", "");
 }
 afterEach(() => {
   vi.unstubAllEnvs();
@@ -53,6 +56,7 @@ const INSTANCE_ENV = {
   CLAUDE_CODE_OAUTH_TOKEN: "instance-token-not-real",
   MOONSHOT_API_KEY: "instance-moonshot-not-real",
   GOOGLE_READ_REFRESH_TOKEN: "google-refresh-not-real",
+  ANTHROPIC_API_KEY: "sk-ant-api03-instance-not-real",
 };
 
 describe("claude-code: instance auth and readable failures", () => {
@@ -66,6 +70,14 @@ describe("claude-code: instance auth and readable failures", () => {
   it("resolveProvider binds claude-code to the run's instance env", async () => {
     hermeticShell();
     const out = await resolveProvider("claude-code", { env: INSTANCE_ENV }).run({ prompt: "brief", cwd: work });
+    expect(out.text).toBe("brief via instance auth");
+  });
+
+  it("never hands `claude` an API key, from the shell or the instance (it would bill credits)", async () => {
+    hermeticShell();
+    vi.stubEnv("ANTHROPIC_API_KEY", "sk-ant-api03-stray-shell-key");
+    vi.stubEnv("ANTHROPIC_AUTH_TOKEN", "stray-bearer");
+    const out = await createClaudeCodeProvider({ env: INSTANCE_ENV }).run({ prompt: "brief", cwd: work });
     expect(out.text).toBe("brief via instance auth");
   });
 
