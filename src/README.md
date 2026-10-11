@@ -134,6 +134,10 @@ Everything model-related crosses this seam and nothing else does.
   side effect by Node entrypoints only (never by `workers/`):
   - `claude-code.ts` — spawns `claude -p … --output-format text`. Declares
     `{fileReads: true, webSearch: false}`.
+  - `subprocess-env.ts` - what the CLI harnesses inherit: the shell env plus
+    ONLY their auth keys from the instance env (`CLI_AUTH_ENV`), and the
+    failure text (stderr, else stdout - `claude -p` prints auth errors on
+    stdout).
   - `claude-agent-sdk.ts` — Claude via `@anthropic-ai/claude-agent-sdk`
     (lazy import; subscription auth via `CLAUDE_CODE_OAUTH_TOKEN`; read-only
     tools, no settings bleed). Laptop-only by architecture: the SDK spawns a

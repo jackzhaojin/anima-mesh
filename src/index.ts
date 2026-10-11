@@ -60,7 +60,9 @@ export {
 } from "./providers/index.js";
 export {
   claudeCodeProvider,
+  createClaudeCodeProvider,
   opencodeProvider,
+  createOpencodeProvider,
   codexProvider,
   claudeAgentSdkProvider,
   createClaudeAgentSdkProvider,

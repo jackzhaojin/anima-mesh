@@ -1,6 +1,6 @@
 import { registerProvider, registerContextualFactory } from "./index.js";
-import { claudeCodeProvider } from "./claude-code.js";
-import { opencodeProvider } from "./opencode.js";
+import { claudeCodeProvider, createClaudeCodeProvider } from "./claude-code.js";
+import { opencodeProvider, createOpencodeProvider } from "./opencode.js";
 import { codexProvider } from "./codex.js";
 import { createOpenAICodexProvider } from "./openai-codex.js";
 import { fileCodexAuth } from "./codex-auth-file.js";
@@ -22,6 +22,8 @@ registerProvider(opencodeProvider);
 registerProvider(codexProvider);
 registerProvider(claudeAgentSdkProvider);
 registerProvider(claudeAgentSdkApiKeyProvider);
+registerContextualFactory("claude-code", createClaudeCodeProvider);
+registerContextualFactory("opencode", createOpencodeProvider);
 registerContextualFactory("claude-agent-sdk", createClaudeAgentSdkProvider);
 registerContextualFactory("claude-agent-sdk-api-key", createClaudeAgentSdkApiKeyProvider);
 
@@ -33,8 +35,8 @@ registerContextualFactory("openai-codex", (ctx) =>
   createOpenAICodexProvider({ ...ctx, codexAuth: ctx.codexAuth ?? fileCodexAuth(ctx.env) }),
 );
 
-export { claudeCodeProvider } from "./claude-code.js";
-export { opencodeProvider } from "./opencode.js";
+export { claudeCodeProvider, createClaudeCodeProvider } from "./claude-code.js";
+export { opencodeProvider, createOpencodeProvider } from "./opencode.js";
 export { codexProvider, codexExecArgs, parseCodexEvents } from "./codex.js";
 export { fileCodexAuth, authJsonTokenStore, codexAuthJsonPath } from "./codex-auth-file.js";
 export {

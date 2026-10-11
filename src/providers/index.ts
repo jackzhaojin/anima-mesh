@@ -59,8 +59,9 @@ const registry = new Map<string, AgentWorkerProvider>([
 
 /**
  * API providers accept an injected env/fetch context (Worker secrets, or the
- * instance's .env on the laptop). CLI providers read process.env in their
- * subprocess and take no context.
+ * instance's .env on the laptop). Subprocess providers register their own
+ * factories from node-providers.ts; they take only their auth keys from the
+ * context (providers/subprocess-env.ts).
  */
 const contextualFactories = new Map<string, (ctx: ApiProviderContext) => AgentWorkerProvider>([
   ["moonshot-api", createMoonshotApiProvider],

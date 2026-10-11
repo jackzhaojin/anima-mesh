@@ -9,11 +9,14 @@ This directory is the minimal Codex SDK baseline POC.
 
 ## What This Uses
 
-- Package: `@openai/codex-sdk`
+- Package: `@openai/codex-sdk` 0.162.1
 - Runtime: Node.js 18+
 - Local auth: the existing Codex CLI login on this machine
 
-The SDK wraps the local `codex` CLI. In this environment, `codex login status` reports `Logged in using ChatGPT`, so this hello-world uses that login path without passing an explicit API key.
+The SDK launches its bundled Codex CLI and reuses the saved local login. On
+2026-10-11 (UTC), the bundled CLI reported `Logged in using ChatGPT`, and the
+live example returned `Hello from Codex.` without an explicit API key. This
+uses ChatGPT plan access; the example does not implement a separate OAuth flow.
 
 ## Files
 
@@ -23,7 +26,7 @@ The SDK wraps the local `codex` CLI. In this environment, `codex login status` r
 
 ```bash
 cd references/poc/codex/hello-world
-npm install
+npm ci
 npm run hello
 ```
 
