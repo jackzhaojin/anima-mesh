@@ -3,7 +3,7 @@
 AnimaMesh is pre-1.0, so this history is organized by **minor release line**:
 the capability boundary operators actually adopt. Patch tags are deliberately
 rolled into the value and maturity of their minor rather than narrated one by
-one. The latest tag is **v2.0.0**.
+one. The latest tag is **v2.0.1**.
 
 ## Upgrade procedure
 
@@ -32,9 +32,29 @@ The ledger remains append-only; never "migrate" it by editing old entries.
 
 ## [v2.0.0] - the mesh of brains: layered and multi-player
 
-**Tag: v2.0.0 · 2026-10-10** *(an operator-chosen major. The pre-release
-cuts v0.18.0 and v0.18.1, tagged earlier the same day, are folded into this
-release and withdrawn; pin `v2.0.0`.)*
+**Latest tag: v2.0.1 · 2026-10-11** *(v2.0.0 was an operator-chosen major.
+The pre-release cuts v0.18.0 and v0.18.1, tagged earlier the same day, are
+folded into it and withdrawn.)*
+
+**v2.0.1 - billing is a harness choice: API credits and Codex.** Four new
+harnesses, each picked per agent with `harness:` or a `cognition.overrides`
+entry like every other: `anthropic-api-key` (Claude on a Console
+`ANTHROPIC_API_KEY`, metered credits, cloud and laptop, same streaming and
+server-side web search as `anthropic-api`), `claude-agent-sdk-api-key` (the
+Agent SDK on the same key, laptop; the path
+`references/poc/claude/claude-api-poc` proved, and it refuses any run the SDK
+reports as billed elsewhere), `codex` (the Codex CLI on the local ChatGPT
+login, `codex exec --json`, read-only sandbox, laptop), and `codex-api`
+(ChatGPT-plan Codex over fetch, cloud and laptop). Two guards come with it:
+the subscription harnesses now strip a stray exported `ANTHROPIC_API_KEY`
+from their subprocesses (the CLI would otherwise prefer it and bill
+credits), and Codex's rotating refresh tokens have exactly one owner per
+tier (HeartbeatDO storage on the Worker, the CLI's own `auth.json` on the
+laptop). *Upgrade:* nothing required. To use `codex-api` on Workers, add
+the `CODEX_REFRESH_TOKEN` secret from a dedicated login
+([deploying-cloud.md](docs/deploying-cloud.md#codex-on-the-worker)); its
+request shape is unprobed from Workers egress, so treat the first beat as
+the probe.
 
 **Why a major.** Through 0.17, one brain meant one company and one human:
 the engine ran a company-of-0. 2.0 changes what the engine is for. A brain

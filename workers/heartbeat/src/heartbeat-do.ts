@@ -1,5 +1,7 @@
 import { DurableObject } from "cloudflare:workers";
 import { runCloudBeat, type BeatSummary } from "./beat.js";
+import { heartbeatCodexAuth } from "./codex-token.js";
+import type { CodexAuthSource } from "../../../src/providers/codex-auth.js";
 import { nextBeatUtc } from "./alarm-time.js";
 import type { Env } from "./env.js";
 
@@ -48,6 +50,13 @@ export class HeartbeatDO extends DurableObject<Env> {
    */
   private beatInFlight: Promise<LastBeat> | null = null;
 
+  /** One per isolate: its mutex is what serializes Codex refreshes (codex-token.ts). */
+  private codexAuthSource: CodexAuthSource | null = null;
+  private codexAuth(): CodexAuthSource {
+    this.codexAuthSource ??= heartbeatCodexAuth(this.ctx.storage, this.env);
+    return this.codexAuthSource;
+  }
+
   override async fetch(req: Request): Promise<Response> {
     const url = new URL(req.url);
 
@@ -87,6 +96,17 @@ export class HeartbeatDO extends DurableObject<Env> {
         beatRunning: this.beatInFlight !== null,
         nextAlarm: alarm === null ? null : new Date(alarm).toISOString(),
       });
+    }
+
+    // Internal only: the Worker's router never forwards here. DirectionDO
+    // gets Codex tokens through this so the login has exactly one owner.
+    if (url.pathname === "/codex-token" && req.method === "POST") {
+      const { force } = ((await req.json().catch(() => ({}))) ?? {}) as { force?: boolean };
+      try {
+        return Response.json(await this.codexAuth()({ force: force === true }));
+      } catch (err) {
+        return Response.json({ error: err instanceof Error ? err.message : String(err) }, { status: 503 });
+      }
     }
 
     if (url.pathname === "/trigger" && req.method === "POST") {
@@ -178,7 +198,7 @@ export class HeartbeatDO extends DurableObject<Env> {
   private async executeBeat(kind: "alarm" | "manual"): Promise<LastBeat> {
     let last: LastBeat;
     try {
-      const summary = await runCloudBeat(this.env);
+      const summary = await runCloudBeat(this.env, console.log, { codexAuth: this.codexAuth() });
       last = { at: new Date().toISOString(), kind, summary };
     } catch (err) {
       last = {

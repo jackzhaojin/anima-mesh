@@ -55,6 +55,7 @@ export default defineWorkersConfig({
             GMAIL_CLIENT_SECRET: "test-gmail-secret-not-real",
             GMAIL_REFRESH_TOKEN: "test-gmail-refresh-not-real",
             AGENT_EMAIL: "persona@example.test",
+            CODEX_REFRESH_TOKEN: "test-codex-refresh-not-real",
           },
         },
       },

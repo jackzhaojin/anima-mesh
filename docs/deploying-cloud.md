@@ -61,7 +61,7 @@ the example file shows the shape.
 | `GITHUB_APP_ID` / `GITHUB_APP_INSTALLATION_ID` / `GITHUB_APP_PRIVATE_KEY` | read + commit the brain via GitHub App installation tokens (preferred — all three or none). The key must be **PKCS#8**: convert GitHub's download once with `openssl pkcs8 -topk8 -nocrypt -in downloaded.pem -out app.pem`, then **pipe it** (`wrangler secret put GITHUB_APP_PRIVATE_KEY < app.pem`) — interactive paste mangles newlines |
 | `GITHUB_TOKEN` | first-class alternative: a standing PAT, used only when no App var is set. A partial App trio fails loudly rather than falling back |
 | `GITHUB_DEFECTS_TOKEN` | Issues read/write on the **public engine repo** — lets leak-clean `defect-report`s file directly as engine issues (issue-first, v0.11.4). Unset ⇒ defects fall back to private drafts |
-| `MOONSHOT_API_KEY` and/or `CLAUDE_CODE_OAUTH_TOKEN` | cognition (whatever the agents' effective harnesses need). Only `anthropic-api` (`CLAUDE_CODE_OAUTH_TOKEN`) grants `web: <n>` search budgets on Workers |
+| `MOONSHOT_API_KEY`, `CLAUDE_CODE_OAUTH_TOKEN`, `ANTHROPIC_API_KEY`, `CODEX_REFRESH_TOKEN` | cognition, whichever the agents' effective harnesses need: `moonshot-api`, `anthropic-api` (subscription), `anthropic-api-key` (metered API credits; cap spend in the Console), `codex-api` (ChatGPT-plan Codex; see [Codex on the Worker](#codex-on-the-worker)). The two Anthropic harnesses grant `web: <n>` search budgets on Workers |
 | `DISCORD_BOT_TOKEN` / `DISCORD_DM_USER_ID` | brief + failure DMs; the direction sender gate |
 | `BEAT_TRIGGER_TOKEN` | gates manual `POST /beat` (mint with `openssl rand -hex 32`) |
 | `GMAIL_CLIENT_ID` / `GMAIL_CLIENT_SECRET` / `GMAIL_REFRESH_TOKEN` / `AGENT_EMAIL` | only if the email surfaces are on. **Publish the OAuth consent screen to "In Production" first** — a screen left in "Testing" expires every refresh token after 7 days ([learning](learnings/2026-07-12-google-oauth-testing-expiry.md)) |
@@ -87,6 +87,42 @@ redirect URI derives from the request origin, so it becomes
 Register exactly that URI on the Google OAuth client. (The `workers.dev`
 route is disabled automatically once a custom domain exists — one hostname,
 one origin, one redirect URI.)
+
+## Codex on the Worker
+
+`codex-api` runs Codex on your ChatGPT plan from the Worker. Unlike every
+other credential here, its refresh token **rotates**: each refresh spends
+the old one, and presenting a spent one fails (`refresh_token_reused`) and
+can revoke the login. Two rules follow.
+
+1. **Give the Worker its own login.** Never seed it from the `auth.json`
+   your laptop's `codex` uses, or the two will spend each other's tokens.
+   Log in once into a throwaway home and seed from that:
+
+   ```bash
+   export CODEX_HOME="$(mktemp -d)"
+   codex login                       # ChatGPT sign-in in the browser
+   jq -r .tokens.refresh_token "$CODEX_HOME/auth.json" | wrangler secret put CODEX_REFRESH_TOKEN
+   rm -rf "$CODEX_HOME"
+   ```
+
+   (If your Codex stores credentials in the OS keyring, add
+   `-c cli_auth_credentials_store=file` to the login so `auth.json` exists.)
+2. **The secret is only the seed.** HeartbeatDO refreshes and keeps the
+   rotated chain in its own storage; DirectionDO gets tokens from it over an
+   internal route instead of refreshing on its own. To replace the login,
+   repeat step 1: a new secret value restarts the chain.
+
+Usage draws on the plan's Codex quota, shared with your own Codex sessions;
+a 429 says so. `CODEX_BASE_URL` overrides the endpoint. **Not yet probed
+from Workers egress:** the request shape follows the Codex CLI's own
+protocol, but `chatgpt.com` sits behind its own edge, which may block
+Worker traffic (an HTML block page is named as such, the
+[Kimi lesson](learnings/2026-07-11-workers-egress-waf.md)). Point one agent
+at it with a `cognition.overrides` entry, trigger one beat, and record the
+result as a learning before moving more agents over. On the laptop,
+`codex-api` simply reuses `codex login`, and the `codex` harness runs the
+CLI itself.
 
 ## Deploy and verify
 

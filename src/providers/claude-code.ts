@@ -4,7 +4,10 @@ import type { AgentWorkerProvider, ProviderRunOptions, ProviderResult } from "./
 /**
  * Claude Code headless (`claude -p`) — the default harness for high-trust
  * jobs. Auth rides on the local claude login or CLAUDE_CODE_OAUTH_TOKEN;
- * no key material passes through the engine.
+ * no key material passes through the engine. An exported ANTHROPIC_API_KEY
+ * is stripped from the subprocess: the CLI would prefer it and silently bill
+ * API credits — metered Claude is the `*-api-key` harnesses' job, chosen by
+ * the brain, never by the shell.
  */
 const DEFAULT_TIMEOUT_MS = 15 * 60 * 1000;
 
@@ -33,9 +36,10 @@ export const claudeCodeProvider: AgentWorkerProvider = {
     opts.onProgress?.(`claude-code: starting headless run${opts.model ? ` (${opts.model})` : ""}`);
 
     return new Promise<ProviderResult>((resolve, reject) => {
+      const { ANTHROPIC_API_KEY: _key, ANTHROPIC_AUTH_TOKEN: _bearer, ...env } = process.env;
       const proc = spawn("claude", args, {
         cwd: opts.cwd,
-        env: process.env,
+        env,
         stdio: ["ignore", "pipe", "pipe"],
       });
       let stdout = "";

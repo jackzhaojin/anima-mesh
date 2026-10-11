@@ -43,7 +43,16 @@ export {
   FakeProvider,
   moonshotApiProvider,
   createMoonshotApiProvider,
+  anthropicApiProvider,
+  createAnthropicApiProvider,
+  anthropicApiKeyProvider,
+  createAnthropicApiKeyProvider,
+  codexApiProvider,
+  createCodexApiProvider,
+  codexAuthSource,
   CLOUD_HARNESSES,
+  type CodexAuthSource,
+  type CodexTokenStore,
   type ApiProviderContext,
   type AgentWorkerProvider,
   type ProviderRunOptions,
@@ -52,8 +61,11 @@ export {
 export {
   claudeCodeProvider,
   opencodeProvider,
+  codexProvider,
   claudeAgentSdkProvider,
   createClaudeAgentSdkProvider,
+  claudeAgentSdkApiKeyProvider,
+  createClaudeAgentSdkApiKeyProvider,
 } from "./providers/node-providers.js";
 
 export {

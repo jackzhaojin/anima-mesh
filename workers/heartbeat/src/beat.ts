@@ -4,6 +4,7 @@ import { heartbeatCore } from "../../../src/harness/heartbeat-core.js";
 import { dateStampFor } from "../../../src/harness/run-core.js";
 import { deliverLatestReportFromStore, deliverMessage } from "../../../src/channels/registry.js";
 import { getEnv } from "../../../src/instance/env-core.js";
+import type { CodexAuthSource } from "../../../src/providers/codex-auth.js";
 import { envRecord, type Env } from "./env.js";
 
 /**
@@ -24,7 +25,11 @@ export interface BeatSummary {
   tokens?: { input: number; output: number };
 }
 
-export async function runCloudBeat(env: Env, log: (note: string) => void = console.log): Promise<BeatSummary> {
+export async function runCloudBeat(
+  env: Env,
+  log: (note: string) => void = console.log,
+  auth: { codexAuth?: CodexAuthSource } = {},
+): Promise<BeatSummary> {
   const record = envRecord(env);
   const date = dateStampFor(new Date(), env.BEAT_TIMEZONE);
   let stage = "init";
@@ -41,7 +46,7 @@ export async function runCloudBeat(env: Env, log: (note: string) => void = conso
     const result = await heartbeatCore({
       store,
       cloudTier: true,
-      providerCtx: { env: record },
+      providerCtx: { env: record, ...(auth.codexAuth ? { codexAuth: auth.codexAuth } : {}) },
       flushPolicy: "caller", // one commit per beat, not per run
       timeZone: env.BEAT_TIMEZONE,
       onProgress: log, // console → wrangler tail

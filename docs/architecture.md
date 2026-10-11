@@ -50,9 +50,15 @@ no cognition or persona secrets — see
 **Cognition** crosses one seam: `AgentWorkerProvider`. Each agent concept
 declares `model` + `harness`; the instance config's `cognition.overrides`
 can reroute a declared harness at runtime (vendor trouble = config edit).
-Cloud-capable providers are pure fetch (`moonshot-api`, `anthropic-api`);
-subprocess providers (`claude-code`, `claude-agent-sdk`, `opencode`) are
-laptop-tier by architecture. Vendor gateway traps are documented with
+Cloud-capable providers are pure fetch (`moonshot-api`, `anthropic-api`,
+`anthropic-api-key`, `codex-api`); subprocess providers (`claude-code`,
+`claude-agent-sdk[-api-key]`, `codex`, `opencode`) are laptop-tier by
+architecture. Billing is part of the harness name (subscription, metered
+API credits, ChatGPT-plan Codex quota, Kimi), so choosing who pays is the
+same config edit as choosing the model. Codex's ChatGPT refresh tokens
+rotate, so each tier has exactly one token owner: HeartbeatDO storage on
+the Worker (DirectionDO asks it over an internal route), the Codex CLI's own
+`auth.json` on the laptop. Vendor gateway traps are documented with
 evidence in [learnings/](learnings/README.md).
 
 Every provider also declares **capabilities** — `fileReads` and `webSearch` —
