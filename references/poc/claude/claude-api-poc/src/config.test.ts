@@ -6,20 +6,24 @@ import { join } from "node:path";
 import { isDeepStrictEqual } from "node:util";
 import { canReadFixture, childEnv, loadKey, redact } from "./config.js";
 
-test("loads only CLAUDE_API_KEY from the selected file without mutating process.env", () => {
+test("loads only ANTHROPIC_API_KEY from the selected file without mutating process.env", () => {
   const dir = mkdtempSync(join(tmpdir(), "claude-api-config-test-"));
-  const file = join(dir, ".env.local");
+  const file = join(dir, ".env");
   const before = { ...process.env };
   try {
-    writeFileSync(file, 'CLAUDE_API_KEY="fixture-key"\nUNRELATED_SECRET=ignored\n');
-    assert.equal(loadKey({ CLAUDE_API_ENV_FILE: file, CLAUDE_API_KEY: "other-key" }), "fixture-key");
+    writeFileSync(file, 'ANTHROPIC_API_KEY="fixture-key"\nUNRELATED_SECRET=ignored\n');
+    assert.equal(loadKey({ CLAUDE_API_ENV_FILE: file, ANTHROPIC_API_KEY: "other-key" }), "fixture-key");
     // Compare as a boolean so test failures cannot print inherited secrets.
     assert.equal(isDeepStrictEqual({ ...process.env }, before), true);
-    writeFileSync(file, "CLAUDE_API_KEY=\n");
-    assert.throws(() => loadKey({ CLAUDE_API_ENV_FILE: file }), /nonempty CLAUDE_API_KEY/);
+    writeFileSync(file, "ANTHROPIC_API_KEY=\nCLAUDE_API_KEY=legacy-key\n");
+    assert.throws(() => loadKey({ CLAUDE_API_ENV_FILE: file }), /nonempty ANTHROPIC_API_KEY/);
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }
+});
+
+test("accepts the standard exported API key without requiring an env file", () => {
+  assert.equal(loadKey({ ANTHROPIC_API_KEY: " exported-key " }), "exported-key");
 });
 
 test("missing key fails rather than falling back to another credential", () => {

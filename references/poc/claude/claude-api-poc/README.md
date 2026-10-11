@@ -1,8 +1,8 @@
 # Claude API PoC
 
 A standalone TypeScript proof of concept using `@anthropic-ai/claude-agent-sdk`
-with `CLAUDE_API_KEY`. It maps that value to the SDK's `ANTHROPIC_API_KEY` in
-the subprocess environment. It does not change AnimaMesh's engine provider.
+with the SDK's standard `ANTHROPIC_API_KEY`, loaded from this PoC's own ignored
+`.env` file. It does not change AnimaMesh's engine provider.
 
 ## Run
 
@@ -26,18 +26,17 @@ The key is loaded in this order:
 
 1. The file explicitly selected by `CLAUDE_API_ENV_FILE` (relative to the shell's
    working directory, or absolute).
-2. An exported `CLAUDE_API_KEY`.
-3. The repository root's `.env.local`, if it exists.
-4. The sibling `../chat-cli/.env`.
+2. An exported `ANTHROPIC_API_KEY`.
+3. This PoC's `.env` (`references/poc/claude/claude-api-poc/.env`).
 
-The selected file must contain a nonempty `CLAUDE_API_KEY`. No other file
-variables are imported. Default file paths are resolved relative to this
-script, so changing the shell's working directory does not break them.
-Credentials stay in their existing ignored file; no key is copied or printed.
-For an explicit source:
+The selected file must contain a nonempty `ANTHROPIC_API_KEY`. No other file
+variables are imported. The default path is resolved relative to this script,
+so changing the shell's working directory does not break it. The PoC does not
+fall back to the repository root or another PoC's env file. Keep `.env` local
+and out of version control; its contents should have this shape:
 
 ```sh
-CLAUDE_API_ENV_FILE=../chat-cli/.env pnpm start
+ANTHROPIC_API_KEY=your-api-key
 ```
 
 ## What PASS proves

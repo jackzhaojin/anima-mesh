@@ -1,26 +1,24 @@
-import { existsSync, readFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { parseEnv } from "node:util";
 import { resolve } from "node:path";
 
-export const repoEnvFile = fileURLToPath(new URL("../../../../../.env.local", import.meta.url));
-const chatEnvFile = fileURLToPath(new URL("../../chat-cli/.env", import.meta.url));
+export const pocEnvFile = fileURLToPath(new URL("../.env", import.meta.url));
 
 export function loadKey(env: NodeJS.ProcessEnv = process.env): string {
   // An explicit file takes precedence. Otherwise allow an exported key, then
-  // use the repository's .env.local or the sibling chat-cli/.env, independent
-  // of the caller's directory. Never copy credentials into this PoC.
-  if (!env.CLAUDE_API_ENV_FILE && env.CLAUDE_API_KEY?.trim()) return env.CLAUDE_API_KEY.trim();
+  // use this PoC's own .env, independent of the caller's directory.
+  if (!env.CLAUDE_API_ENV_FILE && env.ANTHROPIC_API_KEY?.trim()) return env.ANTHROPIC_API_KEY.trim();
   const path = env.CLAUDE_API_ENV_FILE ? resolve(env.CLAUDE_API_ENV_FILE)
-    : existsSync(repoEnvFile) ? repoEnvFile : chatEnvFile;
+    : pocEnvFile;
   let contents: string;
   try {
     contents = readFileSync(path, "utf8");
   } catch {
-    throw new Error("Cannot read .env.local. Set CLAUDE_API_ENV_FILE to its path, or export CLAUDE_API_KEY.");
+    throw new Error("Cannot read the PoC's .env. Set CLAUDE_API_ENV_FILE to its path, or export ANTHROPIC_API_KEY.");
   }
-  const key = parseEnv(contents).CLAUDE_API_KEY?.trim();
-  if (!key) throw new Error("The selected env file must contain a nonempty CLAUDE_API_KEY.");
+  const key = parseEnv(contents).ANTHROPIC_API_KEY?.trim();
+  if (!key) throw new Error("The selected env file must contain a nonempty ANTHROPIC_API_KEY.");
   return key;
 }
 

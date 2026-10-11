@@ -1,5 +1,16 @@
 # Verification
 
+## PoC-owned environment
+
+After switching to the PoC's own ignored `.env` with `ANTHROPIC_API_KEY`,
+typecheck and all six offline tests passed. A live run with exported
+`ANTHROPIC_API_KEY` and `CLAUDE_API_ENV_FILE` unset confirmed the default local
+file works: `ANTHROPIC_API_KEY` authentication, one successful Read, exact
+response match, two turns, 1,908 ms, $0.003715, and 2,995 / 144 input / output
+tokens. The local env file has owner-only permissions (`600`).
+
+## Initial verification before the environment migration
+
 Live test on 2026-10-10 using `CLAUDE_API_KEY` from the existing, git-ignored
 sibling `chat-cli/.env`, mapped to `ANTHROPIC_API_KEY` for the SDK subprocess.
 No subscription token was passed to the subprocess.
@@ -24,3 +35,7 @@ observations from this run, not guarantees for subsequent runs.
 
 This verifies the isolated PoC only. The engine's existing subscription-based
 provider was not changed or exercised.
+
+A second live run after tightening the auth assertion to require the exact
+`ANTHROPIC_API_KEY` source also passed: one Read, exact response match, two
+turns, 1,862 ms, $0.003701, and 2,996 / 141 input / output tokens.
