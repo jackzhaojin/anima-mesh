@@ -369,7 +369,11 @@ export function brainIssues(bundle: Bundle, config: InstanceConfig): BrainIssue[
       }
     }
   }
-  const memberBrains = (config.identity?.members ?? []).filter((m) => typeof m?.brain === "string");
+  // A member's own person brain is linked via has-member - unless the member
+  // IS this brain's person (a person brain listing its own principal).
+  const memberBrains = (config.identity?.members ?? []).filter(
+    (m) => typeof m?.brain === "string" && m.brain !== config.brain?.id,
+  );
   for (const m of memberBrains) {
     const linked = (config.links ?? []).some((l) => l.id === m.brain && l.relation === "has-member");
     if (!linked) {

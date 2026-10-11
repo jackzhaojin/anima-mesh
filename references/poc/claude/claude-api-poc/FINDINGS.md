@@ -1,0 +1,26 @@
+# Verification
+
+Live test on 2026-10-10 using `CLAUDE_API_KEY` from the existing, git-ignored
+sibling `chat-cli/.env`, mapped to `ANTHROPIC_API_KEY` for the SDK subprocess.
+No subscription token was passed to the subprocess.
+
+| Check | Observed result |
+| --- | --- |
+| SDK | `@anthropic-ai/claude-agent-sdk` 0.3.207 |
+| Resolved model | `claude-haiku-4-5-20251001` |
+| SDK-reported authentication source | `ANTHROPIC_API_KEY` |
+| Successful Read calls | 1 |
+| Exact response matches generated fixture | true |
+| Agent turns | 2 |
+| SDK-reported duration | 2,017 ms |
+| SDK-reported cost | $0.003719 |
+| Input / output tokens | 2,999 / 144 |
+| Result | PASS |
+
+`pnpm typecheck` passed. `pnpm test` passed all five offline tests. The live
+check exercised the real SDK runtime, Anthropic authentication, the Read tool,
+the agent continuation, and final response validation. Costs and timing are
+observations from this run, not guarantees for subsequent runs.
+
+This verifies the isolated PoC only. The engine's existing subscription-based
+provider was not changed or exercised.

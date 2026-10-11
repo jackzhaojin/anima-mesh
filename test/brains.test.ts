@@ -253,6 +253,22 @@ describe("mandatory markings win over shares", () => {
     expect(issues.some((i) => i.rule === "brains/marking-blocks-share" && i.path === "finance/retirement.md")).toBe(true);
   });
 
+  it("a person brain may list its own principal as a member of itself", () => {
+    const issues = brainIssues(
+      { root: "", concepts: [] },
+      {
+        bundle: "bundle",
+        ledger: "l",
+        approvals: "a",
+        reports: "r",
+        drafts: "d",
+        brain: { id: "me", kind: "person" },
+        identity: { principal: { name: "Me" }, members: [{ id: "me-human", name: "Me", role: "owner", brain: "me" }] },
+      },
+    );
+    expect(issues.map((i) => i.rule)).not.toContain("brains/member-unlinked");
+  });
+
   it("warns when a person brain grants its brief across a link", () => {
     const issues = brainIssues(
       { root: "", concepts: [] },
