@@ -323,7 +323,7 @@ conformance and complete a full agent run against the fake provider.
 
 ## Status
 
-v2.0.2 (2026-10-11). Package name on npm to be confirmed; pinned consumers
+v2.1.1 (2026-10-11). Package name on npm to be confirmed; pinned consumers
 reference the repo by tag. **2.0 is the mesh of brains**: person, org, team,
 and group brains linked by mutual consent, owner-decided `share:` grants,
 mandatory `markings:`, inherited law down a containment chain, member roles

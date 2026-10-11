@@ -255,8 +255,9 @@ describe("openai-codex (ChatGPT-plan Codex over fetch)", () => {
 
   it("is laptop-tier (Workers egress is blocked), and names the login it is missing", () => {
     expect(CLOUD_HARNESSES.has("openai-codex")).toBe(false);
-    expect(() => createOpenAICodexProvider({ env: {} }).assertConfigured()).toThrow(/codex login.*CODEX_REFRESH_TOKEN/);
-    expect(() => createOpenAICodexProvider({ env: { CODEX_REFRESH_TOKEN: "rt" } }).assertConfigured()).not.toThrow();
+    expect(() => createOpenAICodexProvider({ env: {} }).assertConfigured()).toThrow(/codex login.*blocks Workers egress/);
+    expect(() => createOpenAICodexProvider({ env: { CODEX_ACCESS_TOKEN: "at" } }).assertConfigured()).not.toThrow();
+    expect(() => createOpenAICodexProvider({ env: {}, codexAuth: fixedAuth() }).assertConfigured()).not.toThrow();
   });
 });
 

@@ -150,13 +150,9 @@ export function createOpenAICodexProvider(ctx: ApiProviderContext = {}): AgentWo
     capabilities: { fileReads: false, webSearch: true },
 
     assertConfigured(): void {
-      if (
-        !ctx.codexAuth &&
-        !getEnv(env, "CODEX_ACCESS_TOKEN") &&
-        !getEnv(env, "CODEX_REFRESH_TOKEN")
-      ) {
+      if (!ctx.codexAuth && !getEnv(env, "CODEX_ACCESS_TOKEN")) {
         throw new Error(
-          "openai-codex harness: no Codex login — `codex login` on the laptop, or CODEX_REFRESH_TOKEN (from a dedicated login) in Worker secrets",
+          "openai-codex harness: no Codex login — run `codex login` on the laptop (the engine borrows it read-only). Not available on the cloud tier: chatgpt.com blocks Workers egress",
         );
       }
     },
