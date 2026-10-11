@@ -182,7 +182,7 @@ describe("multi-player gate decisions", () => {
         "brain-org",
         {
           identity: {
-            principal: { name: "Ada" },
+            principal: { name: "Ada", email: "ada@example.test" },
             members: [
               { id: "ada", name: "Ada", email: "ada@example.test", role: "owner" },
               { id: "vic", name: "Vic", role: "viewer" },
@@ -210,7 +210,9 @@ describe("multi-player gate decisions", () => {
     const ok = capture();
     expect(await main(["gate", "approve", r1.id, "--instance", dir, "--by", "ADA@example.test"], ok.io)).toBe(0);
     expect(store.get(r1.id)).toMatchObject({ status: "approved", decidedBy: "ada" });
-    expect(await main(["gate", "deny", r2.id, "--instance", dir, "--by", "ada"], capture().io)).toBe(0);
+    // No --by: the principal's own member record decides.
+    expect(await main(["gate", "deny", r2.id, "--instance", dir], capture().io)).toBe(0);
+    expect(store.get(r2.id)).toMatchObject({ status: "denied", decidedBy: "ada" });
   });
 });
 

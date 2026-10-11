@@ -246,7 +246,13 @@ async function cmdGate(args: string[], io: { log: (s: string) => void }): Promis
   if (sub === "approve" || sub === "deny") {
     const id = args[1];
     if (!id) throw new Error(`gate ${sub}: approval id required`);
-    const by = flag(args, "by") ?? "principal";
+    // Without --by, the decider is the principal: with members declared,
+    // that is the member whose email is the principal's.
+    const principalEmail = instance.config.identity?.principal.email?.toLowerCase();
+    const principalMember = principalEmail
+      ? instance.config.identity?.members?.find((m) => m.email?.toLowerCase() === principalEmail)
+      : undefined;
+    const by = flag(args, "by") ?? principalMember?.id ?? "principal";
     // Multi-player: with members declared, the decider must be an owner or
     // approver member - checked in code before the record changes.
     const member = assertMayDecide(instance.config, by);
