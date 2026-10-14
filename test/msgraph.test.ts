@@ -252,7 +252,7 @@ describe("cabinetContentsMarkdown", () => {
 });
 
 describe("cabinetListingMarkdown", () => {
-  it("renders one indented line per entry with size and modified date", () => {
+  it("renders one line per entry with size and modified date, under its folder", () => {
     const md = cabinetListingMarkdown({
       root: "Cabinet",
       truncated: false,
@@ -261,9 +261,28 @@ describe("cabinetListingMarkdown", () => {
         { path: "Finance/chase.csv", name: "chase.csv", isFolder: false, size: 512, lastModified: "2026-07-15T12:00:00Z", driveId: "d", itemId: "2" },
       ],
     });
-    expect(md).toContain("- Finance/ (folder)");
-    expect(md).toContain("  - chase.csv (512 B, 2026-07-15)");
+    expect(md).toContain("**(top level)**\n- Finance/ (folder)");
+    expect(md).toContain("**Finance/**\n- chase.csv (512 B, 2026-07-15)");
     expect(md).toContain("2 entries under Cabinet");
+  });
+
+  it("ties every child of a breadth-first walk to its own parent folder (issue #10)", () => {
+    const e = (path: string, isFolder = false) => ({ path, name: path.split("/").pop()!, isFolder, driveId: "d", itemId: path });
+    const md = cabinetListingMarkdown({
+      root: "Cabinet",
+      truncated: false,
+      // BFS order, as listCabinet emits it: siblings' children interleave by depth
+      entries: [
+        e("Finance", true), e("Tax", true),
+        e("Finance/Statements", true), e("Tax/FY2026", true),
+        e("Finance/Statements/2026-07.csv"), e("Tax/FY2026/return.pdf"),
+      ],
+    });
+    const sections = md.split("\n\n");
+    expect(sections).toContain("**Finance/Statements/**\n- 2026-07.csv");
+    expect(sections).toContain("**Tax/FY2026/**\n- return.pdf");
+    // no line relies on indentation to say where it lives
+    expect(md).not.toMatch(/^ +- /m);
   });
 });
 
