@@ -365,15 +365,28 @@ export function cabinetContentsMarkdown(files: InlinedFile[]): string {
 
 const LISTING_CHAR_BUDGET = 12_000;
 
-/** The listing as compact markdown for prompt injection — one line per entry. */
+/**
+ * The listing as compact markdown for prompt injection. Entries are grouped
+ * under a header naming their parent folder's full path, because the walk
+ * is breadth-first: indentation alone can't tie a deep file to its folder
+ * (engine issue #10). Group order follows the walk, so the char budget
+ * still drops the deepest levels first.
+ */
 export function cabinetListingMarkdown(listing: CabinetListing): string {
   const lines: string[] = [];
+  let parent: string | undefined;
   for (const e of listing.entries) {
-    const depth = e.path.split("/").length - 1;
+    const slash = e.path.lastIndexOf("/");
+    const dir = slash === -1 ? "" : e.path.slice(0, slash);
+    if (dir !== parent) {
+      if (parent !== undefined) lines.push("");
+      lines.push(dir ? `**${dir}/**` : `**(top level)**`);
+      parent = dir;
+    }
     const meta = e.isFolder
       ? "folder"
       : [e.size !== undefined ? formatSize(e.size) : null, e.lastModified?.slice(0, 10)].filter(Boolean).join(", ");
-    lines.push(`${"  ".repeat(depth)}- ${e.name}${e.isFolder ? "/" : ""}${meta ? ` (${meta})` : ""}`);
+    lines.push(`- ${e.name}${e.isFolder ? "/" : ""}${meta ? ` (${meta})` : ""}`);
   }
   let body = lines.join("\n");
   let clipped = false;

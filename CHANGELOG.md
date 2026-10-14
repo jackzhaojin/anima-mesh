@@ -3,7 +3,7 @@
 This history is organized by **minor release line** (and, from 2.0, major):
 the capability boundary operators actually adopt. Patch tags are deliberately
 rolled into the value and maturity of their minor rather than narrated one by
-one. The latest tag is **v2.2.0**.
+one. The latest tag is **v2.2.1**.
 
 ## Upgrade procedure
 
@@ -32,7 +32,17 @@ The ledger remains append-only; never "migrate" it by editing old entries.
 
 ## [v2.2.x] - OKF v0.2: provenance, trust, and lifecycle the engine can read
 
-**Latest tag: v2.2.0 · 2026-10-11**
+**Latest tag: v2.2.1 · 2026-10-14**
+
+**v2.2.1 - cabinet listings say which folder a file is in.** The OneDrive
+listing walks breadth-first, but it was rendered as one indented list, so
+a deep file printed far from its folder and children of different parents
+interleaved: an agent could not tell which folder held a given file
+([#10](https://github.com/jackzhaojin/anima-mesh/issues/10)). Entries are
+now grouped under a header with their parent folder's full path; the walk
+order is kept, so the listing budget still drops the deepest levels first.
+No config, bundle, or Worker changes; bump `engine.ref` and redeploy to
+pick it up in the cloud.
 
 A minor, planned with the operator. Every brain becomes an
 [Open Knowledge Format v0.2](https://github.com/GoogleCloudPlatform/open-knowledge-format)
