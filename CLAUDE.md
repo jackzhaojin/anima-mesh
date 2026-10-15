@@ -5,6 +5,26 @@ first for what AnimaMesh is, then [docs/README.md](docs/README.md) — the
 operator's shelf, with a read order for new sessions; this file is about how
 to work on the code.
 
+## Claude and Codex
+
+Claude remains the primary assistant. This file is the canonical working
+agreement for both tools; [AGENTS.md](AGENTS.md) directs Codex here. Update
+shared instructions here rather than maintaining a separate Codex copy.
+
+- Skills live in `.claude/skills/`; `.agents/skills` is a relative symlink
+  to that directory for Codex discovery. Edit only the originals. Codex
+  supports this layout ([official documentation](https://learn.chatgpt.com/docs/build-skills)).
+- Claude settings, permissions, hooks, and `.claude/agents/` are specific to
+  Claude. Codex uses its own session tools and permissions; a shared skill
+  does not install those integrations or grant additional access.
+- Nested PoCs with a `CLAUDE.md` have a small `AGENTS.md` reference beside
+  it. Read their local guidance when working there. Keep that guidance
+  scoped to the PoC; the engine's invariants still apply.
+- Instance personas and interactive agent artifacts are generated from
+  instance concepts by `export-local`. They are not native Codex agent
+  registrations. Repo instruction sharing does not change configured
+  production models, providers, or harnesses.
+
 ## The one hard rule
 
 **This repo is public and instance-agnostic.** It must never name, reference,
