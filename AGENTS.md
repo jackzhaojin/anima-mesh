@@ -9,6 +9,9 @@ Repo skills are shared through `.agents/skills -> ../.claude/skills`.
 Edit the originals in `.claude/skills/`, and read the relevant `SKILL.md`
 before using a skill. See CLAUDE.md's **Claude and Codex** section for the
 boundaries between shared guidance and tool-specific configuration.
+Shared agent workflows use small skills that read `.claude/agents/`
+originals. The subagent PoC exposes `$code-validator` and `$task-researcher`
+when Codex is launched there; maintain behavior in the original agent files.
 
 Before working in a nested directory, read its applicable `AGENTS.md` and
 `CLAUDE.md` too. PoC instructions describe that PoC; they do not override

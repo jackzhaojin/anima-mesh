@@ -14,15 +14,30 @@ shared instructions here rather than maintaining a separate Codex copy.
 - Skills live in `.claude/skills/`; `.agents/skills` is a relative symlink
   to that directory for Codex discovery. Edit only the originals. Codex
   supports this layout ([official documentation](https://learn.chatgpt.com/docs/build-skills)).
-- Claude settings, permissions, hooks, and `.claude/agents/` are specific to
-  Claude. Codex uses its own session tools and permissions; a shared skill
-  does not install those integrations or grant additional access.
+- `.claude/` is the primary home for skills, agents, commands, and supporting
+  resources. Codex uses links or small reference wrappers, with no separate
+  copy of the behavior to maintain.
+- Agent workflows are exposed through skills in `.claude/skills/` that read
+  the original `.claude/agents/<name>.md`. Add or remove a reference skill
+  with its source agent; keep the workflow in the original. This follows
+  OpenAI's [guidance for portable agent workflows](https://developers.openai.com/plugins/guides/submit-claude-plugin).
+- The root has no Claude agent roster. Launch Codex in the subagent PoC to
+  discover `$code-validator` and `$task-researcher`. These load the role in
+  the current chat; delegation requires a user request and available agent
+  tools. The skills PoC also exposes its local Claude skills through its own
+  `.agents/skills` link.
+- Claude settings, permissions, hooks, and MCP registrations need explicit
+  Codex configuration. Never symlink `settings.local.json` or credentials
+  into Codex config. No shared hooks, commands, or MCP config are currently
+  tracked here. Future portable commands should use the shared skills;
+  hooks or integrations need an adapter and a working check in each tool.
 - Nested PoCs with a `CLAUDE.md` have a small `AGENTS.md` reference beside
   it. Read their local guidance when working there. Keep that guidance
   scoped to the PoC; the engine's invariants still apply.
 - Instance personas and interactive agent artifacts are generated from
-  instance concepts by `export-local`. They are not native Codex agent
-  registrations. Repo instruction sharing does not change configured
+  instance concepts by `export-local`. A shared role skill reads the Claude
+  artifact; persona edits still go upstream to the concept, followed by
+  `export-local`. Repo instruction sharing does not change configured
   production models, providers, or harnesses.
 
 ## The one hard rule

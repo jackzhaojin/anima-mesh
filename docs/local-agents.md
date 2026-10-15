@@ -70,6 +70,34 @@ map to their Anthropic ids). Override per instance in the config:
 The Claude Code artifact omits `model:` by default — it inherits whatever
 the session runs.
 
+## Sharing agent workflows with Codex
+
+Claude remains the primary authoring surface for local assets. `export-local`
+still generates the two artifacts above. To expose an existing agent to
+both assistants, add a small `.claude/skills/<slug>/SKILL.md` that tells the
+assistant to read `../../agents/<slug>.md` in full before working. Expose the
+skills directory through `.agents/skills -> ../.claude/skills`. The reference
+skill reads the current agent file, so persona changes flow through after
+`export-local` without copying a prompt. Add or remove the wrapper with its
+source agent. See the [subagent PoC wrappers](../references/poc/claude/agent-sdk-subagents-poc/.claude/skills/).
+
+In Codex, invoke `$<slug>` or ask it to read the original agent file and adopt
+the role in the current chat. Launch from the owning project to discover its
+local skills. Delegating that workflow is a separate user request; pass the
+same original source and constraints to the available subagent tool. Claude
+continues to use its native agent entry points as well as the shared skills.
+This matches OpenAI's [guidance for portable agent workflows](https://developers.openai.com/plugins/guides/submit-claude-plugin).
+
+Claude `model:` and `tools:` metadata do not configure Codex. Use the current
+session's model and permissions, honor the agent's restrictions, and report
+missing capabilities before dependent work. Reading instructions does not
+install a tool or create a separate permission sandbox.
+
+Skills share their full directory, including scripts and references.
+Portable commands should use that same shared skill directory. Hooks,
+permissions, and MCP configuration need explicit mapping and a working check
+in each tool. Do not link private settings or credentials between tools.
+
 ## Defect reports — the feedback loop into the engine
 
 An agent whose whitelist carries `defect-report` reports engine bugs —
