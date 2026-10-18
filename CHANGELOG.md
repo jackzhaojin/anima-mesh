@@ -3,7 +3,7 @@
 This history is organized by **minor release line** (and, from 2.0, major):
 the capability boundary operators actually adopt. Patch tags are deliberately
 rolled into the value and maturity of their minor rather than narrated one by
-one. The latest tag is **v2.2.3**.
+one. The latest tag is **v2.2.4**.
 
 ## Upgrade procedure
 
@@ -32,7 +32,20 @@ The ledger remains append-only; never "migrate" it by editing old entries.
 
 ## [v2.2.x] - OKF v0.2: provenance, trust, and lifecycle the engine can read
 
-**Latest tag: v2.2.3 · 2026-10-18**
+**Latest tag: v2.2.4 · 2026-10-18**
+
+**Long-run runtime protection and progress.** The deployment template opts
+older compatibility dates into `durable_object_io_tasks_prevent_eviction`,
+Cloudflare's October protection for pending DO calls, timers and waitUntil
+work. Existing instances must merge this flag into their own configuration.
+Health now retains timestamped progress categories without agent names,
+source contents or errors. A second live test retained its queued request
+but health lost its active-run marker while the run later committed all
+three reports; the precise runtime cause remains unconfirmed. Omitted
+directory reads now include a concrete `bundle:` retrieval example, and
+prompts identify the instance's engine pin ([#16](https://github.com/jackzhaojin/anima-mesh/issues/16)).
+Bundle retrieval already existed; the patch clarifies it even without
+native file tools. Read caps and coverage-gap reporting remain explicit.
 
 **Durable manual beats.** Manual triggers now persist a pending request and
 an immediate alarm before returning HTTP 202. The alarm awaits the run;

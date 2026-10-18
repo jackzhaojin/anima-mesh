@@ -196,6 +196,8 @@ export function readRequestCapabilityLines(agent: AgentConcept): string[] {
     "  ```read-request",
     "  " + example + ": [" + (EXAMPLE_PATHS[example] ?? "path") + "]",
     "  ```",
+    "  bundle: paths are relative to the bundle root; omitted role reads remain requestable.",
+    "  This harness capability works even when the provider has no native file tools.",
     `  Sources you may name: ${sources.join(", ")}. The harness serves the files (cabinet PDFs`,
     `  included) and runs you once more with them inlined — up to ${MAX_REQUEST_FILES} files / ~${Math.round(TOTAL_READ_CHARS / 1000)}K chars,`,
     "  ONE round only. Ask only when the inlined context is insufficient — a request costs a",

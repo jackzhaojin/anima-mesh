@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { SELF, env, fetchMock, runInDurableObject, runDurableObjectAlarm } from "cloudflare:test";
 import { mockGitHub, mockGitHubDown, mockKimi, mockDiscord, wipeHeartbeatDo } from "./fixtures.js";
 
@@ -80,6 +80,21 @@ describe("HeartbeatDO alarm", () => {
 });
 
 describe("HeartbeatDO durable manual queue", () => {
+  it("repairs a stale pending alarm when no run remains active", async () => {
+    const realNow = Date.now();
+    await runInDurableObject(stub(), async (_instance, state) => {
+      await state.storage.put("manual-pending", new Date().toISOString());
+      await state.storage.setAlarm(realNow + 60000);
+    });
+    // Advance JS time without firing the platform alarm automatically.
+    const clock = vi.spyOn(Date, "now").mockReturnValue(realNow + 180000);
+    try {
+      await stub().fetch("https://do/ensure-alarm");
+      const alarm = await getAlarm();
+      expect(alarm).toBe(realNow + 181000);
+    } finally { clock.mockRestore(); }
+  });
+
   it("acknowledges persisted work without starting outbound I/O and coalesces duplicate triggers", async () => {
     const trigger = () => SELF.fetch("https://worker.test/beat", {
       method: "POST", headers: { authorization: `Bearer ${env.BEAT_TRIGGER_TOKEN}` },
@@ -117,6 +132,9 @@ describe("HeartbeatDO durable manual queue", () => {
       const last = await state.storage.get<{ kind: string; summary: { ran: number } }>("lastBeat");
       expect(last?.kind).toBe("manual");
       expect(last?.summary.ran).toBe(1);
+      const progress = await state.storage.get<{ at: string; stage: string }>("beat-progress");
+      expect(progress?.stage).toBe("complete");
+      expect(Object.keys(progress!).sort()).toEqual(["at", "stage"]);
     });
     expect(hourInTz((await getAlarm())!, env.BEAT_TIMEZONE)).toBe(Number(env.BEAT_HOUR));
   });

@@ -148,6 +148,8 @@ describe("role-declared reads in the prompt (issue #5)", () => {
     expect(prompt).toContain("#### crm/rec-20.md");
     expect(prompt).not.toContain("#### crm/rec-21.md");
     expect(prompt).toContain("(3 more file(s) NOT inlined: rec-21.md, rec-22.md, rec-23.md)");
+    expect(prompt).toContain('bundle: ["crm/rec-21.md","crm/rec-22.md","crm/rec-23.md"]');
+    expect(prompt).toContain("even without native file tools");
   });
 
   it("clips an oversized file with a visible truncation note", async () => {

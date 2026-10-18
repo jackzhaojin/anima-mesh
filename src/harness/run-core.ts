@@ -449,6 +449,7 @@ async function buildPrompt(
   sections.push(
     `You are "${agent.title}" (${agent.name}), an agent in ${meshPhrase(config)}.`,
     `Today is ${dateStamp}. Autonomy level: ${agent.level} (${levelMeaning(agent.level)}).`,
+    `Configured engine pin: ${config.engine?.ref ?? "not declared by this instance"}.`,
     "",
     "## Your job",
     agent.job,
@@ -738,6 +739,11 @@ export async function declaredReadsContext(
         // No silent caps: what was dropped is named, so the agent knows the
         // directory is larger than what it was shown.
         parts.push(`\n(${names.length - shown.length} more file(s) NOT inlined: ${names.slice(MAX_DIR_FILES).join(", ")})`);
+        if (candidate.startsWith(`${config.bundle}/`)) {
+          const prefix = candidate.slice(config.bundle.length + 1);
+          const omitted = names.slice(MAX_DIR_FILES, MAX_DIR_FILES + 4).map((name) => `${prefix}/${name}`);
+          parts.push(`\nOmitted bundle files remain readable through the harness (even without native file tools). To prioritize these files, end with:\n\`\`\`read-request\nbundle: ${JSON.stringify(omitted)}\n\`\`\`\nOne round, up to four files within the shared read budget; state any remaining coverage gaps.`);
+        }
       }
       resolved = true;
       break;

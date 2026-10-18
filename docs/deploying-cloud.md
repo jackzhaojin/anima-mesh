@@ -243,3 +243,10 @@ restore the configured daily schedule. Execution is at least once: an
 interruption after an external side effect can replay that effect. Alarms
 have the platform's 15-minute wall-time limit; this is not an unlimited
 workflow runner. Deploy between runs where possible.
+
+For compatibility dates before `2026-10-01`, merge the template's
+`durable_object_io_tasks_prevent_eviction` flag into the instance config.
+It protects pending DO calls, timers, and waitUntil work without a connected
+client. This does not prevent crashes, deploy interruptions, or resource
+limits. Health retains `{ at, stage }` progress categories for diagnosis;
+these contain no agent names, paths, provider errors or source contents.

@@ -8,6 +8,7 @@ import { createMsGraphTokenManager, type MsGraphCredential } from "../../../src/
 const BEAT_LOCK_KEY = "beat-running";
 const LAST_BEAT_KEY = "lastBeat";
 const MANUAL_PENDING_KEY = "manual-pending";
+const PROGRESS_KEY = "beat-progress";
 /** An in-flight beat older than this is presumed hung and may be stolen. */
 const STALE_LOCK_MS = 30 * 60 * 1000;
 
@@ -69,7 +70,10 @@ export class HeartbeatDO extends DurableObject<Env> {
 
     if (url.pathname === "/ensure-alarm") {
       const existing = await this.ctx.storage.getAlarm();
-      if (existing === null) {
+      const pending = await this.ctx.storage.get(MANUAL_PENDING_KEY);
+      if (existing === null || (pending !== undefined && !this.beatInFlight && existing < Date.now() - 60_000)) {
+        // A persisted request must not remain stranded behind an old alarm
+        // timestamp after runtime loss. Never replace an active run's alarm.
         await this.rearm();
       }
       return Response.json({ nextAlarm: new Date((await this.ctx.storage.getAlarm())!).toISOString() });
@@ -102,6 +106,7 @@ export class HeartbeatDO extends DurableObject<Env> {
         lastBeat: sanitized,
         beatRunning: this.beatInFlight !== null,
         beatQueued: (await this.ctx.storage.get(MANUAL_PENDING_KEY)) !== undefined,
+        progress: (await this.ctx.storage.get(PROGRESS_KEY)) ?? null,
         nextAlarm: alarm === null ? null : new Date(alarm).toISOString(),
       });
     }
@@ -206,7 +211,20 @@ export class HeartbeatDO extends DurableObject<Env> {
   private async executeBeat(kind: "alarm" | "manual"): Promise<LastBeat> {
     let last: LastBeat;
     try {
-      const summary = await runCloudBeat(this.env);
+      await this.ctx.storage.put(PROGRESS_KEY, { at: new Date().toISOString(), stage: "init" });
+      const summary = await runCloudBeat(this.env, (note) => {
+        console.log(note);
+        // Categories only: health is public. Never persist provider error
+        // text, agent names, paths, source content, or credentials here.
+        const stage = note.startsWith("heartbeat: running ") ? "agent-start"
+          : note.includes(" via ") && note.startsWith("run ") ? "model-start"
+          : note.includes("requested read(s) served") ? "read-continuation"
+          : note.includes(" retry ") ? "provider-retry"
+          : note.includes("output budget reached") ? "output-continuation"
+          : note.startsWith("beat stage: ") ? note.slice("beat stage: ".length) : undefined;
+        if (stage) this.ctx.waitUntil(this.ctx.storage.put(PROGRESS_KEY, { at: new Date().toISOString(), stage }));
+      });
+      await this.ctx.storage.put(PROGRESS_KEY, { at: new Date().toISOString(), stage: "complete" });
       last = { at: new Date().toISOString(), kind, summary };
     } catch (err) {
       last = {

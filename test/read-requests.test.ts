@@ -122,6 +122,8 @@ describe("the retrieval loop — beat runs", () => {
     expect(provider.calls).toHaveLength(2);
     // Call 1 was told about the capability; call 2 got the served file.
     expect(provider.calls[0]!.prompt).toContain("On-demand reads (one round)");
+    expect(provider.calls[0]!.prompt).toContain("omitted role reads remain requestable");
+    expect(provider.calls[0]!.prompt).toContain("Configured engine pin:");
     expect(provider.calls[1]!.prompt).toContain("## Requested reads (served at your request)");
     expect(provider.calls[1]!.prompt).toContain("ALPHA-42");
     expect(provider.calls[1]!.prompt).toContain("produce your complete final output now");

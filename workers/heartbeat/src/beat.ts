@@ -32,6 +32,7 @@ export async function runCloudBeat(env: Env, log: (note: string) => void = conso
 
   try {
     stage = "store";
+    log("beat stage: store");
     const store = new GitHubInstanceStore({
       repo: env.BRAIN_REPO,
       ref: env.BRAIN_REF,
@@ -39,6 +40,7 @@ export async function runCloudBeat(env: Env, log: (note: string) => void = conso
     });
 
     stage = "heartbeat";
+    log("beat stage: heartbeat");
     const result = await heartbeatCore({
       store,
       cloudTier: true,
@@ -50,11 +52,13 @@ export async function runCloudBeat(env: Env, log: (note: string) => void = conso
     });
 
     stage = "flush";
+    log("beat stage: flush");
     const { commitSha } = await store.flush(
       `beat(cloud): ${date} — ${result.runs.length} run(s), ${result.failures.length} failure(s)`,
     );
 
     stage = "deliver";
+    log("beat stage: deliver");
     let delivered = false;
     let deliveryDetail: string | undefined;
     if (result.runs.length > 0) {

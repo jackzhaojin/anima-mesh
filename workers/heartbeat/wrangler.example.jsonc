@@ -7,6 +7,8 @@
   "main": "src/index.ts", // instance configs point at the engine checkout instead
   "account_id": "<CLOUDFLARE ACCOUNT ID>",
   "compatibility_date": "2026-07-01",
+  // Protect pending DO calls, timers and waitUntil work without a client.
+  "compatibility_flags": ["durable_object_io_tasks_prevent_eviction"],
   "observability": { "enabled": true },
   "durable_objects": {
     "bindings": [
