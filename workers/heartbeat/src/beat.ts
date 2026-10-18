@@ -2,8 +2,7 @@ import { GitHubInstanceStore } from "../../../src/instance/store-github.js";
 import { githubToken } from "../../../src/instance/github-auth.js";
 import { heartbeatCore } from "../../../src/harness/heartbeat-core.js";
 import { dateStampFor } from "../../../src/harness/run-core.js";
-import { deliverLatestReportFromStore, deliverMessage } from "../../../src/channels/registry.js";
-import { getEnv } from "../../../src/instance/env-core.js";
+import { deliverLatestReportFromStore, deliverMessage, resolveChannel } from "../../../src/channels/registry.js";
 import { envRecord, type Env } from "./env.js";
 import { cloudMsGraphToken } from "./msgraph-token.js";
 
@@ -29,6 +28,10 @@ export async function runCloudBeat(env: Env, log: (note: string) => void = conso
   const record = envRecord(env);
   const date = dateStampFor(new Date(), env.BEAT_TIMEZONE);
   let stage = "init";
+  // The brain's delivery channels, once its config is readable - where a
+  // failure alert goes. Unknown (the beat died first) = every chat channel
+  // this Worker has credentials for.
+  let configuredChannels: string[] | undefined;
 
   try {
     stage = "store";
@@ -50,6 +53,8 @@ export async function runCloudBeat(env: Env, log: (note: string) => void = conso
       timeZone: env.BEAT_TIMEZONE,
       onProgress: log, // console → wrangler tail
     });
+
+    configuredChannels = (await store.loadConfig()).delivery?.channels;
 
     stage = "flush";
     log("beat stage: flush");
@@ -79,8 +84,9 @@ export async function runCloudBeat(env: Env, log: (note: string) => void = conso
     // nothing and reads exactly like a quiet "nothing due" day.
     if (result.failures.length > 0) {
       const lines = result.failures.map((f) => `${f.agent}: ${f.error.slice(0, 200)}`).join("\n");
-      await attemptFailureDm(
+      await attemptFailureAlert(
         record,
+        configuredChannels,
         `⚠️ cloud beat ${date}: ${result.failures.length}/${result.due.length} due agent(s) failed\n${lines}`.slice(0, 1500),
         log,
       );
@@ -109,20 +115,48 @@ export async function runCloudBeat(env: Env, log: (note: string) => void = conso
   } catch (err) {
     // Silence must mean success: a beat-level failure still attempts a DM.
     const message = err instanceof Error ? err.message : String(err);
-    await attemptFailureDm(record, `⚠️ cloud beat failed at ${stage}: ${message.slice(0, 500)}`, log);
+    await attemptFailureAlert(record, configuredChannels, `⚠️ cloud beat failed at ${stage}: ${message.slice(0, 500)}`, log);
     throw err;
   }
 }
 
-async function attemptFailureDm(
+/** Chat channels that can carry a failure alert (never console/notion/gmail). */
+const ALERT_CHANNELS = ["slack", "discord"];
+
+/**
+ * Which channels a failure alert goes to: the brain's own chat delivery
+ * channels when its config was read, else (config unknown, or it names no
+ * chat channel) every chat channel with credentials here. A Slack-only
+ * brain alerts in Slack; a brain migrated off Discord stops hearing from it
+ * there (v2.3.2 - alerts were Discord-only before).
+ */
+export function failureAlertChannels(
   record: Record<string, string | undefined>,
+  configured: string[] | undefined,
+): string[] {
+  const chat = (configured ?? []).filter((c) => ALERT_CHANNELS.includes(c));
+  const candidates = chat.length > 0 ? chat : ALERT_CHANNELS;
+  return candidates.filter((name) => {
+    try {
+      resolveChannel(name).assertConfigured({ env: record });
+      return true;
+    } catch {
+      return false;
+    }
+  });
+}
+
+async function attemptFailureAlert(
+  record: Record<string, string | undefined>,
+  configured: string[] | undefined,
   body: string,
   log: (note: string) => void,
 ): Promise<void> {
-  if (!getEnv(record, "DISCORD_BOT_TOKEN") || !getEnv(record, "DISCORD_DM_USER_ID")) return;
-  try {
-    await deliverMessage({ title: "cloud beat failed", body }, ["discord"], { env: record, log });
-  } catch {
-    log("failure DM could not be delivered either");
+  for (const channel of failureAlertChannels(record, configured)) {
+    try {
+      await deliverMessage({ title: "cloud beat failed", body }, [channel], { env: record, log });
+    } catch {
+      log(`failure alert could not be delivered via ${channel} either`);
+    }
   }
 }

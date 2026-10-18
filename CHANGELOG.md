@@ -3,7 +3,7 @@
 This history is organized by **minor release line** (and, from 2.0, major):
 the capability boundary operators actually adopt. Patch tags are deliberately
 rolled into the value and maturity of their minor rather than narrated one by
-one. The latest tag is **v2.3.1**.
+one. The latest tag is **v2.3.2**.
 
 ## Upgrade procedure
 
@@ -32,7 +32,16 @@ The ledger remains append-only; never "migrate" it by editing old entries.
 
 ## [v2.3.x] - Slack: the persona in a group setting
 
-**Latest tag: v2.3.1 · 2026-10-18**
+**Latest tag: v2.3.2 · 2026-10-18**
+
+**Channel membership as the allowlist, and alerts that follow the brain.**
+`SLACK_ALLOWED_USER_IDS=*` lets whoever can post in the channels
+`SLACK_ALLOWED_CHANNEL_IDS` pins direct the persona, for team brains whose
+roster lives in Slack. One shared rule (`slackSenderAllowed`) gates both
+doors. It refuses the wildcard without a pinned channel list and never
+lets it open DMs. Cloud beat failure alerts were Discord-only; they now go
+to the brain's own chat delivery channels (Slack and/or Discord), so a
+brain migrated off Discord alerts in Slack and stops hearing from Discord.
 
 **Mentions on the laptop tier.** `anima-mesh slack listen` polls the
 allowed channel with the bot token and feeds each mention through the same

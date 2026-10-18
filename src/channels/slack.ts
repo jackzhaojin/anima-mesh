@@ -195,6 +195,35 @@ export const slackChannel: DeliveryChannel = {
 
 // ---- inbound helpers (the Worker's Events API edge + DirectionDO) -----------
 
+/** Comma-separated Slack ids → a list (blank entries dropped). */
+export function slackIdList(raw: string | undefined): string[] {
+  return (raw ?? "")
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
+
+/**
+ * The inbound sender gate, shared by both doors (Worker events, laptop
+ * poll). SLACK_ALLOWED_USER_IDS lists who may direct the persona; absent =
+ * nobody. `*` means "whoever can post in an allowed channel" - Slack's own
+ * channel membership becomes the allowlist - and is honored ONLY for
+ * mentions in channels SLACK_ALLOWED_CHANNEL_IDS pins: never for DMs (any
+ * workspace member can DM an app) and never with the channel list unset
+ * (that would be anyone, anywhere the bot is invited).
+ */
+export function slackSenderAllowed(
+  env: Record<string, string | undefined>,
+  at: { user: string; channel: string; isDm: boolean },
+): boolean {
+  const users = slackIdList(env.SLACK_ALLOWED_USER_IDS);
+  const channels = slackIdList(env.SLACK_ALLOWED_CHANNEL_IDS);
+  const channelOk = at.isDm || channels.length === 0 || channels.includes(at.channel);
+  if (!channelOk) return false;
+  if (users.includes(at.user)) return true;
+  return users.includes("*") && !at.isDm && channels.length > 0;
+}
+
 /** Slack's three HTML entities, decoded; everything else is literal. */
 function decodeEntities(text: string): string {
   return text.replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&amp;/g, "&");

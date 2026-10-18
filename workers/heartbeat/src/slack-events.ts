@@ -1,5 +1,5 @@
 import type { Env } from "./env.js";
-import { cleanSlackText, slackApi } from "../../../src/channels/slack.js";
+import { cleanSlackText, slackApi, slackIdList, slackSenderAllowed } from "../../../src/channels/slack.js";
 
 /**
  * Slack Events API endpoint - the mesh's ear in a group setting (v2.3).
@@ -21,7 +21,8 @@ import { cleanSlackText, slackApi } from "../../../src/channels/slack.js";
  *
  * Sender policy: only SLACK_ALLOWED_USER_IDS may direct the persona; absent
  * means nobody, so a fresh install answers no one until the operator opts
- * people in. Strangers get no reply - the attempt is recorded and folded
+ * people in. `*` hands the list to Slack's channel membership, for the
+ * channels SLACK_ALLOWED_CHANNEL_IDS pins only (slackSenderAllowed). Strangers get no reply - the attempt is recorded and folded
  * into the ledger with the next drain, exactly like a Discord knock.
  * SLACK_ALLOWED_CHANNEL_IDS optionally pins which shared channels the
  * persona answers in; it is the code-level answer to "which rooms may hear
@@ -75,15 +76,6 @@ export async function verifySlackSignature(
   return crypto.subtle.timingSafeEqual(given, expected);
 }
 
-function idList(raw: string | undefined): Set<string> {
-  return new Set(
-    (raw ?? "")
-      .split(",")
-      .map((s) => s.trim())
-      .filter(Boolean),
-  );
-}
-
 const OK = () => new Response(null, { status: 200 });
 
 export async function handleSlackEvent(req: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
@@ -109,10 +101,13 @@ export async function handleSlackEvent(req: Request, env: Env, ctx: ExecutionCon
   if (botUserId && event.user === botUserId) return OK();
 
   const stub = env.DIRECTION_DO.get(env.DIRECTION_DO.idFromName("main"));
-  const allowedUsers = idList(env.SLACK_ALLOWED_USER_IDS);
-  const allowedChannels = idList(env.SLACK_ALLOWED_CHANNEL_IDS);
-  const channelOk = isDm || allowedChannels.size === 0 || allowedChannels.has(event.channel);
-  if (!allowedUsers.has(event.user) || !channelOk) {
+  const gateEnv = {
+    SLACK_ALLOWED_USER_IDS: env.SLACK_ALLOWED_USER_IDS,
+    SLACK_ALLOWED_CHANNEL_IDS: env.SLACK_ALLOWED_CHANNEL_IDS,
+  };
+  const pinned = slackIdList(env.SLACK_ALLOWED_CHANNEL_IDS);
+  const channelOk = isDm || pinned.length === 0 || pinned.includes(event.channel); // for the denial record only
+  if (!slackSenderAllowed(gateEnv, { user: event.user, channel: event.channel, isDm })) {
     // Silent to the sender; evidence for the principal.
     await stub.fetch("https://do/denied", {
       method: "POST",

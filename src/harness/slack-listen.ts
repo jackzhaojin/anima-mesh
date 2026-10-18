@@ -7,6 +7,8 @@ import { localBrainOpener } from "../brains/local.js";
 import type { AgentWorkerProvider } from "../providers/index.js";
 import {
   findSlackMentions,
+  slackIdList,
+  slackSenderAllowed,
   postSlackMarkdown,
   slackApi,
   slackConversationContext,
@@ -21,8 +23,9 @@ import { runDirectionCore } from "./direction-core.js";
  * channel(s) with the bot token instead of receiving pushed events, so it
  * needs no public endpoint and no signing secret.
  *
- * Same gates as the Worker, in code: SLACK_ALLOWED_USER_IDS (absent = the
- * listener refuses to start - nobody to answer), channels from
+ * Same gates as the Worker, in code (slackSenderAllowed): SLACK_ALLOWED_USER_IDS
+ * (absent = the listener refuses to start - nobody to answer; `*` = members
+ * of the channels SLACK_ALLOWED_CHANNEL_IDS pins), channels from
  * SLACK_ALLOWED_CHANNEL_IDS or else SLACK_CHANNEL_ID, bot-authored messages
  * never heard. Dedup is the ledger itself: a mention whose ts already
  * appears as a slack `messageId` (started, failed, or denied) is done, so a
@@ -49,13 +52,6 @@ export interface SlackListenResult {
 const DEFAULT_LOOKBACK_MINUTES = 60;
 const HANDLED_ACTIONS = new Set(["direction-started", "direction-failed", "direction-denied"]);
 
-function idList(raw: string | undefined): string[] {
-  return (raw ?? "")
-    .split(",")
-    .map((s) => s.trim())
-    .filter(Boolean);
-}
-
 /** One pass: find new mentions, gate them, answer each in its thread. */
 export async function slackListenOnce(options: SlackListenOptions): Promise<SlackListenResult> {
   const log = options.log ?? (() => {});
@@ -65,11 +61,14 @@ export async function slackListenOnce(options: SlackListenOptions): Promise<Slac
   const api = { env, fetchImpl: options.fetchImpl };
 
   if (!getEnv(env, "SLACK_BOT_TOKEN")) throw new Error("slack listen: SLACK_BOT_TOKEN is not set");
-  const allowedUsers = new Set(idList(getEnv(env, "SLACK_ALLOWED_USER_IDS")));
-  if (allowedUsers.size === 0) {
+  const gateEnv = {
+    SLACK_ALLOWED_USER_IDS: getEnv(env, "SLACK_ALLOWED_USER_IDS"),
+    SLACK_ALLOWED_CHANNEL_IDS: getEnv(env, "SLACK_ALLOWED_CHANNEL_IDS"),
+  };
+  if (slackIdList(gateEnv.SLACK_ALLOWED_USER_IDS).length === 0) {
     throw new Error("slack listen: SLACK_ALLOWED_USER_IDS is empty - nobody may direct the persona, so there is nothing to listen for");
   }
-  const channels = idList(getEnv(env, "SLACK_ALLOWED_CHANNEL_IDS") ?? getEnv(env, "SLACK_CHANNEL_ID"));
+  const channels = slackIdList(getEnv(env, "SLACK_ALLOWED_CHANNEL_IDS") ?? getEnv(env, "SLACK_CHANNEL_ID"));
   if (channels.length === 0) throw new Error("slack listen: set SLACK_ALLOWED_CHANNEL_IDS (or SLACK_CHANNEL_ID)");
 
   const { user_id: botUserId } = await slackApi<{ user_id: string }>(api, "auth.test", {});
@@ -89,7 +88,9 @@ export async function slackListenOnce(options: SlackListenOptions): Promise<Slac
   const directionAgent = config.direction?.agent ?? config.delivery?.deliverAgent ?? "chief-of-staff";
 
   for (const m of fresh) {
-    if (!allowedUsers.has(m.user)) {
+    // Polled mentions are channel messages: the wildcard needs the channel
+    // list pinned explicitly, same as the Worker's door.
+    if (!slackSenderAllowed(gateEnv, { user: m.user, channel: m.channel, isDm: false })) {
       // Silent to the sender; evidence for the principal (once per message).
       await store.appendLedger({
         ts: now().toISOString(),

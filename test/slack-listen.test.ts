@@ -3,7 +3,7 @@ import { rm, readFile } from "node:fs/promises";
 import * as path from "node:path";
 import { makeTree, concept } from "./helpers.js";
 import { slackListenOnce } from "../src/harness/slack-listen.js";
-import { findSlackMentions } from "../src/channels/slack.js";
+import { findSlackMentions, slackSenderAllowed } from "../src/channels/slack.js";
 import { FakeProvider } from "../src/providers/fake.js";
 
 /**
@@ -171,5 +171,54 @@ describe("findSlackMentions", () => {
     expect(found).toEqual([
       { channel: "CTEAM", ts: ts(30), threadTs: parent.ts, inThread: true, user: "UJACK", text: "new one" },
     ]);
+  });
+});
+
+describe("slackSenderAllowed - the sender gate both doors share", () => {
+  const listed = { SLACK_ALLOWED_USER_IDS: "UJACK", SLACK_ALLOWED_CHANNEL_IDS: "CTEAM" };
+  const wildcard = { SLACK_ALLOWED_USER_IDS: "*", SLACK_ALLOWED_CHANNEL_IDS: "CTEAM" };
+
+  it("absent list = nobody", () => {
+    expect(slackSenderAllowed({}, { user: "UJACK", channel: "CTEAM", isDm: false })).toBe(false);
+  });
+
+  it("a listed user passes in pinned channels and DMs, never in other channels", () => {
+    expect(slackSenderAllowed(listed, { user: "UJACK", channel: "CTEAM", isDm: false })).toBe(true);
+    expect(slackSenderAllowed(listed, { user: "UJACK", channel: "DJACK", isDm: true })).toBe(true);
+    expect(slackSenderAllowed(listed, { user: "UJACK", channel: "COTHER", isDm: false })).toBe(false);
+    expect(slackSenderAllowed(listed, { user: "UFRIEND", channel: "CTEAM", isDm: false })).toBe(false);
+  });
+
+  it("'*' = anyone who can post in a PINNED channel", () => {
+    expect(slackSenderAllowed(wildcard, { user: "UFRIEND", channel: "CTEAM", isDm: false })).toBe(true);
+    expect(slackSenderAllowed(wildcard, { user: "UFRIEND", channel: "COTHER", isDm: false })).toBe(false);
+  });
+
+  it("'*' never opens DMs - any workspace member can DM an app", () => {
+    expect(slackSenderAllowed(wildcard, { user: "UFRIEND", channel: "DFRIEND", isDm: true })).toBe(false);
+  });
+
+  it("'*' without a pinned channel list is refused - that would be anyone, anywhere", () => {
+    const open = { SLACK_ALLOWED_USER_IDS: "*" };
+    expect(slackSenderAllowed(open, { user: "UFRIEND", channel: "CTEAM", isDm: false })).toBe(false);
+  });
+});
+
+describe("slack listen with a channel-membership allowlist", () => {
+  it("'*' answers a teammate in the pinned channel", async () => {
+    const root = await makeInstance("SLACK_BOT_TOKEN=xoxb-test\nSLACK_ALLOWED_CHANNEL_IDS=CTEAM\nSLACK_ALLOWED_USER_IDS=*\n");
+    const history = [{ ts: ts(20), user: "UFRIEND", text: `<@${BOT}> what's the plan?` }];
+    const fake = new FakeProvider(() => ({ text: "The plan is on the calendar." }));
+    const r = await slackListenOnce({ instanceRoot: root, fetchImpl: fakeSlack(history).impl, provider: fake, now: () => NOW });
+    expect(r).toEqual({ answered: 1, failed: 0, denied: 0 });
+  });
+
+  it("'*' with only SLACK_CHANNEL_ID (no pinned list) denies", async () => {
+    const root = await makeInstance("SLACK_BOT_TOKEN=xoxb-test\nSLACK_CHANNEL_ID=CTEAM\nSLACK_ALLOWED_USER_IDS=*\n");
+    const history = [{ ts: ts(20), user: "UFRIEND", text: `<@${BOT}> hello` }];
+    const fake = new FakeProvider(() => ({ text: "should not run" }));
+    const r = await slackListenOnce({ instanceRoot: root, fetchImpl: fakeSlack(history).impl, provider: fake, now: () => NOW });
+    expect(r).toEqual({ answered: 0, failed: 0, denied: 1 });
+    expect(fake.calls).toHaveLength(0);
   });
 });

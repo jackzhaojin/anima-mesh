@@ -93,7 +93,7 @@ Heartbeat Worker vars (`cloud/wrangler.jsonc`):
 | Var | Meaning |
 |---|---|
 | `SLACK_CHANNEL_ID` | where the brief posts in bot mode (`C...`/`G...`; a `U...` id posts to the app's DM with that person) |
-| `SLACK_ALLOWED_USER_IDS` | comma-separated user ids who may direct the persona. **Absent = nobody**: a fresh install answers no one until you opt people in |
+| `SLACK_ALLOWED_USER_IDS` | comma-separated user ids who may direct the persona. **Absent = nobody**: a fresh install answers no one until you opt people in. `*` (v2.3.2) = whoever can post in the channels `SLACK_ALLOWED_CHANNEL_IDS` pins - Slack's channel membership becomes the allowlist. `*` is refused without that channel list, and never opens DMs |
 | `SLACK_ALLOWED_CHANNEL_IDS` | optional comma-separated channels where mentions are answered. Absent = any channel the app is in. DMs from allowed users always pass |
 
 Secrets (`wrangler secret put`): `SLACK_BOT_TOKEN`, `SLACK_SIGNING_SECRET`.
@@ -153,10 +153,20 @@ What the persona is told, and what stays in code:
   records the mention's text and the reply (plus `audience: group`); other
   people's messages are read for the run and not committed.
 
+## Failure alerts
+
+When a cloud beat fails, the alert goes to the brain's own chat delivery
+channels (`slack` and/or `discord` in `delivery.channels`), or to every
+chat channel with credentials when the beat died before reading the
+config (v2.3.2). A brain moved from Discord to Slack alerts in Slack, even
+if its Discord secrets are still on the Worker.
+
 ## Choosing the rooms
 
 The brain's whole context can reach a mention's reply. Treat
 `SLACK_ALLOWED_CHANNEL_IDS` as the boundary of who may hear from this brain:
 a private channel with the people you would show your brief to. A personal
 brain in a workspace shared with friends usually wants exactly one allowed
-channel plus DMs.
+channel plus DMs. A team brain can use `SLACK_ALLOWED_USER_IDS=*` with one
+pinned team channel, so whoever is in that channel may direct it and
+membership is managed in Slack.

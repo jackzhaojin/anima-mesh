@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { SELF, env, fetchMock, runInDurableObject } from "cloudflare:test";
 import { mockGitHub, mockKimi, mockDiscord, brainFiles, BASE_SHA, NEW_SHA, wipeHeartbeatDo, settledLastBeat } from "./fixtures.js";
+import { failureAlertChannels } from "../src/beat.js";
 
 /**
  * THE end-to-end proof, entirely local: a Bearer-authorized beat through the
@@ -165,5 +166,49 @@ describe("full cloud beat, end to end in workerd", () => {
     // The attempt is still evidence: run-started flushed to the ledger.
     expect(gh.trees).toHaveLength(1);
     expect(gh.trees[0]!.tree.map((t) => t.path)).toEqual(["ledger/actions.jsonl"]);
+  });
+
+  it("a brain migrated off Discord never hears from it there - failure alerts follow its channels", async () => {
+    // delivery.channels = ["slack"] with Discord credentials still on the
+    // Worker: the alert goes to Slack only (unconfigured here, so nowhere) -
+    // the mock plan has NO Discord interceptor, so a Discord call would fail.
+    const files = brainFiles();
+    files["animamesh.config.json"] = JSON.stringify({
+      bundle: "bundle",
+      delivery: { deliverAgent: "chief-of-staff", channels: ["slack"] },
+    });
+    mockGitHub({ files });
+    fetchMock
+      .get("https://fake-kimi.test")
+      .intercept({ method: "POST", path: "/v1/chat/completions" })
+      .reply(400, "model rejects request");
+    const res = await SELF.fetch("https://worker.test/beat", {
+      method: "POST",
+      headers: { authorization: `Bearer ${env.BEAT_TRIGGER_TOKEN}` },
+    });
+    expect(res.status).toBe(202);
+    const body = (await settledLastBeat())! as { summary: { failures: unknown[] } };
+    expect(body.summary.failures).toHaveLength(1);
+  });
+});
+
+describe("failureAlertChannels", () => {
+  const both = {
+    DISCORD_BOT_TOKEN: "d",
+    DISCORD_DM_USER_ID: "1",
+    SLACK_BOT_TOKEN: "s",
+    SLACK_CHANNEL_ID: "C1",
+  };
+  it("follows the brain's chat channels", () => {
+    expect(failureAlertChannels(both, ["slack"])).toEqual(["slack"]);
+    expect(failureAlertChannels(both, ["discord"])).toEqual(["discord"]);
+    expect(failureAlertChannels(both, ["console", "slack"])).toEqual(["slack"]);
+  });
+  it("config unknown, or no chat channel in it: every credentialed chat channel", () => {
+    expect(failureAlertChannels(both, undefined)).toEqual(["slack", "discord"]);
+    expect(failureAlertChannels({ DISCORD_BOT_TOKEN: "d", DISCORD_DM_USER_ID: "1" }, ["gmail"])).toEqual(["discord"]);
+  });
+  it("a configured channel without credentials is skipped, not substituted", () => {
+    expect(failureAlertChannels({ DISCORD_BOT_TOKEN: "d", DISCORD_DM_USER_ID: "1" }, ["slack"])).toEqual([]);
   });
 });
