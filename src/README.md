@@ -245,7 +245,9 @@ default the store to the local directory and register subprocess providers.
   block (Slack renders standard Markdown, no conversion layer); in bot mode a
   long brief puts its head in the channel and the rest in that message's
   thread. The same module carries the inbound helpers the Worker's Events
-  API edge uses (`cleanSlackText`, `slackConversationContext`).
+  API edge uses (`cleanSlackText`, `slackConversationContext`) and the
+  polled finder (`findSlackMentions`) behind the laptop tier's
+  `harness/slack-listen.ts` (`anima-mesh slack listen`, v2.3.1).
 - `a2a/card-core.ts` — the mesh's Agent Card assembled from a loaded bundle
   (`streaming: false` — short connections by design; dual-gated commercial
   agents are not advertised). `a2a/card.ts` is the fs wrapper.

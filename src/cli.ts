@@ -20,6 +20,7 @@ import { resolveProvider } from "./providers/index.js";
 import { agentsFromBundle } from "./agents/concept.js";
 import { deliverLatestReport } from "./channels/index.js";
 import { heartbeat } from "./harness/heartbeat.js";
+import { slackListenOnce } from "./harness/slack-listen.js";
 import { buildAgentCard } from "./a2a/card.js";
 import { exportLocalAgents } from "./local/agents.js";
 import { listDefectDrafts, fileDefectDrafts } from "./defects/file.js";
@@ -66,6 +67,8 @@ export async function main(argv: string[], io: { log: (s: string) => void; error
         return await cmdBrains(rest, io);
       case "connect":
         return await cmdConnect(rest, io);
+      case "slack":
+        return await cmdSlack(rest, io);
       case "ontology":
         return await cmdOntology(rest, io);
       case "okf":
@@ -115,6 +118,8 @@ function usage(): string {
     "                        OKF v0.1 -> v0.2 mechanical rewrite (dry run unless --write); lists what needs judgment",
     "  anima-mesh connect google [--instance dir] [--port N] [--no-open]",
     "                        one-time READ-ONLY Gmail + Calendar + Drive consent for the principal",
+    "  anima-mesh slack listen [--instance dir] [--once] [--interval SECONDS] [--lookback MINUTES]",
+    "                        answer @-mentions in Slack from the laptop tier (polls; no public endpoint)",
     "  anima-mesh templates",
   ].join("\n");
 }
@@ -312,6 +317,30 @@ async function cmdDeliver(args: string[], io: { log: (s: string) => void }): Pro
   });
   for (const r of results) io.log(`${r.ok ? "✓" : "✗"} ${r.channel}: ${r.detail}`);
   return results.every((r) => r.ok) ? 0 : 1;
+}
+
+async function cmdSlack(args: string[], io: { log: (s: string) => void }): Promise<number> {
+  if (args[0] !== "listen") throw new Error("slack: expected `slack listen`");
+  const instanceRoot = flag(args, "instance") ?? ".";
+  const lookbackMinutes = flag(args, "lookback") ? Number(flag(args, "lookback")) : undefined;
+  const intervalS = flag(args, "interval") ? Number(flag(args, "interval")) : 30;
+  const pass = async (): Promise<void> => {
+    const r = await slackListenOnce({ instanceRoot, lookbackMinutes, log: (n) => io.log(`  ${n}`) });
+    if (r.answered || r.failed || r.denied) io.log(`slack: ${r.answered} answered, ${r.failed} failed, ${r.denied} denied`);
+  };
+  if (hasFlag(args, "once")) {
+    await pass();
+    return 0;
+  }
+  io.log(`slack: listening every ${intervalS}s (Ctrl-C to stop)`);
+  for (;;) {
+    try {
+      await pass();
+    } catch (err) {
+      io.log(`slack: pass failed: ${err instanceof Error ? err.message : String(err)}`);
+    }
+    await new Promise((r) => setTimeout(r, intervalS * 1000));
+  }
 }
 
 async function cmdHeartbeat(args: string[], io: { log: (s: string) => void }): Promise<number> {

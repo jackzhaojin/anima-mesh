@@ -13,8 +13,15 @@ Slack gives the mesh two surfaces, either of which works alone:
    budget, same one-commit-of-evidence-before-the-reply.
 
 Delivery runs on both tiers (laptop `deliver`/`heartbeat` and the cloud
-beat). Mentions need a public HTTPS endpoint, so they are cloud-tier: the
-heartbeat Worker's `POST /slack/events`.
+beat). Mentions run on either tier too:
+
+- **Cloud:** the heartbeat Worker's `POST /slack/events` - Slack pushes each
+  event, so answers start within seconds. Needs the Worker deployed and the
+  signing secret.
+- **Laptop (v2.3.1):** `anima-mesh slack listen` polls the channel with the
+  bot token - no public endpoint, no signing secret, and it runs agents on
+  subprocess harnesses (`claude-code`) the cloud cannot host. Use it for a
+  brain with no cloud tier.
 
 ## 1. Create the Slack app from a manifest
 
@@ -98,7 +105,24 @@ On the laptop tier, put `SLACK_BOT_TOKEN` + `SLACK_CHANNEL_ID` (or
 `SLACK_WEBHOOK_URL`) in the instance's `.env.local`; `anima-mesh deliver`
 then posts the latest brief.
 
-## How a mention is handled
+## Laptop tier: `slack listen`
+
+```bash
+pnpm cli slack listen --instance ../my-brain              # poll every 30 s until Ctrl-C
+pnpm cli slack listen --instance ../my-brain --once       # one pass (cron-friendly)
+```
+
+It reads `.env.local`: `SLACK_BOT_TOKEN`, `SLACK_ALLOWED_USER_IDS` (it
+refuses to start when empty), and `SLACK_ALLOWED_CHANNEL_IDS` or else
+`SLACK_CHANNEL_ID`. Each pass looks back `--lookback` minutes (default 60)
+over top-level messages and recently active threads. The ledger is the
+dedup: a mention whose ts already appears as a slack `messageId`
+(answered, failed, or denied) is never handled again, so restarts are safe
+and there is no cursor file. Gates, the 👀 acknowledgment, the conversation
+context, the `audience: "group"` run and the thread reply match the cloud
+path below. It needs the history scopes, which the manifest already grants.
+
+## How a mention is handled (cloud)
 
 ```
 @persona in #team ──► POST /slack/events

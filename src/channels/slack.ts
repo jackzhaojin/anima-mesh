@@ -266,3 +266,87 @@ export async function slackConversationContext(
   }
   return lines.join("\n");
 }
+
+// ---- polled mentions (the laptop tier's ear; no public endpoint) -----------
+
+export interface SlackMention {
+  channel: string;
+  /** The mention's own ts - the dedup key (ledger `messageId`). */
+  ts: string;
+  /** Where the reply goes: the parent's ts (a top-level mention starts its own thread). */
+  threadTs: string;
+  /** True when the mention was itself a reply inside an existing thread. */
+  inThread: boolean;
+  user: string;
+  /** Cleaned text - the bot's own mention removed. */
+  text: string;
+}
+
+interface SlackPolledMessage extends SlackHistoryMessage {
+  thread_ts?: string;
+  reply_count?: number;
+  latest_reply?: string;
+}
+
+const POLL_HISTORY_LIMIT = 100;
+const POLL_REPLIES_LIMIT = 100;
+
+/**
+ * Mentions of the bot in `channels` since `oldest` (a Slack ts), oldest
+ * first - top-level messages plus replies in threads that moved since
+ * `oldest`. Bot-authored messages and edits never count (no agent loops).
+ * Sender gating is the caller's: it gets every human mention with its
+ * user id and decides. Pure fetch - usable from either tier.
+ */
+export async function findSlackMentions(
+  ctx: SlackApiContext,
+  opts: { channels: string[]; botUserId: string; oldest: string },
+): Promise<SlackMention[]> {
+  const tag = `<@${opts.botUserId}>`;
+  const found: SlackMention[] = [];
+  const consider = (channel: string, m: SlackPolledMessage, parentTs: string | undefined): void => {
+    if (!m.ts || !m.user || m.bot_id || m.subtype || m.user === opts.botUserId) return;
+    if (!(m.text ?? "").includes(tag)) return;
+    if (Number(m.ts) <= Number(opts.oldest)) return;
+    found.push({
+      channel,
+      ts: m.ts,
+      threadTs: parentTs ?? m.ts,
+      inThread: parentTs !== undefined,
+      user: m.user,
+      text: cleanSlackText(m.text ?? "", opts.botUserId),
+    });
+  };
+
+  for (const channel of opts.channels) {
+    // One recent window, filtered by ts: a thread's parent can be older than
+    // `oldest` while its replies are new, so the window is not cut at oldest.
+    const history = await slackApi<{ messages?: SlackPolledMessage[] }>(
+      ctx,
+      "conversations.history",
+      { channel, limit: POLL_HISTORY_LIMIT },
+      "GET",
+    );
+    const parents: string[] = [];
+    for (const m of history.messages ?? []) {
+      consider(channel, m, undefined);
+      if ((m.reply_count ?? 0) > 0 && m.ts && Number(m.latest_reply ?? 0) > Number(opts.oldest)) parents.push(m.ts);
+    }
+    for (const parentTs of parents) {
+      const replies = await slackApi<{ messages?: SlackPolledMessage[] }>(
+        ctx,
+        "conversations.replies",
+        { channel, ts: parentTs, oldest: opts.oldest, limit: POLL_REPLIES_LIMIT },
+        "GET",
+      );
+      for (const r of replies.messages ?? []) {
+        if (r.ts === parentTs) continue; // the parent itself was considered above
+        consider(channel, r, parentTs);
+      }
+    }
+  }
+  const seen = new Set<string>();
+  return found
+    .filter((m) => (seen.has(`${m.channel}:${m.ts}`) ? false : (seen.add(`${m.channel}:${m.ts}`), true)))
+    .sort((a, b) => Number(a.ts) - Number(b.ts));
+}

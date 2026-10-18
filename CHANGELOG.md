@@ -3,7 +3,7 @@
 This history is organized by **minor release line** (and, from 2.0, major):
 the capability boundary operators actually adopt. Patch tags are deliberately
 rolled into the value and maturity of their minor rather than narrated one by
-one. The latest tag is **v2.3.0**.
+one. The latest tag is **v2.3.1**.
 
 ## Upgrade procedure
 
@@ -32,7 +32,16 @@ The ledger remains append-only; never "migrate" it by editing old entries.
 
 ## [v2.3.x] - Slack: the persona in a group setting
 
-**Latest tag: v2.3.0 · 2026-10-18**
+**Latest tag: v2.3.1 · 2026-10-18**
+
+**Mentions on the laptop tier.** `anima-mesh slack listen` polls the
+allowed channel with the bot token and feeds each mention through the same
+direction pipeline, for brains with no cloud tier or with agents on a
+subprocess harness (`claude-code`) the Worker cannot host. Same gates in
+code (`SLACK_ALLOWED_USER_IDS` required; bots and edits never heard);
+the ledger is the dedup, so a restart never answers twice. Verified live:
+a mention in a private channel was answered in its thread by a
+`claude-code` chief-of-staff run.
 
 **Briefs to a Slack channel.** `slack` joins the delivery registry
 (`src/channels/slack.ts`, Workers-safe). Bot mode (`SLACK_BOT_TOKEN` +

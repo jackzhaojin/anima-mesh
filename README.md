@@ -287,6 +287,7 @@ pnpm cli run compliance-ops --instance ../my-brain
 pnpm cli run some-agent --instance github:owner/brain#branch   # zero local reads
 pnpm cli heartbeat --instance ../my-brain      # run everything due; hub last
 pnpm cli deliver --instance ../my-brain        # brief → discord/slack/notion/gmail/console
+pnpm cli slack listen --instance ../my-brain   # answer Slack @-mentions from the laptop
 pnpm cli card --instance ../my-brain           # the mesh's A2A agent card
 pnpm cli gate list --instance ../my-brain
 pnpm cli report --instance ../my-brain
