@@ -7,6 +7,7 @@ import { createMsGraphTokenManager, type MsGraphCredential } from "../../../src/
 
 const BEAT_LOCK_KEY = "beat-running";
 const LAST_BEAT_KEY = "lastBeat";
+const MANUAL_PENDING_KEY = "manual-pending";
 /** An in-flight beat older than this is presumed hung and may be stolen. */
 const STALE_LOCK_MS = 30 * 60 * 1000;
 
@@ -34,12 +35,12 @@ interface BeatLock {
  * Alarms survive deploys; re-arming is idempotent; the alarm ALWAYS re-arms
  * in finally — a crashed beat must not silence tomorrow.
  *
- * A manual /trigger does NOT await the beat (issue #1): tying completion to
- * the request lifetime meant a deploy or client disconnect mid-beat stranded
- * the lock and starved lastBeat. The beat runs detached; the response is a
- * run marker and /healthz reports completion. A lock whose isolate died is
- * journaled as an interrupted beat and reclaimed by the next request — no
- * 30-minute staleness wait.
+ * A manual /trigger persists a request and schedules an immediate alarm
+ * before acknowledging it. The alarm awaits the beat, independent of the
+ * HTTP client. The pending request survives isolate loss and is consumed
+ * only after an outcome is stored. Platform alarm retries can resume it.
+ * Execution is at least once; an interruption after external side effects
+ * can replay them, as with the daily alarm.
  */
 export class HeartbeatDO extends DurableObject<Env> {
   /**
@@ -100,20 +101,28 @@ export class HeartbeatDO extends DurableObject<Env> {
       return Response.json({
         lastBeat: sanitized,
         beatRunning: this.beatInFlight !== null,
+        beatQueued: (await this.ctx.storage.get(MANUAL_PENDING_KEY)) !== undefined,
         nextAlarm: alarm === null ? null : new Date(alarm).toISOString(),
       });
     }
 
     if (url.pathname === "/trigger" && req.method === "POST") {
-      const begun = await this.beginBeat("manual");
-      if ("skipped" in begun) {
-        return Response.json(begun, { status: 202 });
+      if (this.beatInFlight) {
+        return Response.json({ skipped: "beat already running" }, { status: 202 });
       }
-      // Detached on purpose: the response is a run marker, not the outcome.
-      // waitUntil is a no-op on DOs (pending I/O already keeps the object
-      // alive) but states the intent.
-      this.ctx.waitUntil(begun.promise);
-      return Response.json({ started: begun.started, kind: "manual" }, { status: 202 });
+      await this.reconcileStrandedLock();
+      const pending = await this.ctx.storage.get<string>(MANUAL_PENDING_KEY);
+      if (pending) {
+        return Response.json({ skipped: "beat already queued", started: pending }, { status: 202 });
+      }
+      const started = new Date().toISOString();
+      // Queue and alarm commit together: a 202 must never acknowledge work
+      // held only in an isolate, or leave it waiting for tomorrow's alarm.
+      await this.ctx.storage.transaction(async (txn) => {
+        await txn.put(MANUAL_PENDING_KEY, started);
+        await txn.setAlarm(Date.now() + 1000);
+      });
+      return Response.json({ started, kind: "manual", queued: true }, { status: 202 });
     }
 
     return new Response("not found", { status: 404 });
@@ -121,18 +130,22 @@ export class HeartbeatDO extends DurableObject<Env> {
 
   override async alarm(): Promise<void> {
     try {
-      // The alarm invocation holds the beat open — the platform keeps the DO
-      // alive for the whole run, and a failure is already recorded + DM'd by
-      // the time this resolves (executeBeat never rejects).
-      const begun = await this.beginBeat("alarm");
-      if ("promise" in begun) await begun.promise;
+      const pending = await this.ctx.storage.get<string>(MANUAL_PENDING_KEY);
+      const begun = await this.beginBeat(pending ? "manual" : "alarm");
+      if ("promise" in begun) {
+        await begun.promise;
+        if (pending) await this.ctx.storage.delete(MANUAL_PENDING_KEY);
+      }
     } finally {
       await this.rearm();
     }
   }
 
   private async rearm(): Promise<void> {
-    const next = nextBeatUtc(new Date(), this.env.BEAT_TIMEZONE, Number(this.env.BEAT_HOUR));
+    const pending = await this.ctx.storage.get(MANUAL_PENDING_KEY);
+    const next = pending !== undefined
+      ? new Date(Date.now() + 1000)
+      : nextBeatUtc(new Date(), this.env.BEAT_TIMEZONE, Number(this.env.BEAT_HOUR));
     await this.ctx.storage.setAlarm(next);
   }
 

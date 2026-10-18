@@ -230,3 +230,16 @@ multi-tenant. Each company = its own brain repo + its own deploy workspace +
 its own Worker names + its own secrets. Deploy N heartbeat Workers from the
 same engine checkout under different names and they never touch each other.
 See [starting-a-company.md](starting-a-company.md).
+
+### Manual beat durability (v2.2.3)
+
+`POST /beat` commits a pending request and immediate Durable Object alarm
+before acknowledging it with HTTP 202. No model work runs in the HTTP
+handler. `/healthz` exposes `beatQueued` and `beatRunning`; wait for both to
+clear and inspect the new `lastBeat` before declaring success. The alarm
+awaits the run and clears the request only after an outcome is stored.
+Queued requests survive isolate loss and use platform alarm retries, then
+restore the configured daily schedule. Execution is at least once: an
+interruption after an external side effect can replay that effect. Alarms
+have the platform's 15-minute wall-time limit; this is not an unlimited
+workflow runner. Deploy between runs where possible.

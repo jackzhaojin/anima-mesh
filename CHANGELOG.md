@@ -3,7 +3,7 @@
 This history is organized by **minor release line** (and, from 2.0, major):
 the capability boundary operators actually adopt. Patch tags are deliberately
 rolled into the value and maturity of their minor rather than narrated one by
-one. The latest tag is **v2.2.2**.
+one. The latest tag is **v2.2.3**.
 
 ## Upgrade procedure
 
@@ -32,7 +32,16 @@ The ledger remains append-only; never "migrate" it by editing old entries.
 
 ## [v2.2.x] - OKF v0.2: provenance, trust, and lifecycle the engine can read
 
-**Latest tag: v2.2.2 · 2026-10-18**
+**Latest tag: v2.2.3 · 2026-10-18**
+
+**Durable manual beats.** Manual triggers now persist a pending request and
+an immediate alarm before returning HTTP 202. The alarm awaits the run;
+interrupted requests remain available for platform retries and the daily
+schedule is restored after completion. Health distinguishes queued from
+running work. This replaces the detached in-memory promise, which a live
+server test lost before any reports reached git. The precise cause of that
+isolate loss was not established. Alarm execution is at least once and
+subject to Cloudflare's 15-minute alarm limit.
 
 **Credential rotation and longer-job completion.** The Graph connector now
 persists replacement refresh tokens instead of repeatedly redeeming the

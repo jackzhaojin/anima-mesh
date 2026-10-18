@@ -79,6 +79,49 @@ describe("HeartbeatDO alarm", () => {
   });
 });
 
+describe("HeartbeatDO durable manual queue", () => {
+  it("acknowledges persisted work without starting outbound I/O and coalesces duplicate triggers", async () => {
+    const trigger = () => SELF.fetch("https://worker.test/beat", {
+      method: "POST", headers: { authorization: `Bearer ${env.BEAT_TRIGGER_TOKEN}` },
+    });
+    const response = await trigger();
+    expect(response.status).toBe(202);
+    const accepted = await response.json() as { started: string; queued: boolean };
+    expect(accepted.queued).toBe(true);
+    await runInDurableObject(stub(), async (instance, state) => {
+      expect(await state.storage.get("manual-pending")).toBe(accepted.started);
+      expect(await state.storage.get("beat-running")).toBeUndefined();
+      expect((instance as unknown as { beatInFlight: unknown }).beatInFlight).toBeNull();
+    });
+    expect((await getAlarm())! - Date.now()).toBeLessThanOrEqual(1000);
+    const duplicate = await (await trigger()).json() as { skipped: string; started: string };
+    expect(duplicate.skipped).toMatch(/already queued/);
+    expect(duplicate.started).toBe(accepted.started);
+    const health = await (await SELF.fetch("https://worker.test/healthz")).json() as { beatQueued: boolean };
+    expect(health.beatQueued).toBe(true);
+  });
+
+  it("executes a persisted manual request after losing in-memory state, then restores the daily alarm", async () => {
+    mockGitHub(); mockKimi(); mockDiscord();
+    // State left after an accepted request or an interrupted alarm. No
+    // originating HTTP request or in-memory promise exists in this isolate.
+    await runInDurableObject(stub(), async (_instance, state) => {
+      await state.storage.put("manual-pending", new Date().toISOString());
+      await state.storage.put("beat-running", { startedAt: Date.now() - 120000, kind: "manual" });
+      await state.storage.setAlarm(Date.now() + 1000);
+    });
+    await runDurableObjectAlarm(stub());
+    await runInDurableObject(stub(), async (_instance, state) => {
+      expect(await state.storage.get("manual-pending")).toBeUndefined();
+      expect(await state.storage.get("beat-running")).toBeUndefined();
+      const last = await state.storage.get<{ kind: string; summary: { ran: number } }>("lastBeat");
+      expect(last?.kind).toBe("manual");
+      expect(last?.summary.ran).toBe(1);
+    });
+    expect(hourInTz((await getAlarm())!, env.BEAT_TIMEZONE)).toBe(Number(env.BEAT_HOUR));
+  });
+});
+
 describe("HeartbeatDO mutex", () => {
   it("a beat in flight in this isolate makes a manual trigger skip instead of double-running", async () => {
     await runInDurableObject(stub(), async (instance, state) => {
@@ -109,16 +152,13 @@ describe("HeartbeatDO mutex", () => {
       headers: { authorization: `Bearer ${env.BEAT_TRIGGER_TOKEN}` },
     });
     expect(res.status).toBe(202);
-    // The trigger response is a run marker, not the outcome (issue #1):
-    // the beat runs detached from the request.
+    // The trigger acknowledges a durable queue entry, not completion.
     const body = (await res.json()) as { started?: string; skipped?: string };
     expect(body.started).toBeDefined();
     expect(body.skipped).toBeUndefined();
 
-    // Completion lands in lastBeat, not the response.
-    await runInDurableObject(stub(), async (instance) => {
-      await (instance as unknown as { beatInFlight: Promise<unknown> | null }).beatInFlight;
-    });
+    // The run begins only when the alarm fires.
+    await runDurableObjectAlarm(stub());
     const last = await runInDurableObject(stub(), (_i, state) =>
       state.storage.get<{ summary?: { ran: number } }>("lastBeat"),
     );

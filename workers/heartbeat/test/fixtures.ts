@@ -1,4 +1,4 @@
-import { env, fetchMock, runInDurableObject } from "cloudflare:test";
+import { env, fetchMock, runInDurableObject, runDurableObjectAlarm } from "cloudflare:test";
 import type { Env } from "../src/env.js";
 
 /**
@@ -51,13 +51,14 @@ async function wipeDo(makeStub: () => DurableObjectStub): Promise<void> {
 }
 
 /**
- * POST /beat detaches the beat from the request (issue #1): the response is
- * a run marker. Tests that assert on the outcome await the in-flight beat
- * inside the DO and read the recorded lastBeat.
+ * POST /beat durably queues the beat. Fire the queued alarm explicitly,
+ * then read its persisted outcome.
  */
 export async function settledLastBeat<T = unknown>(): Promise<T | undefined> {
   const e = env as Env;
   const stub = e.HEARTBEAT_DO.get(e.HEARTBEAT_DO.idFromName("main"));
+  const queued = await runInDurableObject(stub, (_instance, state) => state.storage.get("manual-pending"));
+  if (queued !== undefined) await runDurableObjectAlarm(stub);
   return runInDurableObject(stub, async (instance, state) => {
     await (instance as unknown as { beatInFlight: Promise<unknown> | null }).beatInFlight;
     return state.storage.get<T>("lastBeat");
