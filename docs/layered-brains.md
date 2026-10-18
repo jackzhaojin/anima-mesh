@@ -3,6 +3,8 @@
 One brain used to mean one company. Since v2.0.0 a brain is one **layer**
 of someone's world, and brains connect to each other:
 
+![The mesh of brains](mesh-of-brains.svg)
+
 ```
   person brain --member-of--> org brain --parent-of--> team brain
   (one life)                  (a company)              (a unit of it)

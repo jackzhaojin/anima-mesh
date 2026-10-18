@@ -139,6 +139,8 @@ generalizes to any relationship-shaped domain (vendors, candidates, press).
 
 ## Layered and multi-player: the mesh of brains (2.0)
 
+![The mesh of brains](docs/mesh-of-brains.svg)
+
 A brain is no longer only a company. Since v2.0 a brain is one **layer** of
 someone's world (`person`, `org`, `team`, or `group`), and brains connect
 ([docs/layered-brains.md](docs/layered-brains.md)):
@@ -352,6 +354,8 @@ run, corrupt ledgers fail verification, and every scaffolded brain must pass
 conformance and complete a full agent run against the fake provider.
 
 ## Status
+
+![AnimaMesh 2.x at a glance](docs/two-point-x.svg)
 
 v2.3.2 (2026-10-18). Package name on npm to be confirmed; pinned consumers
 reference the repo by tag. **2.0 is the mesh of brains**: person, org, team,

@@ -1,5 +1,7 @@
 # Slack - the persona in your workspace (v2.3)
 
+![Multiplayer in Slack](slack-in-the-room.svg)
+
 Slack gives the mesh two surfaces, either of which works alone:
 
 1. **Brief delivery to a channel.** `slack` is a delivery channel like

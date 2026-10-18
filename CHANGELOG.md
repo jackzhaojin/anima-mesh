@@ -26,6 +26,8 @@ Upgrade one private instance at a time:
 No release through v0.15 requires an existing bundle or ledger to be rewritten.
 The ledger remains append-only; never "migrate" it by editing old entries.
 
+![AnimaMesh 2.x at a glance](docs/two-point-x.svg)
+
 ## [Unreleased]
 
 - Nothing yet.

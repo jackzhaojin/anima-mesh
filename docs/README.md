@@ -60,6 +60,23 @@ Working on the code itself? [../CLAUDE.md](../CLAUDE.md) has the working
 agreements and invariants; [../src/README.md](../src/README.md) the module
 map; [../test/README.md](../test/README.md) the testing contract.
 
+## Diagrams
+
+Hand-drawn SVGs that render on GitHub; the 1280×720 ones drop straight
+into a 16:9 slide.
+
+| Diagram | Shows | Used in |
+|---|---|---|
+| [two-point-x.svg](two-point-x.svg) | 2.x at a glance: v2.0 to v2.3, by the numbers (16:9) | README, CHANGELOG |
+| [mesh-of-brains.svg](mesh-of-brains.svg) | person, org, team, group brains; links, grants, markings (16:9) | README, layered-brains |
+| [slack-in-the-room.svg](slack-in-the-room.svg) | a Slack @-mention end to end, gates to threaded reply (16:9) | slack, architecture |
+| [cloud-architecture.svg](cloud-architecture.svg) | the cloud tier: people, Worker, brain, linked brains, sources | architecture |
+| [heartbeat-sequence.svg](heartbeat-sequence.svg) | one beat, step by step | heartbeat-anatomy |
+| [engine-and-instance.svg](engine-and-instance.svg) | the public engine vs a private brain | starting-a-company |
+| [brain-anatomy.svg](brain-anatomy.svg) · [agent-roster.svg](agent-roster.svg) · [resource-reach.svg](resource-reach.svg) | one org brain in production, de-identified | a-typical-brain |
+| [ai-comes-to-you.svg](ai-comes-to-you.svg) | the push posture: everything travels to the human | (talks) |
+| [defect-loop.svg](defect-loop.svg) | engine defects filed from inside a run | (talks) |
+
 ## Contributing docs
 
 - New platform lesson → `learnings/YYYY-MM-DD-<slug>.md` (conventions in

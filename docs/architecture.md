@@ -141,6 +141,8 @@ ledger actions are `direction-*` (never `run-*`, so the heartbeat's
 `{date}-{agent}.direction-{runid}.md` (the dot keeps brief delivery blind
 to them).
 
+![Multiplayer in Slack](slack-in-the-room.svg)
+
 **Inbound: a direction over Slack, in a group (v2.3).** the same queue
 behind a door shaped for shared channels.
 

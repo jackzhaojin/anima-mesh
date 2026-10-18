@@ -1,0 +1,83 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" font-family="ui-sans-serif, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif">
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#57606a"/>
+    </marker>
+    <marker id="arrow-dashed" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#8c959f"/>
+    </marker>
+  </defs>
+  <rect x="0" y="0" width="1280" height="720" fill="#ffffff"/>
+  <text x="40" y="46" font-size="21" fill="#1f2328" font-weight="700">The mesh of brains - one engine, many layers of one world</text>
+  <text x="40" y="70" font-size="13" fill="#57606a">Each brain is its own private repo with its own agents. A link is live only when both sides declare it; the brain that owns the data decides what crosses.</text>
+  <rect x="40" y="100" width="380" height="190" rx="10" fill="#edf5ff" stroke="#54aeff" stroke-width="1.5"/>
+  <text x="56" y="128" font-size="15" fill="#0a5bd3" font-weight="700">Acme Co - the company</text>
+  <rect x="363" y="112" width="41" height="22" rx="11" fill="#ffffff" stroke="#54aeff" stroke-width="1"/>
+  <text x="383.5" y="127" font-size="11.5" fill="#0a5bd3" font-weight="600" text-anchor="middle">org</text>
+  <text x="56" y="152" font-size="12" fill="#33445c">back office run by agents: compliance,</text>
+  <text x="56" y="170" font-size="12" fill="#33445c">bookkeeping, librarian, research watch</text>
+  <text x="56" y="188" font-size="12" fill="#33445c">constitution: money, filings, publishing</text>
+  <text x="56" y="206" font-size="12" fill="#33445c">always end at a human</text>
+  <text x="56" y="224" font-size="12" fill="#33445c">shares with members: nags · calendar · brief</text>
+  <rect x="56" y="256" width="286" height="22" rx="11" fill="#f9f0f9" stroke="#611f69" stroke-width="1"/>
+  <text x="199.0" y="271" font-size="11.5" fill="#4a154b" font-weight="600" text-anchor="middle">Slack #core-team · anyone in the channel</text>
+  <rect x="40" y="450" width="380" height="170" rx="10" fill="#e9f5ee" stroke="#1a7f37" stroke-width="1.5"/>
+  <text x="56" y="478" font-size="15" fill="#116329" font-weight="700">Product team</text>
+  <rect x="356" y="462" width="48" height="22" rx="11" fill="#ffffff" stroke="#1a7f37" stroke-width="1"/>
+  <text x="380.0" y="477" font-size="11.5" fill="#116329" font-weight="600" text-anchor="middle">team</text>
+  <text x="56" y="502" font-size="12" fill="#2f4a3a">child-of Acme Co</text>
+  <text x="56" y="520" font-size="12" fill="#2f4a3a">answers to Acme's constitution (brains sync);</text>
+  <text x="56" y="538" font-size="12" fill="#2f4a3a">its gates = every ancestor's ∪ its own</text>
+  <text x="56" y="556" font-size="12" fill="#2f4a3a">its own roster, its own heartbeat</text>
+  <rect x="56" y="586" width="113" height="22" rx="11" fill="#f9f0f9" stroke="#611f69" stroke-width="1"/>
+  <text x="112.5" y="601" font-size="11.5" fill="#4a154b" font-weight="600" text-anchor="middle">Slack #product</text>
+  <rect x="860" y="100" width="380" height="190" rx="10" fill="#fff8e5" stroke="#d4a72c" stroke-width="1.5"/>
+  <text x="876" y="128" font-size="15" fill="#7d4e00" font-weight="700">The household</text>
+  <rect x="1169" y="112" width="55" height="22" rx="11" fill="#ffffff" stroke="#d4a72c" stroke-width="1"/>
+  <text x="1196.5" y="127" font-size="11.5" fill="#7d4e00" font-weight="600" text-anchor="middle">group</text>
+  <text x="876" y="152" font-size="12" fill="#5c4813">a shared space: family calendar, school,</text>
+  <text x="876" y="170" font-size="12" fill="#5c4813">the house - two adults as members</text>
+  <text x="876" y="188" font-size="12" fill="#5c4813">roles: owner · approver · contributor · viewer</text>
+  <text x="876" y="206" font-size="12" fill="#5c4813">shares family-marked concepts with members</text>
+  <rect x="876" y="256" width="106" height="22" rx="11" fill="#f9f0f9" stroke="#611f69" stroke-width="1"/>
+  <text x="929.0" y="271" font-size="11.5" fill="#4a154b" font-weight="600" text-anchor="middle">Slack #family</text>
+  <rect x="450" y="430" width="380" height="190" rx="10" fill="#fbf5ff" stroke="#8250df" stroke-width="1.5"/>
+  <text x="466" y="458" font-size="15" fill="#6639ba" font-weight="700">You - a person brain</text>
+  <rect x="752" y="442" width="62" height="22" rx="11" fill="#ffffff" stroke="#8250df" stroke-width="1"/>
+  <text x="783.0" y="457" font-size="11.5" fill="#6639ba" font-weight="600" text-anchor="middle">person</text>
+  <text x="466" y="482" font-size="12" fill="#4a3a63">commitments · money · career · family</text>
+  <text x="466" y="500" font-size="12" fill="#4a3a63">reads your own Gmail + Calendar + Drive,</text>
+  <text x="466" y="518" font-size="12" fill="#4a3a63">read-only, codes and account numbers</text>
+  <text x="466" y="536" font-size="12" fill="#4a3a63">redacted in code before any prompt</text>
+  <text x="466" y="554" font-size="12" fill="#4a3a63">finance + family markings never leave</text>
+  <rect x="466" y="586" width="220" height="22" rx="11" fill="#f9f0f9" stroke="#611f69" stroke-width="1"/>
+  <text x="576.0" y="601" font-size="11.5" fill="#4a154b" font-weight="600" text-anchor="middle">Slack #me · only you, plus DMs</text>
+  <path d="M 450 470 C 420 440, 410 330, 380 292" fill="none" stroke="#57606a" stroke-width="1.4" marker-end="url(#arrow)" marker-start="url(#arrow)"/>
+  <text x="396" y="404" font-size="11.5" fill="#57606a" font-weight="600" text-anchor="end">member-of ⇄ has-member</text>
+  <text x="396" y="420" font-size="11" fill="#57606a" text-anchor="end" font-style="italic">↑ talks only · ↓ nags, calendar, brief</text>
+  <path d="M 830 470 C 860 440, 870 330, 900 292" fill="none" stroke="#57606a" stroke-width="1.4" marker-end="url(#arrow)" marker-start="url(#arrow)"/>
+  <text x="884" y="404" font-size="11.5" fill="#57606a" font-weight="600">member-of ⇄ has-member</text>
+  <text x="884" y="420" font-size="11" fill="#57606a" font-style="italic">↕ family-marked concepts</text>
+  <line x1="90" y1="292" x2="90" y2="448" stroke="#57606a" stroke-width="1.4" marker-end="url(#arrow)" marker-start="url(#arrow)"/>
+  <text x="102" y="334" font-size="11.5" fill="#57606a" font-weight="600">parent-of ⇄ child-of</text>
+  <text x="102" y="350" font-size="11" fill="#57606a" font-style="italic">constitution flows down;</text>
+  <text x="102" y="366" font-size="11" fill="#57606a" font-style="italic">nothing flows up unshared</text>
+  <rect x="450" y="100" width="380" height="300" rx="10" fill="#f6f8fa" stroke="#d0d7de" stroke-width="1.5"/>
+  <text x="466" y="128" font-size="15" fill="#1f2328" font-weight="700">How brains connect</text>
+  <text x="466" y="154" font-size="12" fill="#3d444d"><tspan font-weight="700" fill="#1f2328">Mutual consent.</tspan> A link is live only when both</text>
+  <text x="466" y="171" font-size="12" fill="#3d444d">configs declare it, with inverse relations.</text>
+  <text x="466" y="190" font-size="12" fill="#3d444d"><tspan font-weight="700" fill="#1f2328">Deny by default.</tspan> share: grants a concept to</text>
+  <text x="466" y="207" font-size="12" fill="#3d444d">an audience; nothing crosses without it.</text>
+  <text x="466" y="226" font-size="12" fill="#3d444d"><tspan font-weight="700" fill="#1f2328">Markings restrict.</tspan> finance, family … block a</text>
+  <text x="466" y="243" font-size="12" fill="#3d444d">grant unless a link explicitly clears them.</text>
+  <text x="466" y="262" font-size="12" fill="#3d444d"><tspan font-weight="700" fill="#1f2328">Containment carries law.</tspan> Children answer to</text>
+  <text x="466" y="279" font-size="12" fill="#3d444d">every ancestor's constitution and gates.</text>
+  <text x="466" y="298" font-size="12" fill="#3d444d"><tspan font-weight="700" fill="#1f2328">Members with roles.</tspan> Approvals are decided by</text>
+  <text x="466" y="315" font-size="12" fill="#3d444d">an owner or approver, checked in code.</text>
+  <line x1="466" y1="352" x2="814" y2="352" stroke="#d0d7de" stroke-width="1"/>
+  <text x="466" y="374" font-size="11.5" fill="#1f2328" font-weight="600" font-family="ui-monospace, SFMono-Regular, Menlo, monospace">anima-mesh brains</text>
+  <text x="466" y="391" font-size="11.5" fill="#57606a" font-style="italic">prints who can see what, in both directions</text>
+  <line x1="40" y1="650" x2="1240" y2="650" stroke="#d0d7de" stroke-width="1"/>
+  <text x="40" y="676" font-size="12.5" fill="#57606a"><tspan font-weight="700" fill="#0a5bd3">One public engine, pinned by tag,</tspan> runs every brain - each in its own private repo, with its own Worker, agents, and Slack app.</text>
+  <text x="40" y="698" font-size="12.5" fill="#57606a"><tspan font-weight="700" fill="#6639ba">The brain is the unit of access control.</tspan> A repo can't hide a file from someone who can clone it, so sharing happens between brains, never inside one.</text>
+</svg>
