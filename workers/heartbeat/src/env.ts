@@ -14,6 +14,9 @@ export interface Env {
   BEAT_HOUR: string; // "8"
   MOONSHOT_BASE_URL?: string; // set when the key is endpoint-scoped (subscription keys)
   DISCORD_PUBLIC_KEY?: string; // the Discord app's Ed25519 verify key (public info); absent = /interactions is 404
+  SLACK_CHANNEL_ID?: string; // where the daily brief posts in bot mode (C…/G… channel, or a U… user for the app DM)
+  SLACK_ALLOWED_USER_IDS?: string; // comma-separated Slack user ids who may direct the persona; absent = nobody (inbound stays closed)
+  SLACK_ALLOWED_CHANNEL_IDS?: string; // comma-separated channels where mentions are answered; absent = any channel the bot is in. DMs from allowed users always pass
   DIRECTION_DAILY_CAP?: string; // max direction runs per local day; default 20 (decision Q4)
   DIRECTION_GMAIL_POLL_MINUTES?: string; // Gmail poll cadence; 0/absent = inbound email off (decision Q3b)
   DIRECTION_GMAIL_ALLOWED_FROM?: string; // only mail from this address becomes a direction (decision Q6)
@@ -41,6 +44,9 @@ export interface Env {
   MOONSHOT_API_KEY: string; // cognition for moonshot-api; optional in practice when no effective agent uses it
   DISCORD_BOT_TOKEN?: string;
   DISCORD_DM_USER_ID?: string; // doubles as the direction sender allowlist (v1: the principal only)
+  SLACK_BOT_TOKEN?: string; // xoxb- bot token: brief delivery, thread replies, conversation context
+  SLACK_SIGNING_SECRET?: string; // verifies POST /slack/events; absent = the route is 404
+  SLACK_WEBHOOK_URL?: string; // incoming-webhook delivery alternative (one channel, no threading)
   BEAT_TRIGGER_TOKEN: string;
   CLAUDE_CODE_OAUTH_TOKEN?: string; // subscription OAuth for anthropic-api; plain fetch, no SDK
   ANTHROPIC_API_KEY?: string; // Console API key for anthropic-api-key: METERED credits, capped by the Console spend limit
@@ -76,6 +82,9 @@ export function envRecord(env: Env): Record<string, string | undefined> {
     MOONSHOT_BASE_URL: env.MOONSHOT_BASE_URL,
     DISCORD_BOT_TOKEN: env.DISCORD_BOT_TOKEN,
     DISCORD_DM_USER_ID: env.DISCORD_DM_USER_ID,
+    SLACK_BOT_TOKEN: env.SLACK_BOT_TOKEN,
+    SLACK_CHANNEL_ID: env.SLACK_CHANNEL_ID,
+    SLACK_WEBHOOK_URL: env.SLACK_WEBHOOK_URL,
     CLAUDE_CODE_OAUTH_TOKEN: env.CLAUDE_CODE_OAUTH_TOKEN,
     ANTHROPIC_API_KEY: env.ANTHROPIC_API_KEY,
     GMAIL_CLIENT_ID: env.GMAIL_CLIENT_ID,

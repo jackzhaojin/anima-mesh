@@ -122,6 +122,7 @@ export {
   discordChannel,
   notionChannel,
   gmailChannel,
+  slackChannel,
   type DeliveryChannel,
   type DeliveryMessage,
   type DeliveryResult,

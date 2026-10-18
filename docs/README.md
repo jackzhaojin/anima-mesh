@@ -30,7 +30,9 @@ specifics (those live in each instance's own repo — see the boundary doc).
    (what's in the engine vs. what's in your brain); the
    [brain-setup skill](../.claude/skills/brain-setup/SKILL.md) automates it
 8. [deploying-cloud.md](deploying-cloud.md) — the generic Cloudflare
-   runbook (two Workers, secrets contract, Discord wiring, multi-company)
+   runbook (two Workers, secrets contract, Discord wiring, multi-company);
+   [slack.md](slack.md) puts the persona in a Slack workspace - channel
+   briefs and @-mention answers, with an app manifest
 9. [okf-crm-domain.md](okf-crm-domain.md) — the first front-office domain
    shelf: CRM as typed concepts, with compliance screens encoded in data
 10. [local-agents.md](local-agents.md) — the third tier: compile any agent

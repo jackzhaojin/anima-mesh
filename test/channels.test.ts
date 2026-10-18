@@ -6,10 +6,12 @@ import {
   discordChannel,
   notionChannel,
   gmailChannel,
+  slackChannel,
   consoleChannel,
   resolveChannel,
   deliverLatestReport,
 } from "../src/channels/index.js";
+import { cleanSlackText, slackChunks, slackConversationContext } from "../src/channels/slack.js";
 
 const roots: string[] = [];
 afterEach(async () => {
@@ -172,6 +174,105 @@ describe("discord channel", () => {
     await expect(
       discordChannel.deliver({ title: "T", body: "b" }, { env: dmEnv, fetchImpl: impl }),
     ).rejects.toThrow(/DM open → HTTP 403/);
+  });
+});
+
+describe("slack channel", () => {
+  const bot = { SLACK_BOT_TOKEN: "xoxb-test", SLACK_CHANNEL_ID: "CTEAM" };
+
+  it("assertConfigured names the missing vars", () => {
+    expect(() => slackChannel.assertConfigured({ env: {} })).toThrow(/SLACK_BOT_TOKEN \+ SLACK_CHANNEL_ID.*SLACK_WEBHOOK_URL/);
+    expect(() => slackChannel.assertConfigured({ env: { SLACK_BOT_TOKEN: "x" } })).toThrow();
+    expect(() => slackChannel.assertConfigured({ env: bot })).not.toThrow();
+    expect(() => slackChannel.assertConfigured({ env: { SLACK_WEBHOOK_URL: "https://hooks.example/x" } })).not.toThrow();
+  });
+
+  it("bot mode posts the report as a markdown block with a plain fallback, bearer-authed", async () => {
+    const { impl, calls } = fakeFetch({ json: { ok: true, ts: "1.1" } });
+    const result = await slackChannel.deliver(
+      { title: "Daily Brief", body: "# Daily Brief\n\n**All quiet.** See [the log](https://x.test)." },
+      { env: bot, fetchImpl: impl },
+    );
+    expect(result.ok).toBe(true);
+    expect(calls).toHaveLength(1);
+    expect(calls[0]!.url).toBe("https://slack.com/api/chat.postMessage");
+    expect((calls[0]!.init.headers as Record<string, string>).Authorization).toBe("Bearer xoxb-test");
+    const body = JSON.parse(calls[0]!.init.body as string);
+    expect(body.channel).toBe("CTEAM");
+    expect(body.thread_ts).toBeUndefined();
+    // The body already carries its heading: not duplicated.
+    expect(body.blocks).toEqual([{ type: "markdown", text: "# Daily Brief\n\n**All quiet.** See [the log](https://x.test)." }]);
+    expect(body.text).toBe("Daily Brief All quiet. See the log.");
+  });
+
+  it("prepends the title when the body has no heading", async () => {
+    const { impl, calls } = fakeFetch({ json: { ok: true, ts: "1.1" } });
+    await slackChannel.deliver({ title: "Brief", body: "quiet" }, { env: bot, fetchImpl: impl });
+    expect(JSON.parse(calls[0]!.init.body as string).blocks[0].text).toBe("# Brief\n\nquiet");
+  });
+
+  it("a long brief: head in the channel, the rest threaded under it, every chunk under the block limit", async () => {
+    const { impl, calls } = fakeFetch({ json: { ok: true, ts: "1700.0001" } });
+    const para = "x".repeat(4000);
+    const body = `# Long\n\n${Array.from({ length: 6 }, () => para).join("\n\n")}`;
+    const result = await slackChannel.deliver({ title: "Long", body }, { env: bot, fetchImpl: impl });
+    expect(calls.length).toBeGreaterThan(1);
+    expect(result.detail).toContain("threaded");
+    const posts = calls.map((c) => JSON.parse(c.init.body as string));
+    expect(posts[0].thread_ts).toBeUndefined();
+    for (const p of posts.slice(1)) expect(p.thread_ts).toBe("1700.0001");
+    for (const p of posts) expect(p.blocks[0].text.length).toBeLessThanOrEqual(12_000);
+    expect(posts.map((p) => p.blocks[0].text).join("\n\n").replace(/\s/g, "")).toBe(body.replace(/\s/g, ""));
+  });
+
+  it("Slack's HTTP-200 ok:false is a failure, naming Slack's error code", async () => {
+    const { impl } = fakeFetch({ json: { ok: false, error: "not_in_channel" } });
+    await expect(slackChannel.deliver({ title: "t", body: "b" }, { env: bot, fetchImpl: impl })).rejects.toThrow(
+      /chat\.postMessage → not_in_channel/,
+    );
+  });
+
+  it("webhook mode posts each chunk to the webhook (no threading possible)", async () => {
+    const { impl, calls } = fakeFetch({ status: 200, text: "ok" });
+    const result = await slackChannel.deliver(
+      { title: "Daily Brief", body: "All quiet." },
+      { env: { SLACK_WEBHOOK_URL: "https://hooks.example/x" }, fetchImpl: impl },
+    );
+    expect(result.detail).toMatch(/^webhook:/);
+    expect(calls[0]!.url).toBe("https://hooks.example/x");
+    expect(JSON.parse(calls[0]!.init.body as string).blocks[0]).toEqual({ type: "markdown", text: "# Daily Brief\n\nAll quiet." });
+  });
+
+  it("caps a runaway report with a repo pointer", () => {
+    const chunks = slackChunks("y".repeat(200_000));
+    expect(chunks).toHaveLength(6);
+    expect(chunks[5]).toContain("full report lives in the brain repo");
+  });
+
+  it("cleanSlackText drops the bot's mention, flattens links, decodes entities, keeps other mentions", () => {
+    expect(cleanSlackText("<@UBOT> ask <@UTEAM> about <https://x.test|the doc> &amp; <https://y.test> &lt;3", "UBOT")).toBe(
+      "ask <@UTEAM> about the doc (https://x.test) & https://y.test <3",
+    );
+  });
+
+  it("conversation context: channel history oldest-first, the bot as 'you', trigger excluded", async () => {
+    const { impl, calls } = fakeFetch({
+      json: {
+        ok: true,
+        messages: [
+          { ts: "3", user: "UA", text: "<@UBOT> trigger" },
+          { ts: "2", user: "UBOT", text: "I posted the brief" },
+          { ts: "1", user: "UA", text: "morning all" },
+          { ts: "0", subtype: "channel_join", user: "UB", text: "joined" },
+        ],
+      },
+    });
+    const ctx = await slackConversationContext(
+      { env: { SLACK_BOT_TOKEN: "xoxb-test" }, fetchImpl: impl },
+      { channel: "C1", ts: "3", botUserId: "UBOT" },
+    );
+    expect(calls[0]!.url).toMatch(/^https:\/\/slack\.com\/api\/conversations\.history\?channel=C1&latest=3&inclusive=false/);
+    expect(ctx).toBe("<@UA>: morning all\nyou: I posted the brief");
   });
 });
 

@@ -231,7 +231,7 @@ someone's world (`person`, `org`, `team`, or `group`), and brains connect
   verified AND an explicit trigger or waiver is on file. Capability never
   outruns permission.
 - **The mesh reaches its principal, and nags on request.** Delivery channels
-  (Discord webhook/bot-DM, Notion, Gmail, console) carry the hub's brief; an
+  (Discord webhook/bot-DM, Slack channel, Notion, Gmail, console) carry the hub's brief; an
   optional `ops/nags.md` rides in every prompt so opted-into reminders repeat
   every heartbeat — with age — until done. Heartbeats are resilient (a failed
   spoke never kills the beat) and daily means *daily*: local-calendar
@@ -240,12 +240,15 @@ someone's world (`person`, `org`, `team`, or `group`), and brains connect
   carries a scheduler note and the brief nags for the manual run owed.
 - **The principal reaches the mesh, too — agentically.** A **direction** is
   the second entry point beside the heartbeat: an inbound message (Discord
-  slash command via Ed25519-verified interactions, or a polled Gmail inbox)
-  becomes one agentic run — the model reads the message with full bundle
+  slash command via Ed25519-verified interactions, a Slack @-mention or DM
+  via HMAC-verified Events API, or a polled Gmail inbox) becomes one
+  agentic run — the model reads the message with full bundle
   context and decides the disposition itself; no keyword routing exists.
   Directions are sender-allowlisted and budget-capped at the channel edge,
   ledgered as `direction-*` actions, and reply only **after** the evidence
-  commit lands. A separate `workers/web` Worker gives the principal a
+  commit lands. In a Slack channel the persona answers in the mention's
+  thread, having read the conversation around it; bots are never heard, so
+  two agents in one channel cannot loop each other. A separate `workers/web` Worker gives the principal a
   Google-OIDC dashboard (allowlist-only, nothing served unauthenticated).
 
 ## Quickstart: bootstrap locally, operate in cloud
@@ -283,7 +286,7 @@ pnpm cli connect google --instance ../my-life  # one-time read-only consent
 pnpm cli run compliance-ops --instance ../my-brain
 pnpm cli run some-agent --instance github:owner/brain#branch   # zero local reads
 pnpm cli heartbeat --instance ../my-brain      # run everything due; hub last
-pnpm cli deliver --instance ../my-brain        # brief → discord/notion/gmail/console
+pnpm cli deliver --instance ../my-brain        # brief → discord/slack/notion/gmail/console
 pnpm cli card --instance ../my-brain           # the mesh's A2A agent card
 pnpm cli gate list --instance ../my-brain
 pnpm cli report --instance ../my-brain
@@ -312,6 +315,7 @@ separately credentialed dashboard Worker, and one evidence commit per run.
 | [docs/sample-brain/](docs/sample-brain/README.md) | That instance as files: a complete scrubbed brain that validates and runs credential-free |
 | [docs/starting-a-company.md](docs/starting-a-company.md) | Empty directory → a mesh running a real company (repeatable for company #2, #3, …) |
 | [docs/deploying-cloud.md](docs/deploying-cloud.md) | Generic Cloudflare runbook: two Workers, secrets contract, Discord wiring |
+| [docs/slack.md](docs/slack.md) | The persona in a Slack workspace: channel briefs, @-mention answers, an app manifest |
 | [docs/local-agents.md](docs/local-agents.md) | The interactive tier: `export-local` agent artifacts + the `defect-report` loop |
 | [docs/layered-brains.md](docs/layered-brains.md) | Person, org, team, and group brains: links, `share:`/`markings:`, inheritance, members, Gmail/Calendar |
 | [docs/ontology.md](docs/ontology.md) | Concept-type schemas, the ontology view, and the mapping to Palantir's Ontology |
@@ -338,7 +342,7 @@ conformance and complete a full agent run against the fake provider.
 
 ## Status
 
-v2.1.1 (2026-10-11). Package name on npm to be confirmed; pinned consumers
+v2.3.0 (2026-10-18). Package name on npm to be confirmed; pinned consumers
 reference the repo by tag. **2.0 is the mesh of brains**: person, org, team,
 and group brains linked by mutual consent, owner-decided `share:` grants,
 mandatory `markings:`, inherited law down a containment chain, member roles
@@ -357,7 +361,10 @@ ChatGPT plan. Subprocesses never pick up a stray exported key. A
 subscription Codex agent runs on the laptop only, because chatgpt.com
 blocks Cloudflare Workers egress. **v2.2** moves every brain to OKF v0.2:
 provenance, trust tiers, lifecycle, and staleness as frontmatter the engine
-reads, a newest-first log, and `okf trust` / `okf migrate`.
+reads, a newest-first log, and `okf trust` / `okf migrate`. **v2.3** puts
+the persona in Slack: the daily brief posts to a channel, and an @-mention
+in an allowed channel (or a DM to the app) becomes a direction answered in
+its thread, with the surrounding conversation as context.
 
 The cloud tier introduced in v0.3 is the primary execution path; the CLI
 remains the bootstrap, operator, and subprocess-harness path. The 0.x lines

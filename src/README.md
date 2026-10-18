@@ -235,12 +235,17 @@ default the store to the local directory and register subprocess providers.
 ## channels/ + a2a/ — reaching the principal, and the world
 
 - `channels/registry.ts` (Workers-safe) — channel registry (discord bot-DM /
-  webhook, notion, gmail, console; all pure fetch with injected env) +
+  webhook, slack bot / webhook, notion, gmail, console; all pure fetch with injected env) +
   `deliverLatestReportFromStore`. `channels/index.ts` adds the fs wrapper.
   Discord delivery never truncates a long report: it splits into sequential
   messages at paragraph boundaries (`CONTENT_LIMIT` 1900, with a runaway cap
   that clips only a pathological tail), so a brief arrives whole and in
   reading order.
+  Slack delivery (`channels/slack.ts`, v2.3) posts the report as a `markdown`
+  block (Slack renders standard Markdown, no conversion layer); in bot mode a
+  long brief puts its head in the channel and the rest in that message's
+  thread. The same module carries the inbound helpers the Worker's Events
+  API edge uses (`cleanSlackText`, `slackConversationContext`).
 - `a2a/card-core.ts` — the mesh's Agent Card assembled from a loaded bundle
   (`streaming: false` — short connections by design; dual-gated commercial
   agents are not advertised). `a2a/card.ts` is the fs wrapper.

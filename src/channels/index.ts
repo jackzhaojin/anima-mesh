@@ -6,6 +6,7 @@ export type { DeliveryChannel, DeliveryMessage, DeliveryResult, ChannelContext }
 export { discordChannel } from "./discord.js";
 export { notionChannel } from "./notion.js";
 export { gmailChannel } from "./gmail.js";
+export { slackChannel } from "./slack.js";
 export {
   consoleChannel,
   resolveChannel,

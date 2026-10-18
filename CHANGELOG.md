@@ -3,7 +3,7 @@
 This history is organized by **minor release line** (and, from 2.0, major):
 the capability boundary operators actually adopt. Patch tags are deliberately
 rolled into the value and maturity of their minor rather than narrated one by
-one. The latest tag is **v2.2.4**.
+one. The latest tag is **v2.3.0**.
 
 ## Upgrade procedure
 
@@ -29,6 +29,50 @@ The ledger remains append-only; never "migrate" it by editing old entries.
 ## [Unreleased]
 
 - Nothing yet.
+
+## [v2.3.x] - Slack: the persona in a group setting
+
+**Latest tag: v2.3.0 · 2026-10-18**
+
+**Briefs to a Slack channel.** `slack` joins the delivery registry
+(`src/channels/slack.ts`, Workers-safe). Bot mode (`SLACK_BOT_TOKEN` +
+`SLACK_CHANNEL_ID`) posts the report as Slack's `markdown` block, which
+renders standard Markdown as written, so there is no mrkdwn conversion to
+drift. A long brief puts its head in the channel and the rest in that
+message's thread. `SLACK_WEBHOOK_URL` is the delivery-only alternative. The
+Web API's HTTP-200 `ok: false` is treated as the failure it is, naming
+Slack's error code (`not_in_channel`, `missing_scope`).
+
+**Answering when mentioned.** The heartbeat Worker gains
+`POST /slack/events`, a second door into the DirectionDO queue beside
+Discord's `/interactions`. Requests are HMAC-verified against
+`SLACK_SIGNING_SECRET` with a five-minute replay window (absent secret =
+404). Only `app_mention` and app DMs become directions; bot-authored
+messages and edits are dropped, so two agents sharing a channel cannot
+talk each other into a loop. Senders are gated by `SLACK_ALLOWED_USER_IDS`
+(absent = nobody) and channels by `SLACK_ALLOWED_CHANNEL_IDS`; denied
+attempts are ledgered as `direction-denied` like Discord knocks. Slack's
+retries are deduped by `event_id` in the DO, so one event is one run. The
+mention gets an eyes reaction inside Slack's 3-second window; the drain
+reads the thread (or the channel's recent messages) as untrusted context,
+runs with the new `audience: "group"`, commits, then replies in the
+mention's thread. A missing history scope degrades to no context, never a
+failed direction. Over budget, only the sender sees an ephemeral notice.
+
+**Direction messages carry an audience and context.** `DirectionMessage`
+gains optional `audience` (`direct` | `group`) and `context`. A group
+direction's prompt says the whole channel reads the reply and the sender
+may be an allowlisted teammate; the conversation is framed as other
+participants' words, never instructions. The artifact records
+`audience: group`; the context itself is read for the run and not
+committed. Existing channels are unchanged (`direct` is the default).
+
+**Upgrade:** no bundle or ledger change. To use Slack, create the app from
+the manifest in [docs/slack.md](docs/slack.md), add `"slack"` to
+`delivery.channels`, merge the new `SLACK_*` vars from
+`workers/heartbeat/wrangler.example.jsonc`, `wrangler secret put
+SLACK_BOT_TOKEN` and `SLACK_SIGNING_SECRET`, redeploy, then point the app's
+Event Subscriptions at `https://<worker-host>/slack/events`.
 
 ## [v2.2.x] - OKF v0.2: provenance, trust, and lifecycle the engine can read
 

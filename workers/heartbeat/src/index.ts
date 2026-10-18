@@ -7,6 +7,7 @@ import { envRecord, type Env } from "./env.js";
 import { HeartbeatDO } from "./heartbeat-do.js";
 import { DirectionDO } from "./direction-do.js";
 import { handleInteraction } from "./interactions.js";
+import { handleSlackEvent } from "./slack-events.js";
 import { cloudMsGraphToken } from "./msgraph-token.js";
 
 export { HeartbeatDO, DirectionDO };
@@ -33,7 +34,7 @@ function bearerOk(header: string | null, expected: string | undefined): boolean 
  * clock with no hibernation.
  */
 export default {
-  async fetch(req: Request, env: Env): Promise<Response> {
+  async fetch(req: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
     const url = new URL(req.url);
     const stub = env.HEARTBEAT_DO.get(env.HEARTBEAT_DO.idFromName("main"));
 
@@ -57,6 +58,12 @@ export default {
       // Inbound direction (Discord webhook). Absent public key = surface off.
       if (!env.DISCORD_PUBLIC_KEY) return new Response("not found", { status: 404 });
       return handleInteraction(req, env);
+    }
+
+    if (url.pathname === "/slack/events" && req.method === "POST") {
+      // Inbound direction (Slack Events API). Absent signing secret = surface off.
+      if (!env.SLACK_SIGNING_SECRET) return new Response("not found", { status: 404 });
+      return handleSlackEvent(req, env, ctx);
     }
 
     if (url.pathname === "/beat" && req.method === "POST") {

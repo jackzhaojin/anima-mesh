@@ -48,6 +48,11 @@ export default defineWorkersConfig({
             // TEST-ONLY Ed25519 keypair (public half here, private half in
             // test/fixtures.ts) — gates nothing real anywhere.
             DISCORD_PUBLIC_KEY: "e9d8505cd226e86f86d1f1eb538dbd506de6e8fa2e43e8e420416c554c36facc",
+            // TEST-ONLY Slack signing secret (test/fixtures.ts signs with it).
+            SLACK_SIGNING_SECRET: "test-slack-signing-secret-not-real",
+            SLACK_BOT_TOKEN: "xoxb-test-not-real",
+            SLACK_ALLOWED_USER_IDS: "UPRINCIPAL, UTEAMMATE",
+            SLACK_ALLOWED_CHANNEL_IDS: "CTEAM",
             DIRECTION_DAILY_CAP: "3",
             DIRECTION_GMAIL_POLL_MINUTES: "15",
             DIRECTION_GMAIL_ALLOWED_FROM: "principal@example.test",

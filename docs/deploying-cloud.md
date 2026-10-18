@@ -25,7 +25,8 @@ the instance repo (see [engine-vs-instance.md](engine-vs-instance.md)).*
   ([learnings/2026-07-11](learnings/2026-07-11-workers-egress-waf.md):
   some vendor edges block Workers egress entirely).
 - Optional, per surface: a Discord application (bot token + public key) for
-  the persona channel; a Google OAuth web client for the dashboard; Gmail
+  the persona channel; a Slack app (bot token + signing secret,
+  [slack.md](slack.md)) for channel briefs and @-mention answers; a Google OAuth web client for the dashboard; Gmail
   OAuth bits for the email poll.
 
 ## The instance-side workspace
@@ -48,7 +49,8 @@ Copy each from the engine's `workers/*/wrangler.example.jsonc` and fill in:
 | `BRAIN_REPO` / `BRAIN_REF` | `owner/name` and branch of the brain |
 | `BEAT_TIMEZONE` / `BEAT_HOUR` | when the daily beat fires, local-calendar semantics |
 | `DISCORD_PUBLIC_KEY` | the Discord app's request-verification key (inbound directions) |
-| `DIRECTION_DAILY_CAP` | direction budget per day (e.g. `20`) |
+| `SLACK_CHANNEL_ID` / `SLACK_ALLOWED_USER_IDS` / `SLACK_ALLOWED_CHANNEL_IDS` | Slack brief channel; who may direct by @-mention (absent = nobody); which channels answer ([slack.md](slack.md)) |
+| `DIRECTION_DAILY_CAP` | direction budget per day (e.g. `20`; Discord, Slack and email share it) |
 | `DIRECTION_GMAIL_POLL_MINUTES` / `DIRECTION_GMAIL_ALLOWED_FROM` | email poll; unset = off |
 | `MSGRAPH_TENANT` / `MSGRAPH_DRIVE_ID` / `MSGRAPH_CABINET_PATH` | where the 'onedrive' read source points; all optional |
 | `GITHUB_DOCS_REPO` / `GITHUB_DOCS_REF` / `GITHUB_DOCS_PATH` | where the 'github-docs' read source points (`owner/name`, ref default `HEAD`, optional subpath); unset = source unconfigured |
@@ -63,6 +65,7 @@ the example file shows the shape.
 | `GITHUB_DEFECTS_TOKEN` | Issues read/write on the **public engine repo** — lets leak-clean `defect-report`s file directly as engine issues (issue-first, v0.11.4). Unset ⇒ defects fall back to private drafts |
 | `MOONSHOT_API_KEY`, `CLAUDE_CODE_OAUTH_TOKEN`, `ANTHROPIC_API_KEY` | cognition, whichever the agents' effective harnesses need: `moonshot-api`, `anthropic-api` (subscription), `anthropic-api-key` (metered API credits; cap spend in the Console). No Codex secret: Codex is laptop-tier ([why](#codex-is-laptop-tier-a-known-limitation)). The two Anthropic harnesses grant `web: <n>` search budgets on Workers |
 | `DISCORD_BOT_TOKEN` / `DISCORD_DM_USER_ID` | brief + failure DMs; the direction sender gate |
+| `SLACK_BOT_TOKEN` / `SLACK_SIGNING_SECRET` | Slack brief delivery + thread replies; verifies `POST /slack/events` (absent = route off). `SLACK_WEBHOOK_URL` is a delivery-only alternative |
 | `BEAT_TRIGGER_TOKEN` | gates manual `POST /beat` (mint with `openssl rand -hex 32`) |
 | `GMAIL_CLIENT_ID` / `GMAIL_CLIENT_SECRET` / `GMAIL_REFRESH_TOKEN` / `AGENT_EMAIL` | only if the email surfaces are on. **Publish the OAuth consent screen to "In Production" first** — a screen left in "Testing" expires every refresh token after 7 days ([learning](learnings/2026-07-12-google-oauth-testing-expiry.md)) |
 | `MSGRAPH_CLIENT_ID` / `MSGRAPH_REFRESH_TOKEN` (+ `MSGRAPH_CLIENT_SECRET` for confidential clients) | the 'onedrive' read source (agents opting in via `context-sources:` frontmatter); delegated read-only consent; validate with bearer-gated `GET /graph/check` |
@@ -199,6 +202,14 @@ deploy is an instance act; account ids and firm-naming vars stay private):
 2. Authorize the app (user-install) so the command appears in DMs.
 3. The sender gate is `DISCORD_DM_USER_ID`; everyone else is silently
    dropped and ledgered.
+
+## Wiring Slack (channel briefs + @-mention answers)
+
+The full walkthrough, with an app manifest, is [slack.md](slack.md). In
+short: create the app from the manifest, set **Event Subscriptions → Request
+URL** to `https://<worker-host>/slack/events` (Slack sends a signed
+`url_verification` the Worker must echo), invite the app into the channel,
+and opt people in with `SLACK_ALLOWED_USER_IDS`.
 
 ## Operating notes
 

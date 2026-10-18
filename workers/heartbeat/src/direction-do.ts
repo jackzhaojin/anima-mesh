@@ -4,6 +4,7 @@ import { githubToken } from "../../../src/instance/github-auth.js";
 import { runDirectionCore, type DirectionMessage } from "../../../src/harness/direction-core.js";
 import { dateStampFor } from "../../../src/harness/run-core.js";
 import { gmailChannel, pollGmailInbox, markGmailRead } from "../../../src/channels/gmail.js";
+import { postSlackMarkdown, slackConversationContext } from "../../../src/channels/slack.js";
 import { envRecord, type Env } from "./env.js";
 import { cloudMsGraphToken } from "./msgraph-token.js";
 
@@ -12,8 +13,8 @@ import { cloudMsGraphToken } from "./msgraph-token.js";
  * interactions route (3-second budget) only verifies, gates, and enqueues;
  * this DO's alarm does the slow part: run the persona agentically over the
  * GitHub-hosted brain, land ONE commit per drain, and reply on the
- * originating channel — Discord interaction followup (15-min token) or a
- * reply email.
+ * originating channel - Discord interaction followup (15-min token), a
+ * reply email, or a Slack thread reply (v2.3).
  *
  * Its own DO class because a Durable Object holds exactly one alarm and
  * HeartbeatDO's belongs to the daily beat. The one alarm here serves both
@@ -23,14 +24,18 @@ import { cloudMsGraphToken } from "./msgraph-token.js";
  * State: the queue, the per-ET-day budget counter (Q4, DIRECTION_DAILY_CAP,
  * default 20 — Discord AND Gmail directions share it), the denied-sender
  * log (Q5 — folded into the ledger on the next drain, never a commit per
- * knock), and the processed-Gmail-id ring (dedup even if mark-read fails).
+ * knock), the processed-Gmail-id ring (dedup even if mark-read fails), and
+ * the seen-event ring for pushed channels that retry (Slack re-sends an
+ * event it believes was missed - one event must stay one run).
  */
 
 const QUEUE_KEY = "queue";
 const DENIED_KEY = "denied";
 const GMAIL_SEEN_KEY = "gmail-processed";
+const EVENTS_SEEN_KEY = "events-seen";
 const DENIED_MAX = 50;
 const GMAIL_SEEN_MAX = 100;
+const EVENTS_SEEN_MAX = 200;
 const RETRY_DELAY_MS = 60_000;
 export const DEFAULT_DAILY_CAP = 20;
 
@@ -40,6 +45,18 @@ export interface QueuedDirection {
   followup?: { applicationId: string; token: string };
   /** Gmail: reply by mail + mark read after the evidence lands. */
   email?: { id: string; from: string; subject: string };
+  /**
+   * Slack: reply with the bot token, in `threadTs` when set (a channel
+   * mention answers in its own thread). `inThread` marks a mention made
+   * inside an existing thread - its context is that thread, otherwise the
+   * channel's recent messages.
+   */
+  slack?: { channel: string; ts: string; threadTs?: string; inThread?: boolean; botUserId?: string };
+}
+
+/** The enqueue body: the item plus an optional idempotency key. */
+interface EnqueueRequest extends QueuedDirection {
+  dedupKey?: string;
 }
 
 export interface DeniedRecord {
@@ -53,7 +70,13 @@ export class DirectionDO extends DurableObject<Env> {
     const url = new URL(req.url);
 
     if (url.pathname === "/enqueue" && req.method === "POST") {
-      const item = (await req.json()) as QueuedDirection;
+      const { dedupKey, ...item } = (await req.json()) as EnqueueRequest;
+      if (dedupKey) {
+        const seen = (await this.ctx.storage.get<string[]>(EVENTS_SEEN_KEY)) ?? [];
+        if (seen.includes(dedupKey)) return Response.json({ status: "duplicate" }, { status: 200 });
+        seen.push(dedupKey);
+        await this.ctx.storage.put(EVENTS_SEEN_KEY, seen.slice(-EVENTS_SEEN_MAX));
+      }
       if (!(await this.consumeBudget())) {
         return Response.json({ status: "budget", cap: this.cap() }, { status: 429 });
       }
@@ -203,6 +226,34 @@ export class DirectionDO extends DurableObject<Env> {
     }
   }
 
+  /**
+   * Group mentions are answered in the flow of the conversation: the thread
+   * (or the channel's recent messages) rides along as untrusted context.
+   * Best-effort - a missing history scope degrades to "no context", never
+   * to a failed direction.
+   */
+  private async withSlackContext(
+    message: DirectionMessage,
+    slack: NonNullable<QueuedDirection["slack"]>,
+    record: Record<string, string | undefined>,
+  ): Promise<DirectionMessage> {
+    try {
+      const context = await slackConversationContext(
+        { env: record },
+        {
+          channel: slack.channel,
+          ts: slack.ts,
+          ...(slack.inThread && slack.threadTs ? { threadTs: slack.threadTs } : {}),
+          ...(slack.botUserId ? { botUserId: slack.botUserId } : {}),
+        },
+      );
+      return context ? { ...message, context } : message;
+    } catch (err) {
+      console.log(`slack context unavailable: ${err instanceof Error ? err.message : String(err)}`);
+      return message;
+    }
+  }
+
   private async drain(
     queue: QueuedDirection[],
     denied: DeniedRecord[],
@@ -233,9 +284,10 @@ export class DirectionDO extends DurableObject<Env> {
     for (const item of queue) {
       const runId = crypto.randomUUID();
       try {
+        const message = item.slack ? await this.withSlackContext(item.message, item.slack, record) : item.message;
         const report = await runDirectionCore({
           store,
-          message: item.message,
+          message,
           runId,
           providerCtx: { env: record },
           msGraphToken: cloudMsGraphToken(this.env),
@@ -289,6 +341,12 @@ export class DirectionDO extends DurableObject<Env> {
             },
           );
           if (!res.ok) console.log(`direction followup → HTTP ${res.status}`);
+        } else if (item.slack) {
+          await postSlackMarkdown(
+            { env: record },
+            { channel: item.slack.channel, ...(item.slack.threadTs ? { threadTs: item.slack.threadTs } : {}) },
+            content,
+          );
         } else if (item.email) {
           await gmailChannel.deliver(
             {

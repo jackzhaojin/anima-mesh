@@ -27,6 +27,9 @@
     "BEAT_HOUR": "8"
     // "MOONSHOT_BASE_URL": "https://api.kimi.com/coding/v1", // when the key is endpoint-scoped
     // "DISCORD_PUBLIC_KEY": "<discord app verify key>",      // enables POST /interactions (inbound direction)
+    // "SLACK_CHANNEL_ID": "<C... channel id>",                // Slack brief channel (bot mode; invite the app first)
+    // "SLACK_ALLOWED_USER_IDS": "<U...,U...>",                // who may direct by @-mention; absent = nobody
+    // "SLACK_ALLOWED_CHANNEL_IDS": "<C...>",                  // channels where mentions are answered; absent = any the app is in
     // "DIRECTION_DAILY_CAP": "20",                           // direction budget (decision Q4)
     // "DIRECTION_GMAIL_POLL_MINUTES": "20",                  // Gmail poll cadence; 0/absent = inbound email off
     // "DIRECTION_GMAIL_ALLOWED_FROM": "<principal email>"    // only this sender's mail becomes directions
@@ -56,6 +59,9 @@
   // secret: chatgpt.com blocks Workers egress, so Codex is laptop-tier
   // (docs/learnings/2026-10-11-chatgpt-codex-blocks-workers.md);
   // Discord surfaces use DISCORD_BOT_TOKEN and DISCORD_DM_USER_ID;
+  // Slack (v2.3, docs/slack.md) uses SLACK_BOT_TOKEN and
+  // SLACK_SIGNING_SECRET (the latter enables POST /slack/events), or a
+  // delivery-only SLACK_WEBHOOK_URL;
   // for inbound email also GMAIL_CLIENT_ID, GMAIL_CLIENT_SECRET,
   // GMAIL_REFRESH_TOKEN (needs gmail.modify scope), AGENT_EMAIL;
   // for the 'onedrive' read source MSGRAPH_CLIENT_ID, MSGRAPH_REFRESH_TOKEN

@@ -306,3 +306,125 @@ export function mockDiscord(): DiscordScript {
   });
   return script;
 }
+
+// ---- Slack Events API (TEST-ONLY signing secret) ----------------------------
+
+/** Matches SLACK_SIGNING_SECRET in vitest.config.ts. Gates nothing real. */
+const TEST_SLACK_SIGNING_SECRET = "test-slack-signing-secret-not-real";
+
+/** Build a correctly signed Slack Events API request. */
+export async function signedSlackEvent(
+  payload: unknown,
+  opts: { timestamp?: number; headers?: Record<string, string> } = {},
+): Promise<Request> {
+  const body = JSON.stringify(payload);
+  const timestamp = String(opts.timestamp ?? Math.floor(Date.now() / 1000));
+  const enc = new TextEncoder();
+  const key = await crypto.subtle.importKey(
+    "raw",
+    enc.encode(TEST_SLACK_SIGNING_SECRET),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"],
+  );
+  const mac = new Uint8Array(await crypto.subtle.sign("HMAC", key, enc.encode(`v0:${timestamp}:${body}`)));
+  return new Request("https://worker.test/slack/events", {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      "x-slack-request-timestamp": timestamp,
+      "x-slack-signature": `v0=${[...mac].map((b) => b.toString(16).padStart(2, "0")).join("")}`,
+      ...(opts.headers ?? {}),
+    },
+    body,
+  });
+}
+
+export const SLACK_BOT_USER = "UBOTPERSONA";
+
+/** An event_callback envelope around one Slack event. */
+export function slackEnvelope(event: Record<string, unknown>, eventId = "Ev001"): unknown {
+  return {
+    type: "event_callback",
+    event_id: eventId,
+    authorizations: [{ user_id: SLACK_BOT_USER, is_bot: true }],
+    event,
+  };
+}
+
+/** A channel @-mention of the persona. */
+export function slackMention(
+  text: string,
+  opts: { user?: string; channel?: string; ts?: string; threadTs?: string } = {},
+): Record<string, unknown> {
+  return {
+    type: "app_mention",
+    user: opts.user ?? "UPRINCIPAL",
+    text: `<@${SLACK_BOT_USER}> ${text}`,
+    ts: opts.ts ?? "1760000000.000100",
+    channel: opts.channel ?? "CTEAM",
+    ...(opts.threadTs ? { thread_ts: opts.threadTs } : {}),
+  };
+}
+
+export interface SlackScript {
+  posts: Array<{ channel: string; thread_ts?: string; text: string; blocks: Array<{ type: string; text: string }> }>;
+  reactions: Array<{ channel: string; timestamp: string; name: string }>;
+  ephemerals: Array<{ channel: string; user: string; text: string }>;
+  historyPaths: string[];
+}
+
+export interface MockSlackOptions {
+  posts?: number;
+  reactions?: number;
+  ephemerals?: number;
+  /** "history" | "replies" - the one context read the drain makes; null = none. */
+  context?: "history" | "replies" | null;
+  contextMessages?: Array<Record<string, unknown>>;
+}
+
+/** Script the Slack Web API calls one test expects, capturing bodies. */
+export function mockSlack(opts: MockSlackOptions = {}): SlackScript {
+  const script: SlackScript = { posts: [], reactions: [], ephemerals: [], historyPaths: [] };
+  const slack = fetchMock.get("https://slack.com");
+  const posts = opts.posts ?? 1;
+  const reactions = opts.reactions ?? 1;
+  if (posts > 0) {
+    slack
+      .intercept({ method: "POST", path: "/api/chat.postMessage" })
+      .reply(200, (req) => {
+        script.posts.push(JSON.parse(req.body as string));
+        return { ok: true, ts: `1760000999.00000${script.posts.length}` };
+      })
+      .times(posts);
+  }
+  if (reactions > 0) {
+    slack
+      .intercept({ method: "POST", path: "/api/reactions.add" })
+      .reply(200, (req) => {
+        script.reactions.push(JSON.parse(req.body as string));
+        return { ok: true };
+      })
+      .times(reactions);
+  }
+  if ((opts.ephemerals ?? 0) > 0) {
+    slack
+      .intercept({ method: "POST", path: "/api/chat.postEphemeral" })
+      .reply(200, (req) => {
+        script.ephemerals.push(JSON.parse(req.body as string));
+        return { ok: true };
+      })
+      .times(opts.ephemerals!);
+  }
+  const context = opts.context === undefined ? "history" : opts.context;
+  if (context) {
+    const method = context === "history" ? "conversations.history" : "conversations.replies";
+    slack
+      .intercept({ method: "GET", path: (p: string) => p.startsWith(`/api/${method}?`) })
+      .reply(200, (req) => {
+        script.historyPaths.push(req.path);
+        return { ok: true, messages: opts.contextMessages ?? [] };
+      });
+  }
+  return script;
+}

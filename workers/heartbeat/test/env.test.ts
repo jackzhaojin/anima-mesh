@@ -38,4 +38,15 @@ describe("envRecord", () => {
     });
     expect(Object.values(record)).not.toContain("must-not-pass");
   });
+  it("passes Slack delivery vars; the signing secret stays at the edge", () => {
+    const record = envRecord({
+      ...base,
+      SLACK_BOT_TOKEN: "xoxb",
+      SLACK_CHANNEL_ID: "C1",
+      SLACK_WEBHOOK_URL: "https://hooks.example/x",
+      SLACK_SIGNING_SECRET: "edge-only",
+    } as unknown as Env);
+    expect(record).toMatchObject({ SLACK_BOT_TOKEN: "xoxb", SLACK_CHANNEL_ID: "C1", SLACK_WEBHOOK_URL: "https://hooks.example/x" });
+    expect(Object.values(record)).not.toContain("edge-only");
+  });
 });

@@ -2,6 +2,7 @@ import type { DeliveryChannel, DeliveryMessage, DeliveryResult, ChannelContext }
 import { discordChannel } from "./discord.js";
 import { notionChannel } from "./notion.js";
 import { gmailChannel } from "./gmail.js";
+import { slackChannel } from "./slack.js";
 import { parseConcept } from "../okf/frontmatter.js";
 import type { InstanceConfig } from "../instance/config-core.js";
 import type { InstanceStore } from "../instance/store.js";
@@ -29,6 +30,7 @@ const registry = new Map<string, DeliveryChannel>([
   ["discord", discordChannel],
   ["notion", notionChannel],
   ["gmail", gmailChannel],
+  ["slack", slackChannel],
   ["console", consoleChannel],
 ]);
 

@@ -37,6 +37,16 @@ deferred Discord reply — evidence before words. The same DO optionally polls
 a Gmail inbox for principal email (`DIRECTION_GMAIL_POLL_MINUTES`,
 `DIRECTION_GMAIL_ALLOWED_FROM`) with a processed-id dedup ring.
 
+`POST /slack/events` (v2.3, `slack-events.ts`) is the group-shaped door to
+the same queue: HMAC-verified against `SLACK_SIGNING_SECRET` with a
+five-minute replay window, `app_mention` and app DMs only, bots and edits
+dropped (no agent-to-agent loops), senders gated by
+`SLACK_ALLOWED_USER_IDS` (absent = nobody) and channels by
+`SLACK_ALLOWED_CHANNEL_IDS`, Slack's retries deduped by `event_id` in the
+DO. The drain reads the thread around the mention as untrusted context,
+runs with `audience: "group"`, commits, then replies in the mention's
+thread. Setup: [docs/slack.md](../../docs/slack.md).
+
 ## Routes
 
 | Route | Behavior |
@@ -44,6 +54,7 @@ a Gmail inbox for principal email (`DIRECTION_GMAIL_POLL_MINUTES`,
 | `GET /healthz` | last beat summary + next alarm (no auth; counts only) |
 | `POST /beat` | manual trigger, `authorization: Bearer <BEAT_TRIGGER_TOKEN>`; same mutex as the alarm. Persists a queued request and immediate alarm before returning `202 {started, queued: true}`; completion (or failure) lands in `/healthz`. `beatQueued` distinguishes accepted work from an active run. The alarm awaits completion and retains interrupted requests for platform retry; execution is at least once |
 | `POST /interactions` | Discord interactions endpoint (Ed25519-verified; 401 otherwise) |
+| `POST /slack/events` | Slack Events API endpoint (HMAC-verified, replay-windowed; 401 otherwise; 404 without `SLACK_SIGNING_SECRET`) |
 | `GET /graph/check` | bearer-gated validation for the configured `onedrive` source |
 | `GET /docs/check` | bearer-gated validation for the configured `github-docs` source |
 | `GET /.well-known/agent-card.json` | the A2A card, live (`streaming: false` — short connections by design) |
