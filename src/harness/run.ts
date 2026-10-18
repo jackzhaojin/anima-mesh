@@ -2,6 +2,7 @@ import "../providers/node-providers.js"; // register subprocess providers (Node 
 import type { InstanceStore } from "../instance/store.js";
 import { FsInstanceStore } from "../instance/store-fs.js";
 import { nodeSourceFs } from "../sources/local-files.js";
+import { localMsGraphTokenManager } from "../sources/msgraph-auth-file.js";
 import { localBrainOpener } from "../brains/local.js";
 import { runAgentCore, type RunCoreOptions, type RunReport } from "./run-core.js";
 
@@ -30,6 +31,12 @@ export async function runAgent(options: RunOptions): Promise<RunReport> {
   // Node tier: sources may read local working trees (caller can still override).
   return runAgentCore({
     sourceFs: nodeSourceFs,
+    ...(resolved instanceof FsInstanceStore ? {
+      msGraphToken: localMsGraphTokenManager(resolved.root, {
+        env: rest.providerCtx?.env ?? resolved.instanceEnv(), fetchImpl: rest.providerCtx?.fetchImpl,
+        log: rest.onProgress,
+      }),
+    } : {}),
     // Linked brains' sibling checkouts resolve against this instance's root.
     openLocalBrain: localBrainOpener(resolved.root),
     ...rest,

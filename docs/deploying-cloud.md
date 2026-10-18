@@ -68,6 +68,33 @@ the example file shows the shape.
 | `MSGRAPH_CLIENT_ID` / `MSGRAPH_REFRESH_TOKEN` (+ `MSGRAPH_CLIENT_SECRET` for confidential clients) | the 'onedrive' read source (agents opting in via `context-sources:` frontmatter); delegated read-only consent; validate with bearer-gated `GET /graph/check` |
 | `GITHUB_DOCS_TOKEN` | the 'github-docs' read source: fine-grained PAT, Contents READ-ONLY on the docs repo only (falls back to `GITHUB_TOKEN`; public repos need none); validate with bearer-gated `GET /docs/check` |
 
+### Graph credential lifecycle
+
+`MSGRAPH_REFRESH_TOKEN` is a bootstrap credential, not a permanent token to
+reuse forever. Microsoft returns replacement refresh tokens; the runtime
+must persist and use them ([Microsoft documentation](https://learn.microsoft.com/en-us/entra/identity-platform/refresh-tokens)).
+
+- Cloud beats, directions, and the authenticated `/graph/check` share the
+  existing Heartbeat DO's internal credential broker. Replacement tokens
+  live only in its encrypted-at-rest storage; no token endpoint is exposed
+  on the public Worker. `/graph/check` reports
+  `credentialPersistence: "durable-object"` on the updated runtime.
+- The Node harness uses `local-only/credentials/msgraph.json` (mode 600,
+  parent directory mode 700, atomic replacement, its own git exclusion).
+  This directory is unavailable to local document-source reads and listings.
+  The cache never enters the brain's bundle, ledger, reports, or git store.
+- A fingerprint binds the chain to the configured app, tenant, scope, and
+  bootstrap secret. Re-consent and replace that secret to reset a revoked
+  or expired chain. Do not copy the local cache to the cloud: each runtime
+  owns its chain, and the cloud's HTTP read paths all use the same broker.
+- `invalid_grant` / `AADSTS700082` requires interactive sign-in once an old
+  grant has expired. Run the instance's existing consent helper, update the
+  local environment and Worker secret, then check the configured cabinet
+  drive with authenticated `GET /graph/check`. No extra Graph scopes are
+  requested by this fix. Tokens never belong in logs or issue reports.
+
+### Web Worker and dashboard
+
 The web Worker's contract is in
 [workers/web/README.md](../workers/web/README.md) — narrower on purpose.
 

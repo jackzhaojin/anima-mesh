@@ -95,6 +95,7 @@ const WEB_SEARCH_TOOL_TYPE = "web_search_20250305";
 // Server tools can hand the turn back mid-search (`stop_reason: pause_turn`)
 // on long sweeps; continuing the SAME conversation is how the search finishes.
 const MAX_TURNS = 6;
+const MAX_OUTPUT_CONTINUATIONS = 2;
 // A run that trips this many pause_turns has stopped converging; the text
 // gathered so far is still returned rather than thrown away.
 const CAPABILITY_CORRECTION = (reason: string) =>
@@ -366,6 +367,8 @@ function createAnthropicProvider(mode: AnthropicAuthMode, ctx: ApiProviderContex
       let messages: Array<{ role: string; content: unknown }> = [{ role: "user", content: userPrompt }];
       const collected: string[] = [];
       let turns = 0;
+      let outputContinuations = 0;
+      let totalUsage: Record<string, unknown> | undefined;
 
       progress(`${label}: starting (${model}${webEnabled ? `, web search ≤${webUses}` : ""})`);
       for (let attempt = 0; ; attempt++) {
@@ -428,13 +431,19 @@ function createAnthropicProvider(mode: AnthropicAuthMode, ctx: ApiProviderContex
             .filter((b) => b.type === "text" && typeof b.text === "string")
             .map((b) => b.text)
             .join("\n");
+          if (json.usage) {
+            totalUsage ??= {};
+            for (const [key, value] of Object.entries(json.usage)) {
+              if (typeof value === "number") totalUsage[key] = Number(totalUsage[key] ?? 0) + value;
+            }
+          }
           // A paused turn is the API saying "the searches are still running" —
           // hand its own content back and let it finish. Text written before
           // the pause is kept; throwing it away is how a half-done sweep turns
           // into an empty report.
           if (json.stop_reason === "pause_turn" && turns < MAX_TURNS) {
             turns += 1;
-            if (text) collected.push(text);
+            if (text) collected.push(text + "\n");
             messages = [...messages, { role: "assistant", content: json.content ?? [] }];
             attempt = -1; // HTTP retry budget is per request, not per turn
             progress(`${label}: server tool paused the turn — continuing (${turns}/${MAX_TURNS})`);
@@ -444,14 +453,32 @@ function createAnthropicProvider(mode: AnthropicAuthMode, ctx: ApiProviderContex
           // converged. Return everything written so far — a partial digest
           // beats a thrown-away one — but never as a clean run.
           if (json.stop_reason === "pause_turn") {
-            const gathered = [...collected, text].filter(Boolean).join("\n").trim();
+            const gathered = [...collected, text].join("").trim();
             progress(`${label}: turn limit (${MAX_TURNS}) reached mid-search — returning partial output`);
             return {
               text: gathered,
               raw: json,
-              tokens: json.usage,
+              tokens: totalUsage,
               degraded: `web search did not converge within ${MAX_TURNS} turns — this report is partial`,
             };
+          }
+          if (json.stop_reason === "model_context_window_exceeded") {
+            throw new Error(`${label}: context window exhausted — output is incomplete; no completed report returned`);
+          }
+          if (json.stop_reason === "max_tokens" && text) {
+            if (outputContinuations >= MAX_OUTPUT_CONTINUATIONS) {
+              throw new Error(`${label}: output still incomplete after ${MAX_OUTPUT_CONTINUATIONS} continuations; no completed report returned`);
+            }
+            outputContinuations++;
+            collected.push(text);
+            messages = [
+              ...messages,
+              { role: "assistant", content: json.content ?? [] },
+              { role: "user", content: "Continue exactly from the final character of your previous output. Do not repeat any previous text or restart the report. Finish all open code fences and request blocks, then finish the report." },
+            ];
+            attempt = -1;
+            progress(`${label}: output budget reached — continuing (${outputContinuations}/${MAX_OUTPUT_CONTINUATIONS})`);
+            continue;
           }
           if (!text) {
             // Name what DID come back — "malformed" alone is undebuggable
@@ -473,9 +500,9 @@ function createAnthropicProvider(mode: AnthropicAuthMode, ctx: ApiProviderContex
           // costUsd deliberately unset: subscription quota (oauth) or spend
           // whose pricing drifts (api key) — the ledger stores tokens.
           return {
-            text: [...collected, text].join("\n").trim(),
+            text: [...collected, text].join("").trim(),
             raw: json,
-            tokens: json.usage,
+            tokens: totalUsage,
             ...(degraded ? { degraded } : {}),
           };
         }

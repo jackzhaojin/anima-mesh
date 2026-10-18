@@ -2,6 +2,8 @@ import { DurableObject } from "cloudflare:workers";
 import { runCloudBeat, type BeatSummary } from "./beat.js";
 import { nextBeatUtc } from "./alarm-time.js";
 import type { Env } from "./env.js";
+import { envRecord } from "./env.js";
+import { createMsGraphTokenManager, type MsGraphCredential } from "../../../src/sources/msgraph-auth.js";
 
 const BEAT_LOCK_KEY = "beat-running";
 const LAST_BEAT_KEY = "lastBeat";
@@ -47,9 +49,22 @@ export class HeartbeatDO extends DurableObject<Env> {
    * storage awaits and only opens once the beat awaits external I/O.
    */
   private beatInFlight: Promise<LastBeat> | null = null;
+  private graphToken: (() => Promise<string>) | undefined;
 
   override async fetch(req: Request): Promise<Response> {
     const url = new URL(req.url);
+
+    if (url.pathname === "/msgraph-token" && req.method === "POST") {
+      this.graphToken ??= createMsGraphTokenManager({ env: envRecord(this.env) }, {
+        load: () => this.ctx.storage.get<MsGraphCredential>("msgraph-credential"),
+        save: (value) => this.ctx.storage.put("msgraph-credential", value),
+      });
+      try {
+        return Response.json({ token: await this.graphToken() });
+      } catch (error) {
+        return Response.json({ error: error instanceof Error ? error.message : "msgraph credential refresh failed" }, { status: 502 });
+      }
+    }
 
     if (url.pathname === "/ensure-alarm") {
       const existing = await this.ctx.storage.getAlarm();

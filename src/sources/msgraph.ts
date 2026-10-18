@@ -21,9 +21,9 @@ import { getEnv } from "../instance/env-core.js";
  *                          (read-only superset that can follow shortcuts into
  *                          shared libraries; never request a write scope)
  *
- * Refresh tokens rotate on use but the prior token stays valid until its own
- * expiry, so a static secret works; if Graph starts returning invalid_grant,
- * re-run the instance's consent helper and rotate the secret.
+ * Production runtimes inject a persistent credential manager through
+ * SourceContext.msGraphToken. The configured refresh token bootstraps that
+ * store; replacing it after re-consent starts a new rotation chain.
  */
 
 const LOGIN_BASE = "https://login.microsoftonline.com";
@@ -43,12 +43,24 @@ export function msGraphConfigured(ctx: SourceContext): boolean {
 }
 
 export async function msGraphAccessToken(ctx: SourceContext): Promise<string> {
+  if (ctx.msGraphToken) return ctx.msGraphToken();
+  return (await redeemMsGraphToken(ctx, getEnv(ctx.env, "MSGRAPH_REFRESH_TOKEN") ?? "")).access_token;
+}
+
+export interface MsGraphTokenResponse {
+  access_token: string;
+  refresh_token?: string;
+  expires_in?: number;
+}
+
+/** Exchange only: persistence and concurrency are owned by the runtime manager. */
+export async function redeemMsGraphToken(ctx: SourceContext, refreshToken: string): Promise<MsGraphTokenResponse> {
   assertMsGraphConfigured(ctx);
   const doFetch = ctx.fetchImpl ?? fetch;
   const tenant = getEnv(ctx.env, "MSGRAPH_TENANT") || "common";
   const params: Record<string, string> = {
     client_id: getEnv(ctx.env, "MSGRAPH_CLIENT_ID")!,
-    refresh_token: getEnv(ctx.env, "MSGRAPH_REFRESH_TOKEN")!,
+    refresh_token: refreshToken,
     grant_type: "refresh_token",
     scope: getEnv(ctx.env, "MSGRAPH_SCOPE") || DEFAULT_SCOPE,
   };
@@ -59,13 +71,22 @@ export async function msGraphAccessToken(ctx: SourceContext): Promise<string> {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
     body: new URLSearchParams(params).toString(),
+    signal: AbortSignal.timeout(30_000),
   });
   if (!res.ok) {
     // Entra error bodies carry an error code worth surfacing (e.g.
     // invalid_grant = consent expired → re-run the consent helper).
-    throw new Error(`msgraph token refresh → HTTP ${res.status} ${await res.text().catch(() => "")}`.trim());
+    const raw = await res.text().catch(() => "");
+    let error: { error?: string } = {};
+    try { error = JSON.parse(raw) as typeof error; } catch { /* Non-JSON identity-provider error. */ }
+    const code = typeof error.error === "string" && /^[a-z_]+$/.test(error.error) ? error.error : "oauth_error";
+    const aadsts = raw.match(/AADSTS\d+/)?.[0];
+    throw new Error(`msgraph token refresh → HTTP ${res.status} ${code}${aadsts ? ` (${aadsts})` : ""}` +
+      (code === "invalid_grant" ? "; operator sign-in required: re-run the instance consent helper and replace MSGRAPH_REFRESH_TOKEN" : ""));
   }
-  return ((await res.json()) as { access_token: string }).access_token;
+  const token = await res.json() as MsGraphTokenResponse;
+  if (typeof token.access_token !== "string" || !token.access_token) throw new Error("msgraph token refresh returned no access token");
+  return token;
 }
 
 export interface CabinetEntry {

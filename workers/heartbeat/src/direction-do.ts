@@ -5,6 +5,7 @@ import { runDirectionCore, type DirectionMessage } from "../../../src/harness/di
 import { dateStampFor } from "../../../src/harness/run-core.js";
 import { gmailChannel, pollGmailInbox, markGmailRead } from "../../../src/channels/gmail.js";
 import { envRecord, type Env } from "./env.js";
+import { cloudMsGraphToken } from "./msgraph-token.js";
 
 /**
  * DirectionDO — the queue-and-think half of the direction pipeline. The
@@ -237,6 +238,7 @@ export class DirectionDO extends DurableObject<Env> {
           message: item.message,
           runId,
           providerCtx: { env: record },
+          msGraphToken: cloudMsGraphToken(this.env),
           flushPolicy: "caller", // one commit per drain, not per direction
           timeZone: env.BEAT_TIMEZONE,
           onProgress: console.log,

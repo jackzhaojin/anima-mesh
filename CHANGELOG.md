@@ -3,7 +3,7 @@
 This history is organized by **minor release line** (and, from 2.0, major):
 the capability boundary operators actually adopt. Patch tags are deliberately
 rolled into the value and maturity of their minor rather than narrated one by
-one. The latest tag is **v2.2.1**.
+one. The latest tag is **v2.2.2**.
 
 ## Upgrade procedure
 
@@ -32,7 +32,26 @@ The ledger remains append-only; never "migrate" it by editing old entries.
 
 ## [v2.2.x] - OKF v0.2: provenance, trust, and lifecycle the engine can read
 
-**Latest tag: v2.2.1 · 2026-10-14**
+**Latest tag: v2.2.2 · 2026-10-18**
+
+**Credential rotation and longer-job completion.** The Graph connector now
+persists replacement refresh tokens instead of repeatedly redeeming the
+bootstrap secret ([#13](https://github.com/jackzhaojin/anima-mesh/issues/13),
+[#14](https://github.com/jackzhaojin/anima-mesh/issues/14),
+[#15](https://github.com/jackzhaojin/anima-mesh/issues/15)). Cloud beats,
+directions, and `/graph/check` share one credential manager in the existing
+Heartbeat Durable Object; the Node harness uses a private mode-600 cache
+outside the brain. Replacing the bootstrap secret after re-consent resets
+the chain. An already expired grant still needs an operator sign-in; code
+cannot revive it. No new binding, scope, or migration is required. See the
+[credential lifecycle](docs/deploying-cloud.md#graph-credential-lifecycle).
+
+The Anthropic provider continues text cut off by `max_tokens` up to twice,
+preserves the exact text boundary (including request blocks), and sums usage
+across calls. A remaining output cutoff or exhausted context window fails
+the run before a report or requested action is applied. Report previews
+remain bounded, but now name a `reports:` read-request path that can retrieve
+the complete report within the shared 32K-character read budget.
 
 **v2.2.1 - cabinet listings say which folder a file is in.** The OneDrive
 listing walks breadth-first, but it was rendered as one indented list, so

@@ -36,6 +36,9 @@ async function wipeDo(makeStub: () => DurableObjectStub): Promise<void> {
         if ("beatInFlight" in instance) {
           (instance as { beatInFlight: unknown }).beatInFlight = null;
         }
+        if ("graphToken" in instance) {
+          (instance as { graphToken: unknown }).graphToken = undefined;
+        }
         await state.storage.deleteAll();
         await state.storage.deleteAlarm();
       });

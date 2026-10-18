@@ -7,6 +7,7 @@ import { runDirectionCore, type DirectionMessage } from "../src/harness/directio
 import { FsInstanceStore } from "../src/instance/store-fs.js";
 import { FakeProvider } from "../src/providers/fake.js";
 import { parseReadRequests, stripReadRequests } from "../src/harness/read-requests.js";
+import { createAnthropicApiProvider } from "../src/providers/anthropic-api.js";
 
 /**
  * Ask-driven retrieval (v0.17.0). The inline heuristics can't know what THIS
@@ -78,6 +79,41 @@ describe("parse + strip", () => {
 });
 
 describe("the retrieval loop — beat runs", () => {
+  it("does not write a successful report or apply requests from an unfinished long job", async () => {
+    const root = await makeInstance();
+    const provider = createAnthropicApiProvider({
+      env: { CLAUDE_CODE_OAUTH_TOKEN: "test-oauth-not-real" },
+      fetchImpl: async () => Response.json({ content: [{ type: "text", text: "Incomplete report\n```draft-request\npath: unfinished.md\n---\npartial\n```" }], stop_reason: "max_tokens" }),
+    });
+    await expect(runAgent({ instanceRoot: root, agentName: "hub", provider })).rejects.toThrow("output still incomplete");
+    const store = new FsInstanceStore(root);
+    expect(await store.listReports()).toEqual([]);
+    expect(await store.readOptional("drafts/unfinished.md")).toBeNull();
+    expect((await store.readLedger()).some((entry) => entry.action === "run-completed")).toBe(false);
+  });
+
+  it("retrieves the full report beyond the ambient preview and ordinary per-file read cap", async () => {
+    const full = "# Long report\n" + "context ".repeat(2500) + "\nCRITICAL-TAIL-EVIDENCE";
+    const name = "2026-08-03-spoke-long.md";
+    const root = await makeInstance({ [`reports/${name}`]: full });
+    const provider = askingProvider(`\`\`\`read-request\nreports: [${name}]\n\`\`\``);
+    await runAgent({ instanceRoot: root, agentName: "hub", provider });
+    expect(provider.calls[0]!.prompt).toContain("preview truncated");
+    expect(provider.calls[0]!.prompt).not.toContain("CRITICAL-TAIL-EVIDENCE");
+    expect(provider.calls[1]!.prompt).toContain(full);
+    expect(provider.calls).toHaveLength(2);
+  });
+
+  it("report requests cannot escape the jail or read arbitrary instance files", async () => {
+    const root = await makeInstance({ "local-only/private.md": "PRIVATE-CONTENT" });
+    const provider = askingProvider("```read-request\nreports: [../local-only/private.md, local-only/private.md, missing.md]\n```");
+    await runAgent({ instanceRoot: root, agentName: "hub", provider });
+    const served = provider.calls[1]!.prompt;
+    expect(served).not.toContain("PRIVATE-CONTENT");
+    expect(served).toContain("path escapes the jail");
+    expect(served).toContain("not found in the report listing");
+  });
+
   it("serves a requested bundle file and runs exactly one continuation", async () => {
     const root = await makeInstance();
     const provider = askingProvider(REQUEST_BLOCK);

@@ -7,6 +7,7 @@ import { envRecord, type Env } from "./env.js";
 import { HeartbeatDO } from "./heartbeat-do.js";
 import { DirectionDO } from "./direction-do.js";
 import { handleInteraction } from "./interactions.js";
+import { cloudMsGraphToken } from "./msgraph-token.js";
 
 export { HeartbeatDO, DirectionDO };
 
@@ -71,7 +72,7 @@ export default {
       if (!bearerOk(req.headers.get("authorization"), env.BEAT_TRIGGER_TOKEN)) {
         return new Response("unauthorized", { status: 401 });
       }
-      const ctx = { env: envRecord(env) };
+      const ctx = { env: envRecord(env), msGraphToken: cloudMsGraphToken(env) };
       if (!msGraphConfigured(ctx)) {
         return Response.json({ ok: false, error: "msgraph not configured (MSGRAPH_CLIENT_ID/MSGRAPH_REFRESH_TOKEN)" }, { status: 503 });
       }
@@ -79,6 +80,7 @@ export default {
         const listing = await listCabinet(ctx, { maxDepth: 1, maxEntries: 50 });
         return Response.json({
           ok: true,
+          credentialPersistence: "durable-object",
           root: listing.root,
           count: listing.entries.length,
           truncated: listing.truncated,

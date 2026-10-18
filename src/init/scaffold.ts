@@ -132,7 +132,7 @@ export async function scaffoldBrain(targetDir: string, answers: InitAnswers): Pr
 
   put(
     ".gitignore",
-    ["# secrets never enter the brain repo", ".env", ".env.*", "", "node_modules/", ".DS_Store", ""].join("\n"),
+    ["# secrets never enter the brain repo", ".env", ".env.*", "local-only/", "", "node_modules/", ".DS_Store", ""].join("\n"),
   );
 
   put(

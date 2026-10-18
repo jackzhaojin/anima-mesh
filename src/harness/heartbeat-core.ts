@@ -4,7 +4,7 @@ import type { InstanceStore } from "../instance/store.js";
 import type { LedgerEntry } from "../ledger/ledger.js";
 import { runAgentCore, dateStampFor, type RunReport } from "./run-core.js";
 import { scheduleFromBundle, effectiveCadence, mutateSchedule, type Schedule } from "./schedule.js";
-import type { LocalBrainOpener, SourceFs } from "../sources/types.js";
+import type { LocalBrainOpener, SourceFs, SourceContext } from "../sources/types.js";
 
 /**
  * The heartbeat trigger — one of D5's four deterministic jobs. Decides which
@@ -42,6 +42,7 @@ export interface HeartbeatCoreOptions {
   providerCtx?: ApiProviderContext;
   /** Local-read capability for sources — threaded into every run; Node tier only. */
   sourceFs?: SourceFs;
+  msGraphToken?: SourceContext["msGraphToken"];
   /** Node tier: linked brains' local checkouts for the 'brains' source - threaded into every run. */
   openLocalBrain?: LocalBrainOpener;
   /** "per-run" (default) flushes inside each run; "caller" leaves one flush to the caller. */
@@ -234,6 +235,7 @@ export async function heartbeatCore(options: HeartbeatCoreOptions): Promise<Hear
           now: options.now,
           providerCtx: options.providerCtx,
           sourceFs: options.sourceFs,
+          msGraphToken: options.msGraphToken,
           openLocalBrain: options.openLocalBrain,
           flushPolicy: options.flushPolicy,
           timeZone: options.timeZone,

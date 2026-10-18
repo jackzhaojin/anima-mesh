@@ -16,6 +16,38 @@ function okResponse(text = "report body", usage: unknown = { input_tokens: 10, o
 
 const ENV = { CLAUDE_CODE_OAUTH_TOKEN: "sk-ant-oat01-test-not-real" };
 
+describe("long-output completion", () => {
+  const reply = (text: string, stop_reason: string) => Response.json({
+    content: [{ type: "text", text }], stop_reason,
+    usage: { input_tokens: 10, output_tokens: 20 },
+  });
+
+  it("continues cut-off text without breaking a request block and totals all usage", async () => {
+    const fetchImpl = vi.fn()
+      .mockResolvedValueOnce(reply("Report\n```draft-request\npath: draft", "max_tokens"))
+      .mockResolvedValueOnce(reply(".md\n---\nComplete artifact\n```", "end_turn"));
+    const result = await createAnthropicApiProvider({ env: ENV, fetchImpl }).run({ prompt: "long job", cwd: "/" });
+    expect(result.text).toBe("Report\n```draft-request\npath: draft.md\n---\nComplete artifact\n```");
+    expect(result.tokens).toEqual({ input_tokens: 20, output_tokens: 40 });
+    const request = JSON.parse(fetchImpl.mock.calls[1]![1].body);
+    expect(request.messages.at(-1).role).toBe("user");
+    expect(request.messages.at(-2).content[0].text).toContain("path: draft");
+  });
+
+  it("never reports success for output that still exceeds the bounded continuation budget", async () => {
+    const fetchImpl = vi.fn(async () => reply("unfinished", "max_tokens"));
+    await expect(createAnthropicApiProvider({ env: ENV, fetchImpl }).run({ prompt: "long", cwd: "/" }))
+      .rejects.toThrow("output still incomplete after 2 continuations");
+    expect(fetchImpl).toHaveBeenCalledTimes(3);
+  });
+
+  it("rejects context-window truncation instead of applying partial output", async () => {
+    const fetchImpl = vi.fn(async () => reply("partial", "model_context_window_exceeded"));
+    await expect(createAnthropicApiProvider({ env: ENV, fetchImpl }).run({ prompt: "long", cwd: "/" }))
+      .rejects.toThrow("context window exhausted");
+  });
+});
+
 describe("anthropic-api provider (subscription OAuth over plain fetch)", () => {
   it("sends the OAuth-shaped Messages request and maps the response", async () => {
     const fetchImpl = vi.fn().mockResolvedValue(okResponse("  the report  "));

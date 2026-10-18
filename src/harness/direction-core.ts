@@ -70,6 +70,7 @@ export interface DirectionRunOptions {
   providerCtx?: ApiProviderContext;
   /** Local-tree reads for sources that support them (Node callers). */
   sourceFs?: SourceFs;
+  msGraphToken?: SourceContext["msGraphToken"];
   /** Node callers: open linked brains' local checkouts for the 'brains' source. */
   openLocalBrain?: LocalBrainOpener;
   /** "per-run" (default) flushes here; "caller" batches (the Worker). */
@@ -139,6 +140,7 @@ export async function runDirectionCore(options: DirectionRunOptions): Promise<Di
   const sourceCtx: SourceContext = {
     env: providerCtx.env ?? {},
     fetchImpl: providerCtx.fetchImpl,
+    msGraphToken: options.msGraphToken,
     log: progress,
     sourceFs: options.sourceFs,
     config,

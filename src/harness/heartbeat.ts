@@ -2,6 +2,7 @@ import "../providers/node-providers.js"; // register subprocess providers (Node 
 import type { InstanceStore } from "../instance/store.js";
 import { FsInstanceStore } from "../instance/store-fs.js";
 import { nodeSourceFs } from "../sources/local-files.js";
+import { localMsGraphTokenManager } from "../sources/msgraph-auth-file.js";
 import { localBrainOpener } from "../brains/local.js";
 import { heartbeatCore, type HeartbeatCoreOptions, type HeartbeatResult } from "./heartbeat-core.js";
 
@@ -35,6 +36,12 @@ export async function heartbeat(options: HeartbeatOptions): Promise<HeartbeatRes
   // Node tier: sources may read local working trees (caller can still override).
   return heartbeatCore({
     sourceFs: nodeSourceFs,
+    ...(resolved instanceof FsInstanceStore ? {
+      msGraphToken: localMsGraphTokenManager(resolved.root, {
+        env: rest.providerCtx?.env ?? resolved.instanceEnv(), fetchImpl: rest.providerCtx?.fetchImpl,
+        log: rest.onProgress,
+      }),
+    } : {}),
     // Linked brains' sibling checkouts resolve against this instance's root.
     openLocalBrain: localBrainOpener(resolved.root),
     ...rest,

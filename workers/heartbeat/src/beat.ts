@@ -5,6 +5,7 @@ import { dateStampFor } from "../../../src/harness/run-core.js";
 import { deliverLatestReportFromStore, deliverMessage } from "../../../src/channels/registry.js";
 import { getEnv } from "../../../src/instance/env-core.js";
 import { envRecord, type Env } from "./env.js";
+import { cloudMsGraphToken } from "./msgraph-token.js";
 
 /**
  * One cloud beat: the same heartbeat the laptop runs, over the GitHub-hosted
@@ -42,6 +43,7 @@ export async function runCloudBeat(env: Env, log: (note: string) => void = conso
       store,
       cloudTier: true,
       providerCtx: { env: record },
+      msGraphToken: cloudMsGraphToken(env),
       flushPolicy: "caller", // one commit per beat, not per run
       timeZone: env.BEAT_TIMEZONE,
       onProgress: log, // console → wrangler tail

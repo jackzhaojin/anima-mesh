@@ -59,6 +59,7 @@ export interface RunCoreOptions {
    * their fetch-based access paths.
    */
   sourceFs?: SourceFs;
+  msGraphToken?: SourceContext["msGraphToken"];
   /**
    * Node tier: opens linked brains' local checkouts for the 'brains'
    * source. Workers leave it unset - links are then read over their repos.
@@ -215,6 +216,7 @@ export async function runAgentCore(options: RunCoreOptions): Promise<RunReport> 
   const sourceCtx = {
     env: providerCtx.env ?? {},
     fetchImpl: providerCtx.fetchImpl,
+    msGraphToken: options.msGraphToken,
     log: progress,
     sourceFs: options.sourceFs,
     config,
@@ -763,7 +765,9 @@ export async function instanceContext(store: InstanceStore): Promise<string> {
     for (const f of files) {
       try {
         const raw = await store.readReport(f);
-        const clipped = raw.length > MAX_REPORT_CHARS ? raw.slice(0, MAX_REPORT_CHARS) + "\n…(truncated)" : raw;
+        const clipped = raw.length > MAX_REPORT_CHARS
+          ? raw.slice(0, MAX_REPORT_CHARS) + `\n…(preview truncated: ${raw.length} characters total; request the report with a read-request block: reports: [${f}])`
+          : raw;
         parts.push(`\n### reports/${f}\n\n${clipped}`);
       } catch {
         /* report listed but unreadable — treat as absent */

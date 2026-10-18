@@ -11,7 +11,7 @@ import type { LocalFileEntry, SourceFs } from "./types.js";
  * The walk cannot know .gitignore semantics, so callers pass explicit
  * excludes; a few never-useful names are always skipped.
  */
-const ALWAYS_EXCLUDE = new Set([".git", "node_modules", ".DS_Store"]);
+const ALWAYS_EXCLUDE = new Set([".git", "node_modules", ".DS_Store", "local-only"]);
 
 function excluded(relPath: string, name: string, excludes: string[]): boolean {
   if (ALWAYS_EXCLUDE.has(name)) return true;
@@ -60,6 +60,12 @@ export const nodeSourceFs: SourceFs = {
     if (abs !== rootAbs && !abs.startsWith(rootAbs + path.sep)) {
       throw new Error(`local source: '${relPath}' escapes the source root`);
     }
-    return fs.readFile(abs, "utf8");
+    const realRoot = await fs.realpath(rootAbs);
+    const realFile = await fs.realpath(abs);
+    const relative = path.relative(realRoot, realFile);
+    if (relative === ".." || relative.startsWith(".." + path.sep) || path.isAbsolute(relative) || relative.split(path.sep).includes("local-only")) {
+      throw new Error("local source: private cache or path outside the source root is not readable");
+    }
+    return fs.readFile(realFile, "utf8");
   },
 };

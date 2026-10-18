@@ -14,6 +14,8 @@ export interface SourceContext {
   env: Record<string, string | undefined>;
   /** Injectable for the regression suite; defaults to global fetch. */
   fetchImpl?: typeof fetch;
+  /** Runtime-owned, persistent Graph credential manager; never part of a brain or prompt. */
+  msGraphToken?: () => Promise<string>;
   log?: (note: string) => void;
   /**
    * Local-filesystem capability, injected by the Node/CLI harness only —

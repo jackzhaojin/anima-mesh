@@ -97,7 +97,7 @@ export async function serveReadRequests(opts: {
   // Config-driven sources ('brains') resolve links from the reading brain's
   // own config - supplied here so no caller can forget it.
   const sourceCtx: SourceContext = { ...opts.sourceCtx, config: opts.sourceCtx.config ?? config };
-  const allowed = new Set(["bundle", ...agent.sources]);
+  const allowed = new Set(["bundle", "reports", ...agent.sources]);
   const lines: string[] = [
     "\n## Requested reads (served at your request)",
     "You asked for the files below; each is served, or its refusal stated. No further",
@@ -125,7 +125,7 @@ export async function serveReadRequests(opts: {
       lines.push(`\n#### ${label}\n\n_(refused: path escapes the jail — relative paths only, no '..')_`);
       continue;
     }
-    const room = Math.min(PER_FILE_CHARS, TOTAL_READ_CHARS - spent);
+    const room = Math.min(req.source === "reports" ? TOTAL_READ_CHARS : PER_FILE_CHARS, TOTAL_READ_CHARS - spent);
     if (room <= 0) {
       refused++;
       lines.push(`\n#### ${label}\n\n_(refused: the ${TOTAL_READ_CHARS}-char read budget is spent)_`);
@@ -133,7 +133,12 @@ export async function serveReadRequests(opts: {
     }
     try {
       let content: string;
-      if (req.source === "bundle") {
+      if (req.source === "reports") {
+        // Listing membership is required in addition to the path jail.
+        if (!(await store.listReports()).includes(req.path)) throw new Error("not found in the report listing");
+        const raw = await store.readReport(req.path);
+        content = raw.length > room ? raw.slice(0, room) + "\n…(truncated — report read budget exhausted)" : raw;
+      } else if (req.source === "bundle") {
         const raw = await store.readOptional(`${config.bundle}/${req.path}`);
         if (raw === null) throw new Error("not found in the bundle");
         content = raw.length > room ? raw.slice(0, room) + "\n…(truncated)" : raw;
@@ -174,6 +179,7 @@ export async function serveReadRequests(opts: {
 /** What a request path looks like for each source - the example names the right shape. */
 const EXAMPLE_PATHS: Record<string, string> = {
   bundle: "facts/some-concept.md",
+  reports: "<filename-from-the-report-listing>.md",
   onedrive: "Folder/File.pdf",
   "github-docs": "path/in/repo.md",
   brains: "<brain-id>/ops/calendar.md",
@@ -182,7 +188,7 @@ const EXAMPLE_PATHS: Record<string, string> = {
 };
 
 export function readRequestCapabilityLines(agent: AgentConcept): string[] {
-  const sources = ["bundle", ...agent.sources];
+  const sources = ["bundle", "reports", ...agent.sources];
   const example = agent.sources.find((s) => s in EXAMPLE_PATHS) ?? "bundle";
   return [
     "- **On-demand reads (one round):** if the task needs a specific file you can see in a listing",
