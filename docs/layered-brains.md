@@ -200,8 +200,19 @@ alone, as owner, exactly as before.
 
 What is enforced today is the approval decision. Direction senders and
 dashboard logins still come from the Workers' own allowlists
-(`DISCORD_DM_USER_ID`, `DIRECTION_GMAIL_ALLOWED_FROM`, `WEB_ALLOWED_EMAILS`);
-deriving those from member roles is on the roadmap below.
+(`DISCORD_DM_USER_ID`, `SLACK_ALLOWED_USER_IDS`, `DIRECTION_GMAIL_ALLOWED_FROM`,
+`WEB_ALLOWED_EMAILS`); deriving those from member roles is on the roadmap
+below.
+
+**Multi-player in a chat room (v2.3).** A team or org brain can live in a
+Slack channel: the brief posts there, and anyone the channel gate admits can
+@-mention the persona and get an answer in thread, with the conversation as
+context. `SLACK_ALLOWED_USER_IDS=*` with one pinned channel makes Slack's
+channel membership the allowlist. Layering composes with it. A person brain
+and its org brain can each have their own app in the same workspace, each in
+its own channel, and each answers from its own brain, reading across the
+link only what the other brain's `share:` grants allow. See
+[slack.md](slack.md).
 
 **The brain is the unit of access control.** A git repo cannot hide one file
 from someone who can clone it, so per-person visibility inside one brain is

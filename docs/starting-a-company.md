@@ -31,7 +31,7 @@ to understand before you start — the sorting checklist is in
 | `src/gates/` + `src/autonomy/` | the L1–L4 ladder, enforced in code |
 | `src/ledger/` + `src/okf/` | append-only audit + the bundle format |
 | `src/instance/` | the storage seam — read a brain from disk *or* GitHub |
-| `src/channels/` + `src/a2a/` | Discord/Gmail/Notion delivery + agent card |
+| `src/channels/` + `src/a2a/` | Discord/Slack/Gmail/Notion delivery + agent card |
 | `src/local/` | compile agent concepts into interactive terminal artifacts (`export-local`) |
 | `src/defects/` | de-identified engine-issue filing: leak guard, title dedup, per-run cap |
 | `src/init/` + `src/cli.ts` | the command surface: scaffold · validate · run · heartbeat · gate · report · deliver · card · export-local · defect · templates |
@@ -72,8 +72,8 @@ everything you've taught the engine.
 
 The engine runs your brain from **two places over the same files** (the
 storage seam): the **laptop CLI** over a local clone, and the **cloud Worker**
-over the GitHub copy. Both are writers — a cloud beat or an emailed/Discord
-direction lands as a commit authored by the mesh (e.g. `animamesh-cloud`),
+over the GitHub copy. Both are writers — a cloud beat or an emailed, Discord
+or Slack direction lands as a commit authored by the mesh (e.g. `animamesh-cloud`),
 pushed straight to your brain repo. So your local clone goes stale on its own:
 
 ```bash
@@ -217,9 +217,12 @@ The division of labor that keeps both useful:
 ## 4. Connect the principal
 
 - **Delivery** (`delivery` in config): where the daily brief lands —
-  Discord bot DM, Notion page, Gmail, or console while you're bootstrapping.
-- **Directions**: give the persona a Discord app and the principal can
-  message the mesh directly; a polled Gmail inbox does the same for email.
+  a Slack channel, Discord bot DM, Notion page, Gmail, or console while
+  you're bootstrapping.
+- **Directions**: give the persona a Slack app ([slack.md](slack.md)) and
+  your team can @-mention it in a channel, answered in thread with the
+  conversation as context; a Discord app gives the principal a `/direct`
+  command; a polled Gmail inbox does the same for email.
   Inbound is sender-gated, budget-capped, and read *agentically* — the
   agent decides the disposition, no keyword commands to memorize.
 - **Nags**: `ops/nags.md` entries repeat in every brief, with age, until

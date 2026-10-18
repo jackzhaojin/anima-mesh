@@ -19,7 +19,9 @@ Brains link to each other, and both sides must agree. The brain that owns
 the data decides what crosses: `share:` grants it, `markings:` like
 `finance` or `family` forbid it, and containment carries law down (a team
 answers to its company's constitution). Members with roles make a brain
-multi-player. Every agent wakes on its own heartbeat, reads the knowledge
+multi-player, and since v2.3 a brain can live in a Slack channel: the team
+gets the daily brief there and @-mentions the persona to ask it things,
+answered in thread by an agent that read the conversation. Every agent wakes on its own heartbeat, reads the knowledge
 its brain gives it, does the preparable work, and reports back: *"here's
 what I found, here's the draft, approve or edit."*
 
@@ -160,6 +162,14 @@ someone's world (`person`, `org`, `team`, or `group`), and brains connect
 - **Multi-player is in the data model.** `identity.members` with roles
   (owner, approver, contributor, viewer); with members declared, only an
   owner or approver may decide an approval, checked in code.
+- **Multi-player in a chat room (v2.3).** Each brain can have its own Slack
+  app in its own channel: a person brain in a private channel for one, an
+  org brain in the team channel, both in one workspace. Whoever the channel
+  gate admits (`SLACK_ALLOWED_USER_IDS`, or `*` for "whoever is in the
+  pinned channel") @-mentions the persona and gets an answer in thread;
+  bots are never heard, so two brains' agents in one room cannot loop. Each
+  answers from its own layer, reading across links only what `share:`
+  grants allow ([docs/slack.md](docs/slack.md)).
 - **Typed concepts make the twin an ontology.** A `concept-type` concept
   declares a type's properties, enums, and typed links, and conformance
   enforces it; `anima-mesh ontology` prints the type catalog and link graph
@@ -343,7 +353,7 @@ conformance and complete a full agent run against the fake provider.
 
 ## Status
 
-v2.3.0 (2026-10-18). Package name on npm to be confirmed; pinned consumers
+v2.3.2 (2026-10-18). Package name on npm to be confirmed; pinned consumers
 reference the repo by tag. **2.0 is the mesh of brains**: person, org, team,
 and group brains linked by mutual consent, owner-decided `share:` grants,
 mandatory `markings:`, inherited law down a containment chain, member roles
@@ -365,7 +375,10 @@ provenance, trust tiers, lifecycle, and staleness as frontmatter the engine
 reads, a newest-first log, and `okf trust` / `okf migrate`. **v2.3** puts
 the persona in Slack: the daily brief posts to a channel, and an @-mention
 in an allowed channel (or a DM to the app) becomes a direction answered in
-its thread, with the surrounding conversation as context.
+its thread, with the surrounding conversation as context. It runs from the
+cloud Worker (`/slack/events`) or, with no public endpoint, from the laptop
+(`slack listen`). Channel membership can be the allowlist (`*`), and cloud
+failure alerts follow each brain's own channels.
 
 The cloud tier introduced in v0.3 is the primary execution path; the CLI
 remains the bootstrap, operator, and subprocess-harness path. The 0.x lines

@@ -201,13 +201,13 @@ in git; the observability story is `git log` first, dashboard second.
 
 ## The other pulse: directions
 
-Inbound directions (`/direct` on Discord, or the polled inbox) use the same
+Inbound directions (`/direct` on Discord, an @-mention in Slack, or the polled inbox) use the same
 run machinery on a **second** Durable Object with an *immediate* alarm — a
 message enqueues and drains in seconds, not at 08:00. Two namings keep the
 pulses from interfering: direction ledger actions are `direction-*` (so the
 beat's "already ran today" check ignores them) and direction artifacts carry
 a `.direction-` infix (so brief delivery is blind to them). Full flow in
-[architecture.md](architecture.md#how-discord-messages-flow-both-directions).
+[architecture.md](architecture.md#how-chat-messages-flow-discord-and-slack-both-directions).
 
 ## Where the code lives
 

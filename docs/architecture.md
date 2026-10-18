@@ -110,9 +110,9 @@ the hub **beat notes** — a prompt section naming each blocked agent and the
 manual local run that unblocks it — so the brief nags the principal instead
 of letting the missing report pass as a quiet day.
 
-## How Discord messages flow (both directions)
+## How chat messages flow (Discord and Slack, both directions)
 
-**Inbound — a direction (flows ① and ② on the diagram):**
+**Inbound — a direction over Discord (flows ① and ② on the diagram):**
 
 1. The principal runs `/direct <message>` in the persona's DM. Discord POSTs
    to the Worker's `/interactions` with an Ed25519 signature; the Worker
@@ -141,12 +141,44 @@ ledger actions are `direction-*` (never `run-*`, so the heartbeat's
 `{date}-{agent}.direction-{runid}.md` (the dot keeps brief delivery blind
 to them).
 
+**Inbound: a direction over Slack, in a group (v2.3).** the same queue
+behind a door shaped for shared channels.
+
+1. Someone @-mentions the persona in a channel it was invited to (or DMs the
+   app). Slack POSTs to `/slack/events`; the Worker checks the HMAC-SHA256
+   signature against the app's signing secret with a five-minute replay
+   window (401 otherwise) and answers Slack's `url_verification` handshake.
+2. Only `app_mention` and app DMs count. Bot-authored messages and edits are
+   dropped, so two agents in one channel cannot talk each other into a
+   loop.
+3. The **sender and room gates** (`slackSenderAllowed`, shared with the
+   laptop door): `SLACK_ALLOWED_USER_IDS` (absent = nobody; `*` = whoever
+   can post in the channels `SLACK_ALLOWED_CHANNEL_IDS` pins, never DMs) and
+   the pinned channel list. Denials are silent and ledgered.
+4. Slack retries an event it thinks was missed; `DirectionDO` dedups by
+   `event_id`, so one mention is one run. The budget is the same counter
+   Discord and email share; over cap, only the sender sees an ephemeral note.
+5. The Worker answers 200 inside Slack's 3 seconds and puts 👀 on the
+   mention. The drain reads the thread (or the channel's recent messages)
+   as untrusted context, runs with `audience: "group"` (the prompt says the
+   room reads the reply and the sender may be a teammate), commits, then
+   replies in the mention's thread. The conversation context is read for
+   the run and never committed.
+
+A brain with no cloud tier gets the same pipeline from the laptop:
+`anima-mesh slack listen` polls the channel with the bot token, dedups
+against the ledger, and replies in thread. Setup and an app manifest:
+[slack.md](slack.md).
+
 **Outbound — the daily brief (flow ③):** the beat's last agent is the hub;
-its report is delivered as a Discord bot DM (or Notion/Gmail/console — the
-channel registry is pluggable). Failure DMs use the same path: silence must
-mean success. Long reports are never truncated: anything over Discord's
+its report goes to the brain's `delivery.channels`: a Discord bot DM, a
+Slack channel (head in the channel, the rest threaded under it), Notion,
+Gmail or console. The channel registry is pluggable. Failure alerts follow
+the same channels (Slack and/or Discord; v2.3.2): silence must mean
+success. Long reports are never truncated: anything over a channel's
 message ceiling is split at paragraph boundaries and sent as sequential
-messages (`CONTENT_LIMIT` 1900 in `src/channels/discord.ts`).
+messages (`CONTENT_LIMIT` 1900 for Discord, 11,000 per Slack `markdown`
+block).
 
 **Inbound — email:** the same `DirectionDO` alarm optionally polls a Gmail
 inbox (`from:<principal> is:unread`), re-checks the sender client-side,
@@ -183,6 +215,6 @@ and allowed sender are instance vars; unset = off.
 
 Every layer has a local, deterministic harness: workerd-local suites for
 both Workers (`@cloudflare/vitest-pool-workers` with mocked GitHub/Discord/
-vendor edges), the engine regression suite with the `fake` provider, a
+Slack/vendor edges), the engine regression suite with the `fake` provider, a
 golden-day flight recorder, and env-gated live seams (`LIVE_*`) for real
 vendors. `pnpm verify` runs all of it. See [test/README.md](../test/README.md).

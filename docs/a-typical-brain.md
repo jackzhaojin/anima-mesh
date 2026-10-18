@@ -87,7 +87,8 @@ What the principal actually experiences, on a day the laptop stays closed:
    agents), the hub runs last and writes the brief.
 2. **08:0x** — one commit lands in the brain repo:
    `beat(cloud): 2026-07-19 — 3 run(s), 0 failure(s)`. Only after it lands
-   does the brief arrive as a Discord DM — evidence before words.
+   does the brief arrive in the team's Slack channel (a Discord DM before
+   2026-10) — evidence before words.
 3. **Over coffee** — the brief leads with the nags (the principal opted
    into being bugged), then: what happened, what needs a decision today
    with the specific approve/edit ask, what the spokes do next. When a

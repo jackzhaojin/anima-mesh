@@ -98,7 +98,14 @@ everything builds in temp dirs via `helpers.ts` and runs against
 - **channels.test.ts / heartbeat-card.test.ts** — delivery channels against
   mocked fetch (env injection, per-channel auth failures); heartbeat
   due/skip/dedup semantics; the agent card excludes dual-gated agents and
-  declares `streaming: false`.
+  declares `streaming: false`. Slack delivery: markdown blocks, a long brief
+  threaded under its head, Slack's HTTP-200 `ok:false` treated as failure.
+- **slack-listen.test.ts**: the laptop-tier Slack ear (v2.3.1-v2.3.2):
+  answers an allowlisted mention in its thread after the evidence, the
+  ledger as the dedup (a second pass answers nothing), denials recorded
+  once, bots never heard, a refusal to start with nobody allowlisted, and
+  the shared `slackSenderAllowed` rule (`*` only with a pinned channel
+  list, never for DMs).
 - **providers-moonshot.test.ts / providers-anthropic.test.ts /
   providers-claude-sdk.test.ts** — the API providers against mocked fetch / a
   mocked SDK module (never a subprocess): request shape, retry/backoff,
@@ -151,7 +158,7 @@ everything builds in temp dirs via `helpers.ts` and runs against
 
 `pnpm test:worker` (included in `pnpm verify`) runs vitest inside workerd
 via `@cloudflare/vitest-pool-workers`: the deployed-shape Worker with its
-Durable Object, all outbound services (GitHub, Kimi, Discord) scripted with
+Durable Object, all outbound services (GitHub, Kimi, Discord, Slack) scripted with
 `fetchMock` — one-shot interceptors with exact call counts, so the mock plan
 IS the expected traffic (`assertNoPendingInterceptors` in every afterEach).
 
@@ -165,12 +172,22 @@ IS the expected traffic (`assertNoPendingInterceptors` in every afterEach).
 - **beat-e2e.test.ts** — a full cloud beat end-to-end in workerd: snapshot →
   due decision → Kimi cognition → report + ledger → ONE commit (force:false,
   `animamesh-cloud`) → Discord DM; same-day dedup; an agent-level provider
-  failure that the beat survives and reports.
+  failure that the beat survives and reports; failure alerts that follow
+  the brain's delivery channels (a brain moved to Slack never hears from
+  Discord).
 - **interactions.test.ts** — the inbound Discord door: Ed25519 signature
   checks (PING/PONG, 401 on bad or unsigned), the sender gate (a stranger
   gets silence and the attempt folds into the next drain's ONE commit), the
   daily budget gate, and the full deferred flow — defer → cognition → one
   evidence commit → followup reply, honest even when the run fails.
+- **slack-events.test.ts**: the inbound Slack door (v2.3): HMAC signature
+  and the five-minute replay window (checked against Slack's published test
+  vector), the url_verification handshake, bots and edits dropped, the
+  sender and channel gates, event_id dedup against Slack's retries, the full
+  flow (👀 → channel or thread context → one evidence commit → threaded
+  markdown reply, with other people's words kept out of the repo), a DM as a
+  direct audience, a missing history scope degrading to no context, and the
+  ephemeral budget notice.
 - **direction-gmail.test.ts** — the Gmail poll cycle: unread principal mail →
   agentic run → ONE commit → reply email → mark read; a processed message id
   never runs twice; over-budget mail stays unread and unspent (eligible
