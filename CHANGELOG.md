@@ -3,7 +3,7 @@
 This history is organized by **minor release line** (and, from 2.0, major):
 the capability boundary operators actually adopt. Patch tags are deliberately
 rolled into the value and maturity of their minor rather than narrated one by
-one. The latest tag is **v2.3.2**.
+one. The latest tag is **v2.3.3**.
 
 ## Upgrade procedure
 
@@ -30,17 +30,37 @@ The ledger remains append-only; never "migrate" it by editing old entries.
 
 ## [Unreleased]
 
-- **Core brain feedback setup.** `init` includes a shared
+- Nothing yet.
+
+## [v2.3.x] - Slack: the persona in a group setting
+
+**Latest tag: v2.3.3 · 2026-10-18**
+
+**Read-only Drive search and image inspection (#18).** Agents declaring
+`google-drive` can search file/folder metadata across all modification
+dates, follow folder ids, and inspect explicit image requests with vision
+providers. Beats and directions share four bounded retrieval rounds,
+eight requests, 32K text characters, and two images of at most 4 MiB each.
+Recent listings expose their window, pagination, and incomplete searches.
+Inputs remain `drive.readonly`; image bytes are ephemeral, and subsequent
+model text is redacted before storage. Verified with an agentic cloud
+direction that searched older files, inspected one image, committed its
+evidence, and replied in Slack. No private filenames, ids, or payloads are
+included in this release record.
+
+**Upgrade:** redeploy the heartbeat/direction Worker from this patch and
+update the brain's engine pin. Existing `GOOGLE_READ_*` credentials and
+the agent's `context-sources: [google-drive]` grant are sufficient; no
+scope expansion or re-consent is needed. Other agents retain one retrieval
+round. See [request formats and budgets](docs/layered-brains.md#search-older-drive-files-and-inspect-images).
+
+**Core brain feedback setup.** `init` includes a shared
   `ops/engine-feedback.md` runbook in every brain kind, and both hub
   templates read it. The sample brain and setup guidance cover the narrow
   L3 `defect-report` grant, configured engine target, dedicated runtime
   credential, privacy review, and filed/drafted/denied evidence. New hubs
   still start at L1. Existing brains can adopt the runbook and add it to
   the hub's `reads:` without rewriting their ledger or constitution.
-
-## [v2.3.x] - Slack: the persona in a group setting
-
-**Latest tag: v2.3.2 · 2026-10-18**
 
 **Channel membership as the allowlist, and alerts that follow the brain.**
 `SLACK_ALLOWED_USER_IDS=*` lets whoever can post in the channels

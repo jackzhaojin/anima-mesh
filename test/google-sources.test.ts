@@ -6,6 +6,9 @@ import {
   readGmailMessage,
   driveSection,
   readDriveFile,
+  searchDrive,
+  readDriveImage,
+  DRIVE_IMAGE_MAX_BYTES,
   GOOGLE_READ_SCOPES,
 } from "../src/sources/google.js";
 import { sourceSections } from "../src/sources/registry.js";
@@ -189,6 +192,88 @@ describe("google-calendar source", () => {
 });
 
 describe("google-drive source", () => {
+  it("searches older files and direct folder children with escaped filters and visible pagination", async () => {
+    const mock = googleFetch([[/\/drive\/v3\/files\?q=/, () => Response.json({
+      files: [{ id: "OlderPortrait001", name: "headshot.png", mimeType: "image/png", modifiedTime: "2010-01-01T00:00:00Z", parents: ["FolderArchive001"] }],
+      nextPageToken: "next-page", incompleteSearch: true,
+    })]]);
+    const result = await searchDrive({ env: { ...ENV, GDRIVE_READ_QUERY: "ownedByMe = true" }, fetchImpl: mock.fetchImpl, timeZone: "UTC" },
+      { name: "author's \\ headshot", folder: "FolderArchive001", mimeType: "image/", limit: 100, pageToken: "previous-page" });
+    const url = new URL(mock.calls.find((u) => u.includes("/files?q="))!);
+    const q = url.searchParams.get("q")!;
+    expect(q).toContain("name contains 'author\\'s \\\\ headshot'");
+    expect(q).toContain("'FolderArchive001' in parents");
+    expect(q).toContain("mimeType contains 'image/'");
+    expect(q).toContain("(ownedByMe = true)");
+    expect(q).not.toContain("modifiedTime >");
+    expect(url.searchParams.get("pageSize")).toBe("25");
+    expect(url.searchParams.get("pageToken")).toBe("previous-page");
+    expect(url.searchParams.get("fields")).toContain("nextPageToken,incompleteSearch");
+    expect(result).toContain("across all modification dates");
+    expect(result).toContain("2010-01-01");
+    expect(result).toContain("next-page");
+    expect(result).toContain("partial listing");
+    expect(result).toContain("incompleteSearch");
+  });
+
+  it("refuses malformed or unrestricted search requests before any OAuth or Drive call", async () => {
+    const mock = googleFetch([]);
+    for (const query of [{}, { q: "trashed = true" }, { folder: "https://example.com" }, { name: "x".repeat(257) },
+      { name: "x", mimeType: "image/' or trashed = true" }, { name: "x", limit: 0 }, { name: "x", limit: 1.5 }, { name: "x", pageToken: "x".repeat(4097) }]) {
+      await expect(searchDrive({ env: ENV, fetchImpl: mock.fetchImpl }, query)).rejects.toThrow();
+    }
+    expect(mock.calls).toEqual([]);
+  });
+
+  it("states when the ambient recent list has more results, even on an empty page", async () => {
+    const mock = googleFetch([[/\/drive\/v3\/files\?q=/, () => Response.json({ files: [], nextPageToken: "more-results" })]]);
+    const section = await driveSection({ env: ENV, fetchImpl: mock.fetchImpl });
+    expect(section).toContain("modified since");
+    expect(section).toContain("Listing limit: 25");
+    expect(section).toContain("partial listing");
+    expect(section).toContain("not a full inventory");
+  });
+
+  it("serves explicit image bytes with a bounded read and never accepts arbitrary fetch URLs", async () => {
+    const bytes = Uint8Array.from([137, 80, 78, 71, 13, 10, 26, 10]);
+    const mock = googleFetch([
+      [/\/files\/ImageSample001\?fields=/, () => Response.json({ id: "ImageSample001", name: "Portrait.png", mimeType: "image/png", size: String(bytes.length) })],
+      [/\/files\/ImageSample001\?alt=media/, () => new Response(bytes)],
+    ]);
+    const result = await readDriveImage({ env: ENV, fetchImpl: mock.fetchImpl }, "ImageSample001");
+    expect(result.bytes).toBe(bytes.length);
+    expect(result.image.mediaType).toBe("image/png");
+    expect(result.image.data).toBe(Buffer.from(bytes).toString("base64"));
+    const count = mock.calls.length;
+    await expect(readDriveImage({ env: ENV, fetchImpl: mock.fetchImpl }, "https://attacker.example/image.png")).rejects.toThrow(/file id/);
+    expect(mock.calls).toHaveLength(count);
+  });
+
+  it("enforces image size both before download and while streaming when metadata understates it", async () => {
+    let downloads = 0;
+    const mock = googleFetch([
+      [/\/files\/ImageTooLarge01\?fields=/, () => Response.json({ mimeType: "image/png", size: String(DRIVE_IMAGE_MAX_BYTES + 1) })],
+      [/\/files\/ImageLiesSize01\?fields=/, () => Response.json({ mimeType: "image/png", size: "1" })],
+      [/\?alt=media/, () => { downloads++; return new Response(new Uint8Array(DRIVE_IMAGE_MAX_BYTES + 1)); }],
+    ]);
+    const ctx = { env: ENV, fetchImpl: mock.fetchImpl };
+    await expect(readDriveImage(ctx, "ImageTooLarge01")).rejects.toThrow(/4 MiB/);
+    expect(downloads).toBe(0);
+    await expect(readDriveImage(ctx, "ImageLiesSize01")).rejects.toThrow(/4 MiB/);
+    expect(downloads).toBe(1);
+  });
+
+  it("rejects unsupported formats and a response that is not the declared image", async () => {
+    const mock = googleFetch([
+      [/\/files\/ImageVector001\?fields=/, () => Response.json({ mimeType: "image/svg+xml" })],
+      [/\/files\/ImageBadBytes1\?fields=/, () => Response.json({ mimeType: "image/png", size: "20" })],
+      [/\?alt=media/, () => new Response("<html>not an image</html>")],
+    ]);
+    const ctx = { env: ENV, fetchImpl: mock.fetchImpl };
+    await expect(readDriveImage(ctx, "ImageVector001")).rejects.toThrow(/JPEG, PNG, GIF/);
+    expect(mock.calls.some((url) => url.includes("alt=media"))).toBe(false);
+    await expect(readDriveImage(ctx, "ImageBadBytes1")).rejects.toThrow(/does not match/);
+  });
   it("lists recent file names (no contents) with ids, under an UNTRUSTED banner", async () => {
     const mock = googleFetch([
       [

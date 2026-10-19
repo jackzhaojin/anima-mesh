@@ -1,6 +1,7 @@
 import type { SourceContext } from "./types.js";
 import { getEnv } from "../instance/env-core.js";
 import { extractPdfText } from "./msgraph.js";
+import type { ProviderImage } from "../providers/types.js";
 
 /**
  * The principal's own Google account as READ context - Gmail ('gmail'),
@@ -35,9 +36,13 @@ import { extractPdfText } from "./msgraph.js";
  * Drive lists names only; file CONTENTS reach a prompt only through a
  * read-request (`google-drive: [<file-id>]`): Docs/Slides as text, Sheets
  * as CSV, text files as-is, PDFs extracted - all clipped and redacted.
+ * Structured google-drive-search requests search metadata across all dates;
+ * explicit google-drive-image requests pass bounded pixels to vision
+ * providers. Pixel inputs cannot be text-redacted and remain ephemeral;
+ * text generated after image reads is redacted before storage.
  *
  * Two safety properties live in code, not prompts:
- * - Everything inlined passes redactSensitive(): card/account-length digit
+ * - Inlined text passes redactSensitive(): card/account-length digit
  *   runs, SSNs, one-time codes, and "password: …" values never reach a
  *   prompt or a report.
  * - Every section is framed as UNTRUSTED third-party text: instructions
@@ -408,6 +413,7 @@ interface DriveFile {
   modifiedTime?: string;
   size?: string;
   ownedByMe?: boolean;
+  parents?: string[];
 }
 
 export interface DriveItem {
@@ -416,6 +422,15 @@ export interface DriveItem {
   kind: string;
   modified: string;
   ownedByMe: boolean;
+  parents?: string[];
+}
+
+export interface DriveListing {
+  window: string;
+  items: DriveItem[];
+  limit?: number;
+  nextPageToken?: string;
+  incompleteSearch?: boolean;
 }
 
 const FOLDER_MIME = "application/vnd.google-apps.folder";
@@ -438,8 +453,30 @@ function driveKind(mimeType: string | undefined, name: string): string {
   return ext ? ext.toLowerCase() : mimeType;
 }
 
-export async function listDrive(ctx: SourceContext): Promise<{ window: string; items: DriveItem[] }> {
+function driveItem(f: DriveFile, ctx: SourceContext): DriveItem {
+  const name = f.name ?? "(untitled)";
+  return {
+    id: f.id, name: redactSensitive(name), kind: driveKind(f.mimeType, name),
+    modified: f.modifiedTime ? `${dayIn(new Date(f.modifiedTime), ctx.timeZone)} ${timeIn(new Date(f.modifiedTime), ctx.timeZone)}` : "?",
+    ownedByMe: f.ownedByMe !== false,
+    ...(f.parents ? { parents: f.parents } : {}),
+  };
+}
+
+async function drivePage(ctx: SourceContext, q: string, limit: number, pageToken?: string): Promise<Omit<DriveListing, "window">> {
   const token = await googleReadAccessToken(ctx);
+  const url = `${DRIVE_API}/files?q=${encodeURIComponent(q)}&orderBy=modifiedTime%20desc&pageSize=${limit}` +
+    `&fields=${encodeURIComponent("nextPageToken,incompleteSearch,files(id,name,mimeType,modifiedTime,ownedByMe,parents)")}` +
+    `&includeItemsFromAllDrives=true&supportsAllDrives=true${pageToken ? `&pageToken=${encodeURIComponent(pageToken)}` : ""}`;
+  const page = await getJson<{ files?: DriveFile[]; nextPageToken?: string; incompleteSearch?: boolean }>(ctx, token, url);
+  return {
+    items: (page.files ?? []).map((f) => driveItem(f, ctx)), limit,
+    ...(page.nextPageToken ? { nextPageToken: page.nextPageToken } : {}),
+    ...(page.incompleteSearch ? { incompleteSearch: true } : {}),
+  };
+}
+
+export async function listDrive(ctx: SourceContext): Promise<DriveListing> {
   const now = ctx.now ?? new Date();
   const daysRaw = Number(getEnv(ctx.env, "GDRIVE_READ_DAYS") || DEFAULT_DRIVE_DAYS);
   const days = Number.isFinite(daysRaw) && daysRaw > 0 ? daysRaw : DEFAULT_DRIVE_DAYS;
@@ -450,31 +487,15 @@ export async function listDrive(ctx: SourceContext): Promise<{ window: string; i
   const q = [`trashed = false`, `mimeType != '${FOLDER_MIME}'`, `modifiedTime > '${since.toISOString()}'`, extra ? `(${extra})` : ""]
     .filter(Boolean)
     .join(" and ");
-  const url =
-    `${DRIVE_API}/files?q=${encodeURIComponent(q)}&orderBy=modifiedTime%20desc&pageSize=${max}` +
-    `&fields=${encodeURIComponent("files(id,name,mimeType,modifiedTime,ownedByMe)")}` +
-    `&includeItemsFromAllDrives=true&supportsAllDrives=true`;
-  const page = await getJson<{ files?: DriveFile[] }>(ctx, token, url);
-  const items = (page.files ?? []).map((f) => {
-    const name = f.name ?? "(untitled)";
-    return {
-      id: f.id,
-      name: redactSensitive(name),
-      kind: driveKind(f.mimeType, name),
-      modified: f.modifiedTime ? `${dayIn(new Date(f.modifiedTime), ctx.timeZone)} ${timeIn(new Date(f.modifiedTime), ctx.timeZone)}` : "?",
-      ownedByMe: f.ownedByMe !== false,
-    };
-  });
-  return { window: `modified since ${dayIn(since, ctx.timeZone)}${extra ? `, matching \`${extra}\`` : ""}`, items };
+  return { window: `modified since ${dayIn(since, ctx.timeZone)}${extra ? `, matching \`${redactSensitive(extra)}\`` : ""}`, ...await drivePage(ctx, q, max) };
 }
 
-export function driveMarkdown(drive: { window: string; items: DriveItem[] }): string {
-  if (drive.items.length === 0) return `_(no files ${drive.window})_`;
+export function driveMarkdown(drive: DriveListing): string {
   const lines: string[] = [];
   let used = 0;
   let dropped = 0;
   for (const f of drive.items) {
-    const entry = `- **${f.name}** - ${f.kind} · ${f.modified}${f.ownedByMe ? "" : " · shared with the principal"} · id \`${f.id}\``;
+    const entry = `- **${f.name}** - ${f.kind} · ${f.modified}${f.ownedByMe ? "" : " · shared with the principal"} · id \`${f.id}\`${f.parents?.length ? ` · parent ids: ${f.parents.join(", ")}` : ""}`;
     if (used + entry.length > DRIVE_SECTION_CHARS) {
       dropped++;
       continue;
@@ -483,7 +504,87 @@ export function driveMarkdown(drive: { window: string; items: DriveItem[] }): st
     lines.push(entry);
   }
   if (dropped > 0) lines.push(`\n(${dropped} more file(s) not shown - the section budget is spent)`);
+  if (drive.items.length === 0) lines.push(`_(no files returned ${drive.window})_`);
+  lines.push(`\nListing limit: ${drive.limit ?? drive.items.length}; shown ${drive.items.length - dropped} of ${drive.items.length} returned.`);
+  if (drive.nextPageToken) lines.push(`More results exist; nextPageToken: \`${drive.nextPageToken}\`. This is a partial listing, not the whole Drive.`);
+  if (drive.incompleteSearch) lines.push("Google reports incompleteSearch: some accessible drives were not fully searched; narrow the query.");
   return lines.join("\n");
+}
+
+const DRIVE_ID = /^(?:root|[A-Za-z0-9_-]{10,128})$/;
+const driveLiteral = (text: string) => text.replace(/\\/g, "\\\\").replace(/'/g, "\\'");
+
+/** One bounded metadata page, with no recency constraint and no model-supplied raw q. */
+export async function searchDrive(ctx: SourceContext, input: unknown): Promise<string> {
+  const query = typeof input === "string" ? { name: input } : input;
+  if (!query || typeof query !== "object" || Array.isArray(query)) throw new Error("Drive search needs name, folder, or mimeType filters");
+  const q = query as Record<string, unknown>;
+  const fields = ["name", "folder", "mimeType", "limit", "pageToken"];
+  if (Object.keys(q).some((k) => !fields.includes(k))) throw new Error(`Drive search accepts only ${fields.join(", ")}; arbitrary Drive q is not allowed`);
+  for (const key of ["name", "folder", "mimeType", "pageToken"]) {
+    if (q[key] !== undefined && (typeof q[key] !== "string" || !(q[key] as string).trim() || (q[key] as string).length > (key === "pageToken" ? 4096 : 256))) {
+      throw new Error(`Drive search ${key} must be a bounded non-empty string`);
+    }
+  }
+  const { name, folder, mimeType, pageToken } = q as { name?: string; folder?: string; mimeType?: string; pageToken?: string };
+  if (!name && !folder && !mimeType) throw new Error("Drive search needs name, folder, or mimeType (use folder: root for a root listing)");
+  if (folder && !DRIVE_ID.test(folder)) throw new Error("Drive search folder must be a folder id or root, not a path or URL");
+  if (mimeType && !/^[a-zA-Z0-9.+-]+\/[a-zA-Z0-9.+-]*$/.test(mimeType)) throw new Error("Drive search mimeType must be a MIME type or prefix such as image/");
+  if (q.limit !== undefined && (typeof q.limit !== "number" || !Number.isInteger(q.limit) || q.limit < 1)) throw new Error("Drive search limit must be a positive integer (capped at 25)");
+  const limit = Math.min(25, (q.limit as number | undefined) ?? 15);
+  const extra = getEnv(ctx.env, "GDRIVE_READ_QUERY")?.trim();
+  const clauses = ["trashed = false"];
+  if (name) clauses.push(`name contains '${driveLiteral(name)}'`);
+  if (folder) clauses.push(`'${driveLiteral(folder)}' in parents`);
+  if (mimeType) clauses.push(`mimeType ${mimeType.endsWith("/") ? "contains" : "="} '${driveLiteral(mimeType)}'`);
+  if (extra) clauses.push(`(${extra})`);
+  const listing: DriveListing = {
+    window: `across all modification dates; query ${redactSensitive(JSON.stringify(query))}${extra ? "; operator GDRIVE_READ_QUERY also applies" : ""}`,
+    ...await drivePage(ctx, clauses.join(" and "), limit, pageToken),
+  };
+  return `UNTRUSTED Google Drive search metadata (${listing.window}). A folder filter lists direct children; follow returned folder ids to browse deeper.\n${driveMarkdown(listing)}`;
+}
+
+export const DRIVE_IMAGE_MAX_BYTES = 4 * 1024 * 1024;
+
+/** Explicit vision read; only Google API URLs receive the account credential. */
+export async function readDriveImage(ctx: SourceContext, id: string): Promise<{ image: ProviderImage; bytes: number }> {
+  if (!/^[A-Za-z0-9_-]{10,128}$/.test(id)) throw new Error("Drive image reads name a file id, not a URL or path");
+  const token = await googleReadAccessToken(ctx);
+  const url = `${DRIVE_API}/files/${encodeURIComponent(id)}`;
+  const meta = await getJson<DriveFile>(ctx, token, `${url}?fields=id,name,mimeType,size&supportsAllDrives=true`);
+  const mime = meta.mimeType;
+  if (!["image/jpeg", "image/png", "image/gif", "image/webp"].includes(mime ?? "")) throw new Error("Vision reads support JPEG, PNG, GIF (first frame), or WebP images only");
+  if (Number(meta.size ?? 0) > DRIVE_IMAGE_MAX_BYTES) throw new Error("Drive image exceeds the 4 MiB image read cap");
+  const res = await doFetch(ctx)(`${url}?alt=media&supportsAllDrives=true`, { headers: { Authorization: `Bearer ${token}` } });
+  if (!res.ok) throw await googleHttpError(url, res);
+  if (Number(res.headers.get("content-length") ?? 0) > DRIVE_IMAGE_MAX_BYTES) { await res.body?.cancel(); throw new Error("Drive image exceeds the 4 MiB image read cap"); }
+  const reader = res.body?.getReader();
+  if (!reader) throw new Error("Drive image returned no body");
+  const chunks: Uint8Array[] = [];
+  let size = 0;
+  try {
+    while (true) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      size += value.length;
+      if (size > DRIVE_IMAGE_MAX_BYTES) throw new Error("Drive image exceeds the 4 MiB image read cap");
+      chunks.push(value);
+    }
+  } catch (err) { await reader.cancel(); throw err; }
+  if (!size) throw new Error("Drive image returned an empty body");
+  const bytes = new Uint8Array(size);
+  let offset = 0;
+  for (const chunk of chunks) { bytes.set(chunk, offset); offset += chunk.length; }
+  const ascii = (from: number, to: number) => String.fromCharCode(...bytes.subarray(from, to));
+  const isImage = mime === "image/png" ? [137, 80, 78, 71, 13, 10, 26, 10].every((b, i) => bytes[i] === b)
+    : mime === "image/jpeg" ? bytes[0] === 255 && bytes[1] === 216 && bytes[2] === 255
+    : mime === "image/gif" ? ["GIF87a", "GIF89a"].includes(ascii(0, 6))
+    : ascii(0, 4) === "RIFF" && ascii(8, 12) === "WEBP";
+  if (!isImage) throw new Error("Drive response does not match its declared image format; no pixels attached");
+  let binary = "";
+  for (let i = 0; i < bytes.length; i += 8192) binary += String.fromCharCode(...bytes.subarray(i, i + 8192));
+  return { image: { mediaType: mime as ProviderImage["mediaType"], data: btoa(binary), label: redactSensitive(`google-drive: ${id} (${meta.name ?? "image"})`) }, bytes: size };
 }
 
 /** One Drive file as redacted text (read-request `google-drive: [<file-id>]`). */
@@ -508,7 +609,7 @@ export async function readDriveFile(
     if (size > cap) throw new Error(`'${name}' is ${Math.round(size / 1024)} KB - over the ${Math.round(cap / 1024)} KB read cap`);
     url = `${fileUrl}?alt=media&supportsAllDrives=true`;
   } else {
-    throw new Error(`'${name}' is ${driveKind(mime, name)} (${mime || "unknown type"}) - only Docs, Sheets, Slides, text, and PDFs are readable`);
+    throw new Error(`'${name}' is ${driveKind(mime, name)} (${mime || "unknown type"}) - only Docs, Sheets, Slides, text, and PDFs are readable as text; use google-drive-image for supported images on a vision provider`);
   }
 
   const res = await doFetch(ctx)(url, { headers: { Authorization: `Bearer ${token}` } });
@@ -578,6 +679,9 @@ export async function driveSection(ctx: SourceContext): Promise<string> {
       `${heading}\n\nLive this run: files ${drive.window}${ctx.timeZone ? ` (${ctx.timeZone})` : ""}, most recent first ` +
       `(${drive.items.length}). Names and dates are current facts; CONTENTS are not shown. To read one file, name its id ` +
       `in a read-request (\`google-drive: [<file-id>]\`) - Docs and Slides as text, Sheets as CSV, PDFs extracted, all redacted.` +
+      ` This recent window is not a full inventory. Use google-drive-search for name, folder, or MIME filters across all dates,` +
+      ` and google-drive-image for explicit image inspection when the provider supports vision. Follow the read-request operating rules.` +
+      ` Start a structured search without the recent listing's page token; cursors belong to their original filters.` +
       `\n\n> ${UNTRUSTED}\n\n${driveMarkdown(drive)}`
     );
   } catch (err) {

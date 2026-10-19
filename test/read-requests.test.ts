@@ -6,7 +6,7 @@ import { runAgent } from "../src/harness/run.js";
 import { runDirectionCore, type DirectionMessage } from "../src/harness/direction-core.js";
 import { FsInstanceStore } from "../src/instance/store-fs.js";
 import { FakeProvider } from "../src/providers/fake.js";
-import { parseReadRequests, stripReadRequests } from "../src/harness/read-requests.js";
+import { parseReadRequests, stripReadRequests, MAX_DRIVE_READ_ROUNDS, TOTAL_READ_CHARS } from "../src/harness/read-requests.js";
 import { createAnthropicApiProvider } from "../src/providers/anthropic-api.js";
 
 /**
@@ -54,6 +54,138 @@ function askingProvider(block: string, finalText = "Final report: grounded in AL
 }
 
 const REQUEST_BLOCK = "```read-request\nbundle: [cabinet/legal.md]\n```";
+
+describe("Google Drive search followed by visual inspection (issue #18)", () => {
+  const googleEnv = { GOOGLE_READ_CLIENT_ID: "cid", GOOGLE_READ_CLIENT_SECRET: "secret", GOOGLE_READ_REFRESH_TOKEN: "refresh" };
+  const imageData = "iVBORw0KGgo=";
+  const block = (yaml: string) => `\`\`\`read-request\n${yaml}\n\`\`\``;
+  const driveAgent = () => concept("agent", {
+    name: "hub", title: "Hub", level: "L1", model: "test-model", harness: "fake", heartbeat: "daily", "context-sources": ["google-drive"],
+  }, "Find the requested file, then inspect its image.");
+
+  it.each(["beat", "direction"])("%s follows actual search and folder results before sending pixels, with no bytes in stored evidence", async (entrypoint) => {
+    const root = await makeInstance({ "bundle/agents/hub.md": driveAgent() });
+    const calls: { url: string; method: string }[] = [];
+    const fetchImpl: typeof fetch = async (input, init) => {
+      const url = new URL(String(input));
+      calls.push({ url: url.href, method: init?.method ?? "GET" });
+      if (url.hostname === "oauth2.googleapis.com") return Response.json({ access_token: "access-test" });
+      if (url.pathname.endsWith("/files")) {
+        const q = url.searchParams.get("q")!;
+        if (q.includes("modifiedTime >")) return Response.json({ files: [] });
+        if (q.includes("name contains 'Archive'")) return Response.json({ files: [{ id: "FolderArchive001", name: "Archive", mimeType: "application/vnd.google-apps.folder" }] });
+        expect(q).toContain("'FolderArchive001' in parents");
+        return Response.json({ files: [{ id: "OldPortrait00001", name: "headshot.png", mimeType: "image/png", modifiedTime: "2000-01-01T00:00:00Z" }] });
+      }
+      expect(url.pathname).toContain("OldPortrait00001");
+      return url.searchParams.get("alt") === "media"
+        ? new Response(Buffer.from(imageData, "base64"))
+        : Response.json({ id: "OldPortrait00001", name: "headshot.png", mimeType: "image/png", size: "8" });
+    };
+    const outputs = [
+      block("google-drive-search: [{name: Archive, mimeType: application/vnd.google-apps.folder}]"),
+      block("google-drive-search: [{folder: FolderArchive001, name: headshot, mimeType: 'image/'}]"),
+      block("google-drive-image: [OldPortrait00001]"),
+      "The image has a warm background. Printed account 000123456789; SSN 123-45-6789.",
+    ];
+    let index = 0;
+    const provider = new FakeProvider(() => ({ text: outputs[index++]! }), { fileReads: false, webSearch: false, vision: true });
+    const providerCtx = { env: googleEnv, fetchImpl };
+    const report = entrypoint === "beat"
+      ? await runAgent({ instanceRoot: root, agentName: "hub", provider, providerCtx, timeZone: "UTC" })
+      : await runDirectionCore({ store: new FsInstanceStore(root), agentName: "hub", provider, providerCtx, timeZone: "UTC",
+          message: { channel: "test", sender: "operator", text: "Find the old portrait and describe the background.", receivedAt: new Date().toISOString() } });
+    expect(report.ok).toBe(true);
+    expect(provider.calls).toHaveLength(4);
+    expect(provider.calls[1]!.prompt).toContain("FolderArchive001");
+    expect(provider.calls[2]!.prompt).toContain("2000-01-01");
+    expect(provider.calls[2]!.images).toBeUndefined();
+    expect(provider.calls[3]!.images).toEqual([{ mediaType: "image/png", data: imageData, label: "google-drive: OldPortrait00001 (headshot.png)" }]);
+    const artifact = await readFile(report.reportPath, "utf8");
+    const ledger = await readFile(path.join(root, "ledger/actions.jsonl"), "utf8");
+    expect(artifact).toContain("warm background");
+    for (const text of [artifact, ledger]) {
+      expect(text).not.toContain(imageData);
+      expect(text).not.toContain("access-test");
+      expect(text).not.toContain("000123456789");
+      expect(text).not.toContain("123-45-6789");
+    }
+    const reads = ledger.trim().split("\n").map((line) => JSON.parse(line)).filter((e) => e.action === "reads-requested");
+    expect(reads).toHaveLength(3);
+    expect(reads[2].detail).toMatchObject({ images: 1, imageBytes: 8, round: 3 });
+    expect(calls.filter((c) => c.url.includes("/drive/")).every((c) => c.method === "GET")).toBe(true);
+  });
+
+  it("refuses virtual Drive sources without the underlying source grant", async () => {
+    const root = await makeInstance();
+    let networkCalls = 0;
+    const provider = askingProvider(block("google-drive-search: [{name: portrait}]\ngoogle-drive-image: [OldPortrait00001]"));
+    await runAgent({ instanceRoot: root, agentName: "hub", provider,
+      providerCtx: { env: googleEnv, fetchImpl: async () => { networkCalls++; return Response.json({}); } } });
+    expect(networkCalls).toBe(0);
+    expect(provider.calls[1]!.prompt).toContain("source 'google-drive-search' is not available");
+    expect(provider.calls[1]!.prompt).toContain("source 'google-drive-image' is not available");
+  });
+
+  it("refuses pixel reads before any image fetch when the provider lacks vision", async () => {
+    const root = await makeInstance({ "bundle/agents/hub.md": driveAgent() });
+    let mediaCalls = 0;
+    const fetchImpl: typeof fetch = async (input) => {
+      const url = String(input);
+      if (url.includes("oauth2.googleapis.com")) return Response.json({ access_token: "test" });
+      if (!url.includes("/files?q=")) mediaCalls++;
+      return Response.json({ files: [] });
+    };
+    const provider = askingProvider(block("google-drive-image: [OldPortrait00001]"));
+    await runAgent({ instanceRoot: root, agentName: "hub", provider, providerCtx: { env: googleEnv, fetchImpl } });
+    expect(mediaCalls).toBe(0);
+    expect(provider.calls[1]!.prompt).toContain("pixels were not fetched or inspected");
+    expect(provider.calls[1]!.images).toBeUndefined();
+  });
+
+  it("caps persistent requests and shares the text budget across all rounds", async () => {
+    const root = await makeInstance({ "bundle/agents/hub.md": driveAgent(), "bundle/ops/long.md": concept("fact", {}, "x".repeat(20_000)) });
+    const provider = new FakeProvider(() => ({ text: block("bundle: [ops/long.md]") }));
+    const report = await runAgent({ instanceRoot: root, agentName: "hub", provider, providerCtx: { env: {} } });
+    expect(provider.calls).toHaveLength(MAX_DRIVE_READ_ROUNDS + 1);
+    const store = new FsInstanceStore(root);
+    const reads = (await store.readLedger()).filter((e) => e.action === "reads-requested");
+    expect(reads.reduce((sum, e) => sum + Number((e.detail as { chars?: number })?.chars ?? 0), 0)).toBeLessThanOrEqual(TOTAL_READ_CHARS);
+    expect(await readFile(report.reportPath, "utf8")).toContain("bounded read-request budget is exhausted");
+  });
+
+  it("shares the eight-request cap across rounds instead of resetting it per continuation", async () => {
+    const root = await makeInstance({ "bundle/agents/hub.md": driveAgent() });
+    const provider = new FakeProvider(() => ({ text: block("bundle: [cabinet/legal.md, cabinet/legal.md, cabinet/legal.md, cabinet/legal.md]") }));
+    await runAgent({ instanceRoot: root, agentName: "hub", provider, providerCtx: { env: {} } });
+    expect(provider.calls).toHaveLength(3);
+    const reads = (await new FsInstanceStore(root).readLedger()).filter((e) => e.action === "reads-requested");
+    expect(reads).toHaveLength(2);
+    expect(reads.reduce((sum, e) => sum + Number((e.detail as { served?: number }).served ?? 0), 0)).toBe(8);
+  });
+
+  it("shares the two-image cap across continuations, refusing a third image before fetching it", async () => {
+    const root = await makeInstance({ "bundle/agents/hub.md": driveAgent() });
+    const ids = ["ImageCandidate1", "ImageCandidate2", "ImageCandidate3"];
+    const fetched: string[] = [];
+    const fetchImpl: typeof fetch = async (input) => {
+      const url = new URL(String(input));
+      if (url.hostname === "oauth2.googleapis.com") return Response.json({ access_token: "test" });
+      if (url.pathname.endsWith("/files")) return Response.json({ files: [] });
+      fetched.push(url.pathname);
+      return url.searchParams.get("alt") === "media" ? new Response(Buffer.from(imageData, "base64"))
+        : Response.json({ mimeType: "image/png", size: "8" });
+    };
+    let turn = 0;
+    const provider = new FakeProvider(() => ({ text: turn < 3 ? block(`google-drive-image: [${ids[turn++]}]`) : "Inspected two images; third unavailable." }),
+      { fileReads: false, webSearch: false, vision: true });
+    const report = await runAgent({ instanceRoot: root, agentName: "hub", provider, providerCtx: { env: googleEnv, fetchImpl } });
+    expect(report.ok).toBe(true);
+    expect(fetched.some((url) => url.includes(ids[2]!))).toBe(false);
+    expect(provider.calls[3]!.images).toHaveLength(2);
+    expect(provider.calls[3]!.prompt).toContain("2-image run budget is spent");
+  });
+});
 
 describe("parse + strip", () => {
   it("parses multi-source blocks into source/path pairs", () => {

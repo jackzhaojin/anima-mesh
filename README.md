@@ -209,6 +209,13 @@ someone's world (`person`, `org`, `team`, or `group`), and brains connect
   `GITHUB_DEFECTS_TOKEN` on each filing runtime, privacy review, and filed
   versus fallback evidence. The [sample runbook](docs/sample-brain/bundle/ops/engine-feedback.md)
   shows the complete setup; new hubs still start at L1.
+- **Drive reads can follow the task.** Agents with `google-drive` can
+  search file and folder metadata across all dates, follow returned ids,
+  and inspect requested images on vision providers. Beats and directions
+  share bounded retrieval rounds and text/image budgets; the recent
+  listing states its window and pagination. Access stays `drive.readonly`,
+  and image payloads remain ephemeral
+  ([setup and request formats](docs/layered-brains.md#search-older-drive-files-and-inspect-images)).
 - **The model chokepoint.** Each agent concept declares its `model` and
   `harness`; swapping vendors is a config edit, never a rebuild. Shipped
   harnesses: `moonshot-api`, `anthropic-api`, and `anthropic-api-key` (pure

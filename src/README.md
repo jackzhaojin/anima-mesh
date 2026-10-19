@@ -287,9 +287,15 @@ contents"), never aborted runs.
 - `sources/google.ts` - the `gmail`, `google-calendar`, and `google-drive`
   sources: the PRINCIPAL's own account (not the persona's mailbox),
   read-only scopes on one OAuth client, `redactSensitive` applied in code to
-  everything inlined, every section framed as untrusted third-party text.
-  Drive lists names only; `readDriveFile` serves `google-drive: [<file-id>]`
-  read-requests. Env contract in the module header.
+  inlined text, every section framed as untrusted third-party data.
+  Drive's recent listing states its window and pagination; `searchDrive`
+  serves structured name/folder/MIME searches across all dates.
+  `readDriveFile` serves text/PDF reads; explicit `readDriveImage` returns
+  bounded, ephemeral pixels for vision providers. The shared retrieval
+  loop in `harness/read-requests.ts` supports bounded search-to-image
+  continuations for Drive agents on both beat and direction paths; it
+  redacts subsequent model text and ledgers counts, never payloads.
+  Env contract in the module header.
 - `sources/registry.ts` — `sourceSections(names, ctx)`, the harness's one
   entry point.
 

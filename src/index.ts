@@ -54,6 +54,7 @@ export {
   type ApiProviderContext,
   type AgentWorkerProvider,
   type ProviderRunOptions,
+  type ProviderImage,
   type ProviderResult,
 } from "./providers/index.js";
 export {

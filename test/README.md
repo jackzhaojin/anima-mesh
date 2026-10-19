@@ -72,6 +72,12 @@ everything builds in temp dirs via `helpers.ts` and runs against
   issue, UA header, title-dedup, NO draft), draft fallback on no-token / API
   failure / leak, whitelist denial, the per-run cap, and `defect file`
   promotion re-running the leak guard on current content.
+- **read-requests.test.ts / google-sources.test.ts** — source allowlists,
+  path and filter validation, recent-list pagination truth, Drive metadata
+  search across all dates, and search -> folder -> image continuations on
+  both run paths. Shared round/request/text/image caps, streaming byte caps,
+  vision refusal before fetch, and payload/identifier exclusion from
+  stored evidence are behavioral checks.
 - **direction.test.ts** — `runDirectionCore`: evidence artifact + the
   `direction-*` ledger trio, a midday direction never eats the daily dedup,
   brief delivery stays blind to direction artifacts, agent resolution order,

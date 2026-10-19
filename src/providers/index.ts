@@ -16,6 +16,7 @@ import { createOpenAICodexProvider, openaiCodexProvider } from "./openai-codex.j
 export type {
   AgentWorkerProvider,
   ProviderRunOptions,
+  ProviderImage,
   ProviderResult,
   ProviderCapabilities,
 } from "./types.js";

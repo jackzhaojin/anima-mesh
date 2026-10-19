@@ -1,6 +1,7 @@
 import { findAgent, assertActivatable, effectiveCognition } from "../agents/concept.js";
 import { loadGatedTypes, assertActionAllowed } from "../gates/gatekeeper.js";
-import { resolveProvider, type AgentWorkerProvider, type ApiProviderContext } from "../providers/index.js";
+import { resolveProvider, providerCapabilities, type AgentWorkerProvider, type ApiProviderContext } from "../providers/index.js";
+import type { ProviderImage } from "../providers/types.js";
 import type { InstanceStore } from "../instance/store.js";
 import {
   dateStampFor,
@@ -15,7 +16,7 @@ import { applyDefectReports } from "./defects.js";
 import { defectCapabilityLines, stripDefectReports } from "../defects/report-core.js";
 import { sourceSections } from "../sources/registry.js";
 import type { LocalBrainOpener, SourceContext, SourceFs } from "../sources/types.js";
-import { parseReadRequests, serveReadRequests, stripReadRequests, readRequestCapabilityLines } from "./read-requests.js";
+import { continueRequestedReads, stripReadRequests, readRequestCapabilityLines } from "./read-requests.js";
 import {
   verifyConformanceBundle,
   verifyExpectedOutputsStore,
@@ -161,38 +162,26 @@ export async function runDirectionCore(options: DirectionRunOptions): Promise<Di
     timeZone: options.timeZone,
     now,
   };
-  const prompt = await buildDirectionPrompt(agent, store, config, dateStamp, message, sourceCtx);
   const cognition = effectiveCognition(agent, config);
   const provider = options.provider ?? resolveProvider(cognition.harness, providerCtx);
   provider.assertConfigured();
+  const vision = providerCapabilities(provider).vision === true;
+  const prompt = await buildDirectionPrompt(agent, store, config, dateStamp, message, sourceCtx, vision);
   progress(`direction ${runId.slice(0, 8)}: ${agent.name} via ${provider.name} (${message.channel})`);
 
-  const runOnce = (p: string) =>
+  const runOnce = (p: string, images: ProviderImage[] = []) =>
     provider.run({
       prompt: p,
+      ...(images.length ? { images } : {}),
       cwd: store.bundleDir ?? (typeof process !== "undefined" ? process.cwd() : "/"),
       model: cognition.model,
       onProgress: progress,
     });
   let result = await runOnce(prompt);
 
-  // Ask-driven retrieval (v0.17.0) — the direction path is where "open the
-  // file my question is about" actually gets asked. Same loop as a beat run:
-  // model names paths, code validates + serves + ledgers, ONE continuation.
-  const readRequests = parseReadRequests(result.text);
-  if (readRequests.length > 0) {
-    const served = await serveReadRequests({ requests: readRequests, agent, store, config, sourceCtx });
-    await store.appendLedger({
-      ts: clock(),
-      runId,
-      agent: agent.name,
-      action: "reads-requested",
-      type: "report",
-      detail: { requested: served.requested, served: served.served, refused: served.refused, chars: served.chars },
-    });
-    progress(`direction ${runId.slice(0, 8)}: ${served.served}/${served.requested} requested read(s) served — continuation run`);
-    result = await runOnce(`${prompt}\n${served.section}`);
-  }
+  result = (await continueRequestedReads({
+    agent, store, config, sourceCtx, vision, prompt, result, runId, clock, progress, run: runOnce,
+  })).result;
 
   // Draft-request blocks apply here too — this is what makes "DM the persona,
   // the prep artifact updates in the repo" a one-message loop. Blocks are
@@ -307,6 +296,7 @@ async function buildDirectionPrompt(
   dateStamp: string,
   message: DirectionMessage,
   sourceCtx: SourceContext,
+  vision: boolean,
 ): Promise<string> {
   const preamble = [
     `You are "${agent.title}" (${agent.name}), an agent in ${meshPhrase(config)}.`,
@@ -342,7 +332,7 @@ async function buildDirectionPrompt(
     ...(agent.whitelist.includes("defect-report") ? defectCapabilityLines(config.drafts) : []),
     // Ask-driven retrieval (v0.17.0): a chat question is exactly where "open
     // the file this is about" gets asked — same surface as beat runs.
-    ...readRequestCapabilityLines(agent),
+    ...readRequestCapabilityLines(agent, { vision }),
   ].join("\n");
 
   const group = message.audience === "group";

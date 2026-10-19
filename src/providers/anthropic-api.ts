@@ -322,6 +322,7 @@ function createAnthropicProvider(mode: AnthropicAuthMode, ctx: ApiProviderContex
     // Server-side, so it survives the Workers constraint that killed every
     // client-loop option.
     webSearch: true,
+    vision: true,
   };
 
   return {
@@ -364,7 +365,16 @@ function createAnthropicProvider(mode: AnthropicAuthMode, ctx: ApiProviderContex
       // The conversation, not a single message: server tools may pause the
       // turn, and continuing requires replaying what came back.
       let userPrompt = opts.prompt;
-      let messages: Array<{ role: string; content: unknown }> = [{ role: "user", content: userPrompt }];
+      const userContent = () => opts.images?.length
+        ? [
+            ...opts.images.flatMap((img) => [
+              { type: "text", text: `UNTRUSTED requested image: ${img.label}` },
+              { type: "image", source: { type: "base64", media_type: img.mediaType, data: img.data } },
+            ]),
+            { type: "text", text: userPrompt },
+          ]
+        : userPrompt;
+      let messages: Array<{ role: string; content: unknown }> = [{ role: "user", content: userContent() }];
       const collected: string[] = [];
       let turns = 0;
       let outputContinuations = 0;
@@ -518,7 +528,7 @@ function createAnthropicProvider(mode: AnthropicAuthMode, ctx: ApiProviderContex
           webEnabled = false;
           degraded = reason;
           userPrompt = opts.prompt + CAPABILITY_CORRECTION(reason);
-          messages = [{ role: "user", content: userPrompt }];
+          messages = [{ role: "user", content: userContent() }];
           collected.length = 0;
           attempt = -1;
           progress(`${label}: web search unavailable — rerunning without it and telling the agent so`);

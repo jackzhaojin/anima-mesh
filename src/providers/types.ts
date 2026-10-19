@@ -6,8 +6,16 @@
  * Pattern lineage: the migration-agent backend seam — "one contract,
  * swappable runtimes" — proven across Claude, Codex, and Kimi backends.
  */
+/** Ephemeral vision input; never serialized into run reports or the ledger. */
+export interface ProviderImage {
+  mediaType: "image/jpeg" | "image/png" | "image/gif" | "image/webp";
+  data: string;
+  label: string;
+}
+
 export interface ProviderRunOptions {
   prompt: string;
+  images?: ProviderImage[];
   /** Working directory the harness grants the worker. */
   cwd: string;
   /** Model identifier in the harness's own vocabulary (from the agent concept). */
@@ -52,6 +60,8 @@ export interface ProviderCapabilities {
   fileReads: boolean;
   /** The worker can search the live web mid-run. */
   webSearch: boolean;
+  /** Accepts explicit image content through ProviderRunOptions.images. */
+  vision?: boolean;
 }
 
 /** The honest default: a provider that declares nothing offers nothing. */

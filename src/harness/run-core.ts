@@ -3,7 +3,8 @@ import { loadGatedTypes, assertActionAllowed, GateViolation } from "../gates/gat
 import { parseScheduleRequest, mutateSchedule, scheduleFromBundle } from "./schedule.js";
 import { applyDraftRequests, draftCapabilityLines } from "./drafts.js";
 import { applyDefectReports } from "./defects.js";
-import { parseReadRequests, serveReadRequests, stripReadRequests, readRequestCapabilityLines } from "./read-requests.js";
+import { continueRequestedReads, stripReadRequests, readRequestCapabilityLines } from "./read-requests.js";
+import type { ProviderImage } from "../providers/types.js";
 import { defectCapabilityLines } from "../defects/report-core.js";
 import {
   resolveProvider,
@@ -238,9 +239,10 @@ export async function runAgentCore(options: RunCoreOptions): Promise<RunReport> 
   // The bundle IS the agent's working world: relative reads in any harness
   // resolve against the knowledge layer, matching the prompt's paths.
   // Remote stores have no local dir; API providers ignore cwd entirely.
-  const runOnce = (p: string) =>
+  const runOnce = (p: string, images: ProviderImage[] = []) =>
     provider.run({
       prompt: p,
+      ...(images.length ? { images } : {}),
       cwd: store.bundleDir ?? (typeof process !== "undefined" ? process.cwd() : "/"),
       model: cognition.model,
       onProgress: progress,
@@ -255,35 +257,12 @@ export async function runAgentCore(options: RunCoreOptions): Promise<RunReport> 
   }
   const runTokens = [normalizeTokens(result.tokens)];
 
-  // Ask-driven retrieval (v0.17.0): a read-request in the output is model
-  // judgment naming the files THIS run is about — the inline heuristics
-  // can't know that. Code validates, serves, ledgers, and runs the agent
-  // once more with the served section appended. ONE round: requests in the
-  // continuation's own output are stripped, never served.
-  const readRequests = parseReadRequests(result.text);
-  if (readRequests.length > 0) {
-    const served = await serveReadRequests({
-      requests: readRequests,
-      agent,
-      store,
-      config,
-      sourceCtx,
-    });
-    await store.appendLedger({
-      ts: clock(),
-      runId,
-      agent: agent.name,
-      action: "reads-requested",
-      type: "report",
-      detail: { requested: served.requested, served: served.served, refused: served.refused, chars: served.chars },
-    });
-    progress(`run ${runId.slice(0, 8)}: ${served.served}/${served.requested} requested read(s) served — continuation run`);
-    result = await runOnce(`${prompt}\n${served.section}`);
-    if (result.degraded) {
-      progress(`run ${runId.slice(0, 8)}: DEGRADED — ${result.degraded}`);
-    }
-    runTokens.push(normalizeTokens(result.tokens));
-  }
+  const reads = await continueRequestedReads({
+    agent, store, config, sourceCtx, vision: capabilities.vision === true,
+    prompt, result, runId, clock, progress, run: runOnce,
+  });
+  result = reads.result;
+  runTokens.push(...reads.continuations.map((r) => normalizeTokens(r.tokens)));
   const finalText = stripReadRequests(result.text);
 
   // L1 contract: the harness, not the agent, writes the artifact.
@@ -483,7 +462,7 @@ async function buildPrompt(
   }
   // Ask-driven retrieval (v0.17.0): every agent may request specific files —
   // the inline heuristics can't know what THIS run is about; the model can.
-  sections.push(...readRequestCapabilityLines(agent));
+  sections.push(...readRequestCapabilityLines(agent, { vision: runtime.capabilities.vision }));
   // Beat notes come from the deterministic scheduler, not the model — they
   // outrank recall the same way capability lines do.
   if (beatNotes && beatNotes.length > 0) {

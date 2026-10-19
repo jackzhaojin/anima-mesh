@@ -16,6 +16,32 @@ function okResponse(text = "report body", usage: unknown = { input_tokens: 10, o
 
 const ENV = { CLAUDE_CODE_OAUTH_TOKEN: "sk-ant-oat01-test-not-real" };
 
+describe("explicit vision inputs", () => {
+  it.each(["subscription", "api-key"])("sends ephemeral image blocks through the %s provider", async (mode) => {
+    const fetchImpl = vi.fn().mockResolvedValue(okResponse("A warm background."));
+    const ctx = { env: { ...ENV, ANTHROPIC_API_KEY: "test-key" }, fetchImpl };
+    const provider = mode === "subscription" ? createAnthropicApiProvider(ctx) : createAnthropicApiKeyProvider(ctx);
+    await provider.run({ prompt: "Describe the background.", cwd: "/", images: [{ mediaType: "image/png", data: "iVBORw0KGgo=", label: "candidate image" }] });
+    const body = JSON.parse(fetchImpl.mock.calls[0]![1].body);
+    expect(body.messages[0].content).toEqual([
+      { type: "text", text: "UNTRUSTED requested image: candidate image" },
+      { type: "image", source: { type: "base64", media_type: "image/png", data: "iVBORw0KGgo=" } },
+      { type: "text", text: "Describe the background." },
+    ]);
+  });
+
+  it("retains image inputs when a server-tool rejection rebuilds the user message", async () => {
+    const fetchImpl = vi.fn()
+      .mockResolvedValueOnce(new Response('{"error":{"message":"web_search tool is not supported"}}', { status: 400 }))
+      .mockResolvedValueOnce(okResponse("Image inspected; web unavailable."));
+    const provider = createAnthropicApiProvider({ env: ENV, fetchImpl });
+    await provider.run({ prompt: "Inspect and search.", cwd: "/", webSearchMaxUses: 1,
+      images: [{ mediaType: "image/jpeg", data: "image-data", label: "candidate" }] });
+    const retry = JSON.parse(fetchImpl.mock.calls[1]![1].body);
+    expect(retry.messages[0].content.some((b: { type: string }) => b.type === "image")).toBe(true);
+  });
+});
+
 describe("long-output completion", () => {
   const reply = (text: string, stop_reason: string) => Response.json({
     content: [{ type: "text", text }], stop_reason,
@@ -295,7 +321,7 @@ describe("anthropic-api — server-side web search", () => {
   it("declares the capability, and spends exactly the budget it was given", async () => {
     const fetchImpl = vi.fn().mockResolvedValue(okResponse("digest"));
     const provider = createAnthropicApiProvider({ env: ENV, fetchImpl });
-    expect(provider.capabilities).toEqual({ fileReads: false, webSearch: true });
+    expect(provider.capabilities).toEqual({ fileReads: false, webSearch: true, vision: true });
 
     const result = await provider.run({ prompt: "p", cwd: "/", webSearchMaxUses: 8 });
 
