@@ -1,7 +1,15 @@
-# templates/ — the shipped agent roster
+# templates/ — the shipped brain and agent shapes
 
-Each file becomes a `bundle/agents/*.md` concept in a scaffolded brain. They
+Each agent file becomes a `bundle/agents/*.md` concept in a scaffolded brain. They
 are **firm-agnostic by contract**: identity arrives only through placeholders.
+
+`ops/engine-feedback.md` is the shared core feedback runbook. Init renders
+it into every brain's `bundle/ops/` and links it from the README and index;
+both hub variants declare it in `reads:`. It covers engine bugs and
+requested enhancements, the narrow operator grant, the dedicated filing
+credential on each runtime, privacy review, and outcome evidence. The
+sample brain carries a rendered copy. Its `{{DATE}}` and `{{GENERATED}}`
+placeholders receive the scaffolding date and provenance line.
 
 ## Placeholder contract
 
@@ -20,7 +28,8 @@ Beyond the bundle, `init` also compiles the hub's **local interactive
 surfaces** (`.claude/agents/` + `.opencode/agents/` — see
 [docs/local-agents.md](../docs/local-agents.md)) from the scaffolded
 concept, so a new instance can talk to its persona in a coding terminal on
-day one. Templates deliberately ship WITHOUT the `defect-report` whitelist
+day one. Hub jobs include engine feedback from day one. Templates ship
+WITHOUT the `defect-report` whitelist
 entry — at the shipped L1 it would only generate denials. But granting it
 IS the standard path, not an exotic option: when the principal promotes
 the hub to L3, add `defect-report` to its whitelist, and set the

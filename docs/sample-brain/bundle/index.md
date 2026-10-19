@@ -113,6 +113,7 @@ never writes; the founder sends everything under their own name.
 | [ops/watch-list.md](ops/watch-list.md) | Research-watch subjects |
 | [ops/nags.md](ops/nags.md) | **Active nags** — founder-requested daily bugging until done |
 | [ops/schedule.md](ops/schedule.md) | Machine-read: cadence overrides + one-shot wakes |
+| [ops/engine-feedback.md](ops/engine-feedback.md) | Core issue-filing path for every brain kind: grants, runtime credential, privacy review, and outcome evidence |
 
 ## Agents (roster — every agent starts L1; promotions are frontmatter edits with history)
 

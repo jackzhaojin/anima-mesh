@@ -30,7 +30,13 @@ The ledger remains append-only; never "migrate" it by editing old entries.
 
 ## [Unreleased]
 
-- Nothing yet.
+- **Core brain feedback setup.** `init` includes a shared
+  `ops/engine-feedback.md` runbook in every brain kind, and both hub
+  templates read it. The sample brain and setup guidance cover the narrow
+  L3 `defect-report` grant, configured engine target, dedicated runtime
+  credential, privacy review, and filed/drafted/denied evidence. New hubs
+  still start at L1. Existing brains can adopt the runbook and add it to
+  the hub's `reads:` without rewriting their ledger or constitution.
 
 ## [v2.3.x] - Slack: the persona in a group setting
 

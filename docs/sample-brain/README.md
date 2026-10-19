@@ -44,6 +44,33 @@ runs: prompt assembly, report write, ledger append, verifiers. Delete the
 run **writes real files** here (`reports/`, `ledger/`);
 `git checkout -- docs/sample-brain` restores the curated state afterward.
 
+## Engine issue filing is a core brain capability
+
+The sample already demonstrates an authorized hub: L3 with
+`defect-report` on its whitelist, backed by the
+[issue-first decision](bundle/decisions/2026-06-08-defects-file-as-issues.md).
+Its required [engine-feedback runbook](bundle/ops/engine-feedback.md) is
+also included by `init` in every new brain, and both personal and
+organizational hub templates read it on every run.
+
+To enable filing in your own brain, record the principal's narrow grant,
+promote the hub to L3 with `defect-report`, check `engine.repo`, and install
+`GITHUB_DEFECTS_TOKEN` on the runtime that will file (local environment and
+heartbeat/direction Worker as needed). The automatic path does not reuse
+the brain-store token or GitHub App credential. See the runbook for secret
+loader wiring, the fenced report format, privacy review, and evidence.
+
+The same harness path handles heartbeat and chat-direction reports. A
+direct GitHub tool is not required. Engine bugs, missing capabilities, and
+principal-requested engine enhancements can be reported with synthetic
+examples; private brain data stays out. A filed URL is backed by
+`defect-filed`; unavailable filing produces a private fallback draft;
+level or whitelist denials produce neither an issue nor a draft.
+
+This offline sample carries no filing credential, and the `fake` provider
+does not generate report blocks. Its normal demo run opens no public issue.
+The regression suite exercises filing with a mocked GitHub API.
+
 ## What to notice
 
 - **The bundle is the only state.** Agents hold nothing between runs; any

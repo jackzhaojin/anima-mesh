@@ -143,6 +143,20 @@ Walk the user through, in order (each exists for a reason — say the reason):
    with the laptop closed — hand them
    [docs/deploying-cloud.md](../../../docs/deploying-cloud.md). Not a
    day-one requirement.
+7. **Core engine feedback.** Every scaffold includes
+   `bundle/ops/engine-feedback.md`, required reading for the personal and
+   organizational hubs. Explain it as a standard setup capability: the
+   principal records a narrow public-engine-issue grant, promotes the hub
+   to L3 with only `defect-report` if that is all they need, and provisions
+   `GITHUB_DEFECTS_TOKEN` for the configured `engine.repo`. New hubs remain
+   L1 until that authorization. Include the dedicated key in each filing
+   runtime's local environment, Worker secret uploader, local Worker env
+   generator, and CI wiring where present; a brain-store token or GitHub
+   App does not substitute for it. Never ask for or print the token value.
+   Regenerate local artifacts after a promotion. Verify through the run
+   report and `defect-filed` ledger entry with an issue URL, or report the
+   missing setup / private fallback honestly. Engine bugs and requested
+   enhancements use general requirements and synthetic examples only.
 
 ## What NOT to do
 

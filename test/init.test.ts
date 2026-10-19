@@ -14,6 +14,8 @@ import { checkConformance } from "../src/okf/conformance.js";
 import { loadInstance } from "../src/instance/config.js";
 import { runAgent } from "../src/harness/run.js";
 import { FakeProvider } from "../src/providers/fake.js";
+import { runDirectionCore } from "../src/harness/direction-core.js";
+import { FsInstanceStore } from "../src/instance/store-fs.js";
 
 const roots: string[] = [];
 async function freshDir(): Promise<string> {
@@ -102,6 +104,57 @@ describe("agentic init — the acceptance test from the PRD", () => {
       runAgent({ instanceRoot: target, agentName: "inbound-triage", provider: new FakeProvider() }),
     ).rejects.toThrow(/dual-gated/);
   });
+
+  it.each(["org", "person", "team", "group"] as const)(
+    "%s brains know the core feedback path and file only after the narrow grant",
+    async (brainKind) => {
+      const target = await freshDir();
+      await scaffoldBrain(target, {
+        ...normalizeAnswers(BASE), brainKind, agents: ["chief-of-staff"],
+        engineRepo: "github.com/example/engine", defaultHarness: "fake", defaultModel: "fake",
+      });
+      const store = new FsInstanceStore(target);
+      const title = "Source listing drops its continuation cursor";
+      const fake = new FakeProvider(() => ({
+        text: `Engine feedback.\n\n\`\`\`defect-report\ntitle: ${title}\n---\nRepro: return two listing pages; only the first page is shown.\n\`\`\``,
+      }));
+      const requests: { url: string; method: string; body?: unknown }[] = [];
+      const fetchImpl: typeof fetch = async (input, init) => {
+        const url = String(input);
+        const method = init?.method ?? "GET";
+        requests.push({ url, method, ...(init?.body ? { body: JSON.parse(String(init.body)) } : {}) });
+        return method === "POST"
+          ? new Response(JSON.stringify({ html_url: "https://github.com/example/engine/issues/9", number: 9 }), { status: 201 })
+          : new Response("[]");
+      };
+      const options = {
+        store, provider: fake, providerCtx: { env: { GITHUB_DEFECTS_TOKEN: "test-issue-token" }, fetchImpl },
+        message: { channel: "test", sender: "operator", text: "Report this engine listing defect.", receivedAt: BASE.now },
+      };
+
+      // New hubs know how filing works, but a credential cannot bypass L1.
+      expect((await runDirectionCore(options)).ok).toBe(true);
+      expect(fake.calls[0]!.prompt).toContain("# Engine feedback");
+      expect(fake.calls[0]!.prompt).toContain("The automatic filing path never falls back");
+      expect(fake.calls[0]!.prompt).not.toMatch(/ops\/engine-feedback\.md[^\n]*NOT AVAILABLE/);
+      expect(requests).toEqual([]);
+      expect((await store.readLedger()).some((e) => e.action === "defect-report-denied")).toBe(true);
+
+      // The operator's narrow promotion activates the same scaffolded path.
+      const hubFile = path.join(target, "bundle/agents/chief-of-staff.md");
+      await writeFile(hubFile, readFileSync(hubFile, "utf8")
+        .replace("level: L1", "level: L3").replace("whitelist: []", "whitelist: [defect-report]"));
+      const filed = await runDirectionCore(options);
+      expect(filed.ok).toBe(true);
+      expect(requests.filter((r) => r.method === "POST")).toEqual([{
+        url: "https://api.github.com/repos/example/engine/issues", method: "POST",
+        body: { title, body: "Repro: return two listing pages; only the first page is shown.", labels: ["defect"] },
+      }]);
+      expect((await store.readLedger()).find((e) => e.action === "defect-filed")?.detail)
+        .toMatchObject({ url: "https://github.com/example/engine/issues/9" });
+      expect(readFileSync(filed.reportPath, "utf8")).toContain("https://github.com/example/engine/issues/9");
+    },
+  );
 });
 
 describe("answers plumbing", () => {

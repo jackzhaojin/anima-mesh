@@ -202,6 +202,13 @@ someone's world (`person`, `org`, `team`, or `group`), and brains connect
   `defect-report` (file a de-identified engine bug as a public GitHub
   issue — identity-leak guard, title dedup, and per-run cap are
   deterministic code; the model only writes the report).
+- **Engine feedback is a core brain capability.** Every scaffolded brain
+  carries `ops/engine-feedback.md`, required reading for both hub variants.
+  It covers engine bugs and requested enhancements, the principal's narrow
+  L3 `defect-report` grant, `engine.repo`, the dedicated
+  `GITHUB_DEFECTS_TOKEN` on each filing runtime, privacy review, and filed
+  versus fallback evidence. The [sample runbook](docs/sample-brain/bundle/ops/engine-feedback.md)
+  shows the complete setup; new hubs still start at L1.
 - **The model chokepoint.** Each agent concept declares its `model` and
   `harness`; swapping vendors is a config edit, never a rebuild. Shipped
   harnesses: `moonshot-api`, `anthropic-api`, and `anthropic-api-key` (pure

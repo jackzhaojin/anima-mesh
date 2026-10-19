@@ -39,7 +39,10 @@ everything builds in temp dirs via `helpers.ts` and runs against
   substituted; non-empty targets refused; a scaffolded brain immediately
   completes a run; agentic enrichment adopts valid suggestions, strips unknown
   agents, survives fenced/prose JSON, falls back on garbage, and never
-  overrides an explicit human choice.
+  overrides an explicit human choice. Every brain kind receives the core
+  engine-feedback runbook in its hub prompt; a token cannot bypass L1,
+  while the narrow L3 `defect-report` grant files and ledgers an issue
+  through the mocked GitHub API.
 - **cli.test.ts** - the CLI (14 commands) driven in-process (`main(argv)` →
   exit code): init/validate/run/gate/report/templates plus
   `defect list`/`defect file` — including the v0.11.3 positional-parsing

@@ -4,6 +4,17 @@ Grouped by date, newest first (OKF v0.2 §9). New entries go at the top of
 today's group; history is never rewritten, and corrections are new entries.
 This file is the story of the company's operating system.
 
+## 2026-10-18
+
+### Core engine feedback made explicit in the reference brain
+
+Added the shared [engine-feedback runbook](ops/engine-feedback.md) and made
+it required reading for the hub. The sample already had its L3
+`defect-report` grant; the runbook now explains the target repository,
+dedicated credential on each runtime, privacy review, and the distinction
+between denied, drafted, and filed reports. The offline sample remains
+credential-free; this documentation update makes no live filing claim.
+
 ## 2026-06-08
 
 ### Defect loop live; capability truth in every prompt

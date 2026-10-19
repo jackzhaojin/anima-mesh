@@ -7,7 +7,7 @@ import { OKF_VERSION } from "../okf/trust.js";
 import { CONFIG_FILENAME, type InstanceConfig } from "../instance/config.js";
 import type { BrainKind } from "../instance/config-core.js";
 import { BRAIN_KINDS, isSlug, RESERVED_TOKENS } from "../brains/core.js";
-import { fillTemplate, loadAgentTemplate } from "./templates.js";
+import { fillTemplate, loadAgentTemplate, templatesDir } from "./templates.js";
 import { agentsFromBundle } from "../agents/concept.js";
 import { composeLocalAgents, selectLocalAgents } from "../local/agents-core.js";
 
@@ -147,7 +147,9 @@ export async function scaffoldBrain(targetDir: string, answers: InitAnswers): Pr
       `\nOperate from an engine checkout (github.com/jackzhaojin/anima-mesh) until\n` +
       `the npm package ships:\n\n` +
       `    pnpm cli validate <path-to-this-repo>\n` +
-      `    pnpm cli run <agent> --instance <path-to-this-repo>\n`,
+      `    pnpm cli run <agent> --instance <path-to-this-repo>\n\n` +
+      `Core engine feedback: [bundle/ops/engine-feedback.md](bundle/ops/engine-feedback.md)\n` +
+      `explains the hub's narrow issue-filing grant and runtime credential setup.\n`,
   );
 
   // ── the bundle ───────────────────────────────────────────────────────────
@@ -164,6 +166,7 @@ export async function scaffoldBrain(targetDir: string, answers: InitAnswers): Pr
       `| [ops/calendar.md](ops/calendar.md) | ${isPerson ? "Obligations calendar" : "Compliance calendar"} |\n` +
       `| [ops/watch-list.md](ops/watch-list.md) | Research / competitive watch |\n` +
       `| [ops/schedule.md](ops/schedule.md) | Schedule overrides and one-shot wakes |\n` +
+      `| [ops/engine-feedback.md](ops/engine-feedback.md) | Core engine issue reporting: authorization, runtime setup, and filing evidence |\n` +
       `${agentLinks}\n`,
   );
 
@@ -240,6 +243,14 @@ export async function scaffoldBrain(targetDir: string, answers: InitAnswers): Pr
     `bundle/events/${date}-instance-created.md`,
     `---\ntype: event\ntitle: "Instance created"\ndate: ${date}\n${generated}\n---\n\n` +
       `# Event: instance created — ${date}\n\nScaffolded by \`anima-mesh init\` for ${answers.orgName}. Append-only; corrections are new events.\n`,
+  );
+
+  put(
+    "bundle/ops/engine-feedback.md",
+    fillTemplate(readFileSync(path.join(templatesDir(), "ops", "engine-feedback.md"), "utf8"), {
+      DATE: date,
+      GENERATED: generated,
+    }),
   );
 
   // ── agents from templates ────────────────────────────────────────────────

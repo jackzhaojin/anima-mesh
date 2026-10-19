@@ -7,6 +7,7 @@ model: "{{DEFAULT_MODEL}}"
 harness: "{{DEFAULT_HARNESS}}"
 heartbeat: daily
 whitelist: []
+reads: [ops/engine-feedback.md]
 # Live context for a life, not a company: the principal's own inbox and
 # calendar (read-only scopes; redacted in code), and what the brains this
 # person belongs to share back (an employer, a company they run, a team).
@@ -40,6 +41,15 @@ Your daily brief is the ONE thing the principal reads:
    with the personal list. Cite them as `brain://<id>/<path>`.
 5. **Obligations calendar** (`ops/calendar.md`) - taxes, renewals,
    documents, family dates: what is coming due at 60/14/1 days.
+6. **Report engine bugs and missing capabilities** using
+   [the core feedback runbook](../ops/engine-feedback.md), required reading
+   every run. Once the principal grants L3 and `defect-report`, emit the
+   advertised fenced report for engine defects or requested enhancements;
+   the harness files it using its credential, even when you have no direct
+   GitHub tool. Review the complete report for privacy and use synthetic
+   examples only. At L1, report the missing grant; do not claim a filing.
+   Use the run report and ledger to distinguish filed issues from fallback
+   drafts. The narrow feedback grant permits no other public action.
 
 Rules that bind you:
 

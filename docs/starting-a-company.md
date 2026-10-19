@@ -227,10 +227,16 @@ The division of labor that keeps both useful:
   agent decides the disposition, no keyword commands to memorize.
 - **Nags**: `ops/nags.md` entries repeat in every brief, with age, until
   done — the mesh politely refuses to let you forget your own blockers.
-- **The defect loop** — standard posture for a new instance: grant
-  `defect-report` in the hub's whitelist at its L3 promotion and set the
-  `GITHUB_DEFECTS_TOKEN` secret, so leak-clean engine bugs file directly
-  as public engine-repo issues. Details in
+- **Core engine feedback** — every scaffolded brain includes
+  `bundle/ops/engine-feedback.md`, read by the personal and organizational
+  hub templates. Record the principal's narrow public-issue authorization,
+  promote the hub to L3 with `defect-report`, check `engine.repo`, and set
+  `GITHUB_DEFECTS_TOKEN` on each filing runtime. Include the key in the
+  instance's local Worker environment and secret deployment wiring:
+  `GITHUB_TOKEN` or a brain-store GitHub App does not enable automatic
+  issue filing. Engine bugs and requested enhancements use the same
+  privacy-reviewed report path. A gate denial writes no draft; unavailable
+  filing after the gate leaves a private fallback. Details in
   [local-agents.md](local-agents.md#defect-reports--the-feedback-loop-into-the-engine).
 
 ## 5. Go to the cloud
