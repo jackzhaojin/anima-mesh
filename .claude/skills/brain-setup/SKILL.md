@@ -83,6 +83,13 @@ pnpm cli init <target-dir> --answers answers.json   # target must be EMPTY
 pnpm cli validate <target-dir>                      # must PASS / 0 errors
 ```
 
+If the brain will hold someone else's proprietary knowledge (an employer's
+or a client's), add `--local` (or `"localOnly": true` in the answers file):
+the engine then keeps it on the machine, with no cloud tier, chat or mail
+delivery, cloud read sources, web search or public issues
+([docs/local-only.md](../../../docs/local-only.md)). Ask before assuming
+either way, and skip the cloud-tier step for a local brain.
+
 Init refuses non-empty directories by design, and validates its own output —
 a failed conformance check is an engine bug, not a user error. Keep the
 answers file out of the new repo (it's setup scratch, not knowledge).

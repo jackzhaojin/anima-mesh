@@ -51,6 +51,13 @@ the exact persona the scheduled tiers run
 hosted service: each private instance deploys its own Workers, Durable
 Objects, repository, and secrets from this public engine.
 
+**Local mode** (v2.3.6) is the exception, for brains that hold someone
+else's proprietary knowledge: `init --local` makes a brain the engine keeps
+on the machine. No cloud tier, chat or mail delivery, cloud read sources,
+web search or public issues, all refused in code; the same OKF memory,
+focus file, layout and gated agents, run from the CLI or an interactive
+session ([docs/local-only.md](docs/local-only.md)).
+
 ## How it's organized
 
 **One Chief of Staff, many detached hands.**
@@ -294,6 +301,13 @@ pnpm cli init ../my-brain --org "Acme Co" --principal "Ada" \
 # or let a model refine the interview
 pnpm cli init ../my-brain --answers answers.json --agentic opencode
 
+# or a brain that never leaves this machine (no cloud, chat, web or Drive)
+pnpm cli init ../work-brain --name "My work" --principal "Ada" --kind person --local
+
+# or just look: what the sample brain's beat would run (it needs no setup;
+# copy it elsewhere first to run it for real, offline, brief to the console)
+pnpm cli heartbeat --instance docs/sample-brain --dry-run
+
 # no model credentials yet? add --harness fake: the deterministic provider
 # runs the full loop (prompt → report → ledger → verifiers) offline, so you
 # can see a complete agent run before wiring any vendor. Switch later by
@@ -349,6 +363,7 @@ separately credentialed dashboard Worker, and one evidence commit per run.
 | [CHANGELOG.md](CHANGELOG.md) | Each minor release line: its value, maturity, and operator upgrade steps |
 | [docs/engine-vs-instance.md](docs/engine-vs-instance.md) | The sorting rule: what belongs in this public engine vs a private brain |
 | [docs/okf-v0.2.md](docs/okf-v0.2.md) | OKF v0.2 in AnimaMesh: provenance, trust, lifecycle; how AI writes a memory file; migrating |
+| [docs/local-only.md](docs/local-only.md) | Local mode: a brain for proprietary knowledge that never leaves the machine |
 | [docs/focus.md](docs/focus.md) | The focus file (what matters right now) and the three-line brief |
 | [docs/memory-layout.md](docs/memory-layout.md) | Where memory files go: an area, then a calendar year or a topic, at most three folders deep |
 | [docs/okf-crm-domain.md](docs/okf-crm-domain.md) | The CRM domain shelf: typed concepts, lifecycle stages, compliance screens as data |
@@ -373,7 +388,7 @@ conformance and complete a full agent run against the fake provider.
 
 ![AnimaMesh 2.x at a glance](docs/two-point-x.svg)
 
-v2.3.5 (2026-10-27). Package name on npm to be confirmed; pinned consumers
+v2.3.6 (2026-10-27). Package name on npm to be confirmed; pinned consumers
 reference the repo by tag. **2.0 is the mesh of brains**: person, org, team,
 and group brains linked by mutual consent, owner-decided `share:` grants,
 mandatory `markings:`, inherited law down a containment chain, member roles

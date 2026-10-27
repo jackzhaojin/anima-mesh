@@ -49,6 +49,21 @@ brief: { lines: 3, also: 8 }
 - `init` scaffolds a template; the [sample brain](sample-brain/bundle/ops/focus.md)
   has a filled-in one.
 
+## The focus links out
+
+Keep the focus a short list of pointers: each item links to the record that
+holds its detail (`[the return](../finance/2026/20260301-return.md)`), and
+the detail stays there. The records linked under **Top of mind** are inlined
+for the hub (its beats and its chat directions; up to four, clipped), so
+moving an item into or out of top of mind changes what the hub reads in
+full, not just how it ranks. A link that no longer resolves is said out
+loud. Spokes see the focus but keep their own `reads:`.
+
+Out of focus is not deleted: the record stays where it is, and git keeps
+every version of the focus. Compressing cold memory (summarizing records
+nobody has had in focus for a long time) is a planned next step, not part
+of this release.
+
 ## Changing it from chat
 
 Give the hub `focus-update` on its whitelist (an L3 reversible action).

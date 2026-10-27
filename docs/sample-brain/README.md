@@ -41,7 +41,13 @@ From the repo root:
 pnpm cli validate docs/sample-brain          # OKF + animamesh conformance: PASS
 pnpm cli run chief-of-staff --instance docs/sample-brain
 pnpm cli report --instance docs/sample-brain
+pnpm cli heartbeat --instance docs/sample-brain   # every due agent, then the brief
 ```
+
+Nothing here needs an account: no Slack, Discord, Drive, Gmail or cloud.
+The brief goes to the console as the three-line digest; read sources the
+agents declare (OneDrive, the docs repo) show as honest "not configured"
+sections.
 
 No credentials needed: the sample's config maps every declared harness to
 the engine's offline `fake` provider via `cognition.overrides` — the same
@@ -134,6 +140,12 @@ here as you need them:
 
 ```bash
 pnpm cli init ../my-brain          # interactive; add --harness fake to try it credential-free
+pnpm cli init ../work-brain --name "My work" --principal "Ada" --local
+                                   # proprietary knowledge: never leaves the machine
 ```
+
+Every new brain gets a `CLAUDE.md`/`AGENTS.md` working agreement (focus
+first, OKF v0.2, the layout, the log), so an assistant session in it keeps
+the same standards as this sample. See [local mode](../local-only.md).
 
 [docs/starting-a-company.md](../starting-a-company.md) walks the full path.

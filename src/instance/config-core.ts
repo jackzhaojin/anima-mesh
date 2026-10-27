@@ -114,6 +114,12 @@ export interface InstanceConfig {
     optionTrigger?: string | null;
     founderWaiver?: boolean;
   };
+  /**
+   * "local" (v2.3.6): nothing leaves this machine except the model call. The
+   * engine refuses chat/mail delivery, network read sources, web search,
+   * public engine issues and the cloud tier for this brain (local-mode.ts).
+   */
+  mode?: "local";
   /** Where reports get delivered (channel names) and whose report is "the brief". */
   delivery?: {
     channels?: string[];

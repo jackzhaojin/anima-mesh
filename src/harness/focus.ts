@@ -90,6 +90,57 @@ export function focusContextSection(focus: Focus): string {
   ].join("\n");
 }
 
+export const MAX_FOCUS_RECORDS = 4;
+const MAX_FOCUS_RECORD_CHARS = 3000;
+
+/** Bundle paths linked from the focus's `## Top of mind` section, in order. */
+export function topOfMindLinks(focus: Focus): string[] {
+  const m = /^##\s+Top of mind[^\n]*\n([\s\S]*?)(?=^##\s|(?![\s\S]))/im.exec(focus.body);
+  if (!m) return [];
+  const out: string[] = [];
+  for (const link of m[1]!.matchAll(/\]\(([^)#\s]+\.md)(?:#[^)]*)?\)/g)) {
+    const target = link[1]!;
+    if (/^[a-z]+:/i.test(target)) continue;
+    // Resolve against ops/ (where the focus lives) to a bundle-relative path.
+    const parts = ["ops"];
+    for (const seg of target.split("/")) {
+      if (seg === "" || seg === ".") continue;
+      if (seg === "..") {
+        if (parts.length === 0) { parts.length = 0; break; }
+        parts.pop();
+      } else parts.push(seg);
+    }
+    const rel = target.startsWith("/") ? target.slice(1) : parts.join("/");
+    if (rel && !out.includes(rel)) out.push(rel);
+  }
+  return out;
+}
+
+/**
+ * The focus links out (v2.3.6): the records it links under Top of mind are
+ * inlined for the hub, so moving an item into or out of top of mind changes
+ * what the hub sees in detail, and the focus itself stays a short list of
+ * pointers. Bounded and clipped; a missing link is said out loud.
+ */
+export async function focusRecordsSection(store: InstanceStore, config: InstanceConfig, focus: Focus): Promise<string> {
+  const links = topOfMindLinks(focus);
+  if (links.length === 0) return "";
+  const parts = ["\n### Records linked from Top of mind (inlined because they are in focus)"];
+  for (const rel of links.slice(0, MAX_FOCUS_RECORDS)) {
+    const raw = await store.readOptional(`${config.bundle}/${rel}`);
+    if (raw === null) {
+      parts.push(`\n#### ${rel} - LINKED FROM THE FOCUS BUT NOT FOUND (say so; the focus may need fixing)`);
+      continue;
+    }
+    const clipped = raw.length > MAX_FOCUS_RECORD_CHARS ? raw.slice(0, MAX_FOCUS_RECORD_CHARS) + "\n…(truncated by the harness)" : raw;
+    parts.push(`\n#### ${rel}\n\n${clipped.trim()}`);
+  }
+  if (links.length > MAX_FOCUS_RECORDS) {
+    parts.push(`\n(${links.length - MAX_FOCUS_RECORDS} more Top-of-mind link(s) not inlined: ${links.slice(MAX_FOCUS_RECORDS).join(", ")}. A focus with this many top items is not focused.)`);
+  }
+  return parts.join("\n");
+}
+
 /**
  * The report contract for the hub's scheduled brief. Delivery enforces the
  * line counts; this tells the hub what those lines are for.

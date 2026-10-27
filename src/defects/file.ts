@@ -2,6 +2,7 @@ import { existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import * as path from "node:path";
 import { loadInstance } from "../instance/config.js";
 import { parseConcept } from "../okf/frontmatter.js";
+import { assertNotLocal } from "../instance/local-mode.js";
 import {
   createDefectIssue,
   defectDraftContent,
@@ -77,6 +78,7 @@ export interface FileDefectsResult {
 
 export async function fileDefectDrafts(options: FileDefectsOptions): Promise<FileDefectsResult> {
   const instance = loadInstance(options.instanceRoot);
+  assertNotLocal(instance.config, "filing engine issues");
   const repo = engineRepoSlug(instance.config);
   if (!repo) throw new Error("config.engine.repo is missing or not owner/name-shaped — nowhere to file");
 

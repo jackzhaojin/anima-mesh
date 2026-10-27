@@ -4,6 +4,7 @@ import { assertActionAllowed, GateViolation } from "../gates/gatekeeper.js";
 import type { ApprovalRecord } from "../gates/approvals.js";
 import type { Level } from "../autonomy/ladder.js";
 import { getEnv } from "../instance/env-core.js";
+import { isLocalMode } from "../instance/local-mode.js";
 import {
   parseDefectReports,
   engineRepoSlug,
@@ -85,7 +86,8 @@ export async function applyDefectReports(options: ApplyDefectsOptions): Promise<
 
   // Auto-filing rides the dedicated token — never the App/store credential
   // — so a tokenless instance produces clean drafts, not a 404 per beat.
-  const autoFileToken = getEnv(options.env, "GITHUB_DEFECTS_TOKEN");
+  // Local mode never files publicly: the report stays a draft for the principal.
+  const autoFileToken = isLocalMode(config) ? undefined : getEnv(options.env, "GITHUB_DEFECTS_TOKEN");
   const repo = engineRepoSlug(config);
 
   const written: string[] = [];

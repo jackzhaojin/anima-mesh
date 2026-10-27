@@ -5,6 +5,8 @@ import * as path from "node:path";
 import { execFile } from "node:child_process";
 import { loadInstanceEnv } from "../instance/env.js";
 import { GOOGLE_READ_SCOPES } from "../sources/google.js";
+import { assertNotLocal } from "../instance/local-mode.js";
+import type { InstanceConfig } from "../instance/config-core.js";
 
 /**
  * `anima-mesh connect google` - the one-time consent that lets a brain READ
@@ -144,6 +146,9 @@ export interface ConnectGoogleResult {
 /** Run the full loopback consent; resolves once the refresh token is stored and verified. */
 export async function connectGoogle(opts: ConnectGoogleOptions): Promise<ConnectGoogleResult> {
   const root = path.resolve(opts.instanceRoot);
+  // A local-mode brain never connects a cloud account (v2.3.6).
+  const mode = (JSON.parse(readFileSync(path.join(root, "animamesh.config.json"), "utf8")) as { mode?: string }).mode;
+  if (mode === "local") assertNotLocal({ mode: "local" } as InstanceConfig, "connecting a Google account");
   const env = loadInstanceEnv(root);
   const clientId = env.GOOGLE_READ_CLIENT_ID;
   const clientSecret = env.GOOGLE_READ_CLIENT_SECRET;

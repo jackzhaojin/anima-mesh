@@ -28,7 +28,7 @@
   },
   "delivery": {
     "channels": [
-      "discord"
+      "console"
     ],
     "deliverAgent": "chief-of-staff"
   },

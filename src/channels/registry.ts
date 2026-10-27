@@ -10,6 +10,7 @@ import { newestReportName } from "../harness/latest-report.js";
 import { loadFocus, DEFAULT_BRIEF } from "../harness/focus.js";
 import { digestBrief } from "./brief-core.js";
 import { flatBody } from "./types.js";
+import { assertLocalChannels } from "../instance/local-mode.js";
 
 /**
  * Channel registry + store-based delivery — Workers-safe. All bundled
@@ -112,6 +113,7 @@ export async function deliverLatestReportFromStore(
   const config = await store.loadConfig();
   const agent = options.agent ?? config.delivery?.deliverAgent ?? "chief-of-staff";
   const channelNames = options.channels ?? config.delivery?.channels ?? ["console"];
+  assertLocalChannels(config, channelNames);
 
   // Ledger-true recency, never filename order (see harness/latest-report.ts).
   const newest = await newestReportName(store, agent);

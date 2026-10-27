@@ -40,6 +40,12 @@ export interface InitAnswers {
   brainKind?: BrainKind;
   /** The brain's id for links and `share:` markings. Default: slug of orgName. */
   brainId?: string;
+  /**
+   * Local mode (v2.3.6): nothing leaves the machine except the model call -
+   * console delivery, no network sources or web search, no public engine
+   * issues, no cloud tier (instance/local-mode.ts).
+   */
+  localOnly?: boolean;
   /** Injectable clock for deterministic tests. */
   now?: string;
 }
@@ -104,8 +110,11 @@ export async function scaffoldBrain(targetDir: string, answers: InitAnswers): Pr
   // Dated records file under their calendar year (docs/memory-layout.md).
   const year = date.slice(0, 4);
   const eventRel = `events/${year}/${date.replaceAll("-", "")}-instance-created.md`;
-  const model = answers.defaultModel ?? "kimi-code/kimi-for-coding";
-  const harness = answers.defaultHarness ?? "opencode";
+  const local = answers.localOnly === true;
+  // A local brain defaults to a local CLI harness; the model call is its one
+  // network path, and the organization picks which one is approved.
+  const model = answers.defaultModel ?? (local ? "claude-sonnet-5-5" : "kimi-code/kimi-for-coding");
+  const harness = answers.defaultHarness ?? (local ? "claude-code" : "opencode");
   const persona = answers.personaName?.trim() || undefined;
 
   const created: string[] = [];
@@ -118,6 +127,7 @@ export async function scaffoldBrain(targetDir: string, answers: InitAnswers): Pr
 
   // ── instance config: the pairing between this brain and the engine ──────
   const config: InstanceConfig = {
+    ...(local ? { mode: "local" as const, delivery: { channels: ["console"] } } : {}),
     bundle: "bundle",
     ledger: "ledger/actions.jsonl",
     approvals: "approvals",
@@ -303,11 +313,25 @@ export async function scaffoldBrain(targetDir: string, answers: InitAnswers): Pr
 
   put(
     "bundle/ops/engine-feedback.md",
-    fillTemplate(readFileSync(path.join(templatesDir(), "ops", "engine-feedback.md"), "utf8"), {
-      DATE: date,
-      GENERATED: generated,
-    }),
+    local
+      ? `---\ntype: runbook\ntitle: "Engine feedback - kept inside this brain"\ndate: ${date}\n${generated}\n---\n\n` +
+          `# Engine feedback - kept inside this brain\n\n` +
+          `This brain runs in local mode: the engine never files issues from it, and its\n` +
+          `knowledge must not appear in any public tracker. When an agent hits an engine\n` +
+          `bug or a missing capability, it writes a draft under \`drafts/defects/\` and says so\n` +
+          `in its report. The principal decides whether to describe the problem upstream,\n` +
+          `by hand, in generic terms with no names, clients, data or internal details.\n`
+      : fillTemplate(readFileSync(path.join(templatesDir(), "ops", "engine-feedback.md"), "utf8"), {
+          DATE: date,
+          GENERATED: generated,
+        }),
   );
+
+  // ── the standards pack: how any session (Claude Code, Codex, a person)
+  // works in this brain, written into the brain itself (v2.3.6) ──────────
+  const standards = standardsPack({ name: answers.orgName, principal: answers.principalName, local, isPerson });
+  put("CLAUDE.md", standards);
+  put("AGENTS.md", `# AGENTS.md\n\nThe working agreement for this brain is [CLAUDE.md](CLAUDE.md); it applies to every\nassistant and every person who edits the bundle.\n`);
 
   // ── agents from templates ────────────────────────────────────────────────
   const vars = {
@@ -318,7 +342,8 @@ export async function scaffoldBrain(targetDir: string, answers: InitAnswers): Pr
     DEFAULT_HARNESS: harness,
   };
   for (const agentName of agents) {
-    put(`bundle/agents/${agentName}.md`, fillTemplate(loadAgentTemplate(agentName, kind), vars));
+    const text = fillTemplate(loadAgentTemplate(agentName, kind), vars);
+    put(`bundle/agents/${agentName}.md`, local ? localAgentText(text) : text);
   }
 
   // ── operational surfaces ─────────────────────────────────────────────────
@@ -352,4 +377,119 @@ export async function scaffoldBrain(targetDir: string, answers: InitAnswers): Pr
   }
 
   return { root, created, conformance };
+}
+
+/**
+ * The working agreement written into every new brain (v2.3.6): the
+ * standards the engine enforces or assumes - focus first, OKF v0.2
+ * frontmatter, the two-tier layout, newest-first log, local indexes, the
+ * untouchable constitution - so an interactive session in the brain, with
+ * or without the engine installed, keeps the same practices. Local mode
+ * adds its boundary.
+ */
+export function standardsPack(o: { name: string; principal: string; local: boolean; isPerson: boolean }): string {
+  return [
+    `# ${o.name} - working agreement`,
+    "",
+    `An AnimaMesh brain: an OKF v0.2 knowledge bundle plus the ledger, reports and`,
+    `approvals around it. ${o.principal} is the principal and the approval gate. These`,
+    `rules apply to every assistant session and every person who edits it.`,
+    ...(o.local
+      ? [
+          "",
+          "## Local mode: nothing leaves this machine",
+          "",
+          "`animamesh.config.json` sets `\"mode\": \"local\"`. The engine enforces it: reports go to the",
+          "console and to files, no chat or mail delivery, no cloud drives or inboxes, no web search,",
+          "no public engine issues, no cloud tier. Keep the same line by hand:",
+          "",
+          "- Never push this repository to a personal or public remote, and never copy its contents",
+          "  into another brain, a public issue, a chat outside the organization, or a prompt for a",
+          "  tool the organization has not approved.",
+          "- The model harness is the one network path. Use only the assistant and account the",
+          "  organization approves for this material.",
+          "- Engine bugs become drafts under `drafts/defects/`; describing one upstream is the",
+          "  principal's call, in generic terms with no internal details.",
+        ]
+      : []),
+    "",
+    "## Start every session here",
+    "",
+    "1. `bundle/ops/focus.md` - what matters right now. Work on top-of-mind items; give",
+    "   secondary and tertiary ones a line at most; leave quiet areas alone unless their",
+    "   exception fires; never touch hands-off topics.",
+    "2. `bundle/index.md` - the map of areas; follow local indexes from there.",
+    "3. `bundle/ops/nags.md` and `bundle/ops/calendar.md` - open asks and dates.",
+    "",
+    "## Writing memory (OKF v0.2)",
+    "",
+    "One concept per Markdown file, with frontmatter:",
+    "",
+    "```yaml",
+    "---",
+    "type: fact                  # required",
+    'title: "One line"',
+    "description: One sentence an index or search can use.",
+    "date: 2026-01-31            # the domain date, YYYY-MM-DD",
+    "generated: { by: <harness>/<model>, at: 2026-01-31T14:05:00-05:00 }",
+    "sources:",
+    '  - { id: original, resource: "where it came from", title: "what it is" }',
+    "verified: { by: <who>, at: <when>, note: what was actually checked }   # only when true",
+    "---",
+    "```",
+    "",
+    "- `sources` say where a fact came from; cite claims with footnotes keyed to the id.",
+    "- `verified` records a real check; without it a fact is a lead, not a basis for action.",
+    "- `status` is lifecycle only (`draft` or `deprecated`); `stale_after` marks a shelf life.",
+    "- Update evergreen facts in place; record what changed as a dated event or decision.",
+    "",
+    "## Where files go: two tiers, three at most",
+    "",
+    "- Below an area, dated memory splits by calendar year first (`events/2026/`,",
+    "  `decisions/2026/`), evergreen memory by topic. A second level is optional (one",
+    "  workspace, a month, a sub-topic); never a fourth folder.",
+    "- Dated files are `YYYYMMDD-slug.md`; evergreen files keep stable names.",
+    "- Every folder has an `index.md` listing its children with a short description (no",
+    "  frontmatter, except the root's `okf_version`). Update it in the same change.",
+    "- `bundle/log.md` is newest first: add a `## YYYY-MM-DD` group at the top and never",
+    "  rewrite old entries. Events are append-only; a changed course is a new decision.",
+    "- `bundle/constitution.md` is never edited by an assistant; only the principal",
+    "  amends it, with a decision and a log entry.",
+    "",
+    "## The focus and the brief",
+    "",
+    "- The focus links out: list each item with a link to its record, and keep the",
+    "  detail in the record. Records linked under Top of mind are what the hub reads in",
+    "  full; moving an item out of focus changes nothing but its priority.",
+    "- The daily brief is three lines (`## Brief`), a short `## Also` list, and a",
+    "  `## Detail` that stays in the repo.",
+    "",
+    "## Checking your work",
+    "",
+    "From an AnimaMesh engine checkout: `pnpm cli validate <this brain>` must pass with no",
+    "errors; fix warnings when you touch the files they name.",
+    "",
+  ].join("\n");
+}
+
+/**
+ * A template agent as a local-mode brain gets it: network read sources and
+ * the web budget removed from its frontmatter (the engine would refuse them
+ * anyway), with a comment saying why, so the file does not promise reach
+ * the brain will never have.
+ */
+export function localAgentText(text: string): string {
+  const end = text.indexOf("\n---", 4);
+  if (!text.startsWith("---\n") || end === -1) return text;
+  let fm = text.slice(0, end);
+  const rest = text.slice(end);
+  // The comment block that introduces context-sources describes cloud setup.
+  fm = fm.replace(/((?:^#.*\n)+)(?=context-sources:)/m, "");
+  fm = fm.replace(/^context-sources:\s*\[([^\]]*)\]\s*$/m, (_m, list: string) => {
+    const kept = list.split(",").map((x) => x.trim()).filter((x) => x && !["gmail", "google-calendar", "google-drive", "onedrive", "github-docs"].includes(x));
+    const note = "# Local mode: no inbox, calendar, drive or remote docs; linked brains only from local checkouts.";
+    return kept.length ? `${note}\ncontext-sources: [${kept.join(", ")}]` : note;
+  });
+  fm = fm.replace(/^((?:#.*\n)*)web:\s*\d+\s*$/m, "# Local mode: no web search; no query leaves the machine.");
+  return fm + rest;
 }

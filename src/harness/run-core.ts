@@ -6,7 +6,8 @@ import { applyDefectReports } from "./defects.js";
 import { continueRequestedReads, stripReadRequests, readRequestCapabilityLines } from "./read-requests.js";
 import type { ProviderImage } from "../providers/types.js";
 import { defectCapabilityLines } from "../defects/report-core.js";
-import { loadFocus, focusContextSection, briefFormatLines } from "./focus.js";
+import { loadFocus, focusContextSection, focusRecordsSection, briefFormatLines } from "./focus.js";
+import { isLocalMode } from "../instance/local-mode.js";
 import {
   resolveProvider,
   providerCapabilities,
@@ -214,7 +215,8 @@ export async function runAgentCore(options: RunCoreOptions): Promise<RunReport> 
   const provider = options.provider ?? resolveProvider(cognition.harness, providerCtx);
   provider.assertConfigured();
   const capabilities = providerCapabilities(provider);
-  const webBudget = capabilities.webSearch ? agent.web : 0;
+  // Local mode: no search query leaves through the model vendor's tool.
+  const webBudget = capabilities.webSearch && !isLocalMode(config) ? agent.web : 0;
   const sourceCtx = {
     env: providerCtx.env ?? {},
     fetchImpl: providerCtx.fetchImpl,
@@ -231,7 +233,7 @@ export async function runAgentCore(options: RunCoreOptions): Promise<RunReport> 
     store,
     config,
     dateStamp,
-    { provider: provider.name, capabilities, webBudget },
+    { provider: provider.name, capabilities, webBudget, localMode: isLocalMode(config) },
     sourceCtx,
     options.beatNotes,
   );
@@ -421,7 +423,7 @@ async function buildPrompt(
   store: InstanceStore,
   config: InstanceConfig,
   dateStamp: string,
-  runtime: { provider: string; capabilities: ProviderCapabilities; webBudget: number },
+  runtime: { provider: string; capabilities: ProviderCapabilities; webBudget: number; localMode?: boolean },
   sourceCtx: SourceContext,
   beatNotes?: string[],
 ): Promise<string> {
@@ -479,7 +481,9 @@ async function buildPrompt(
   const external = agent.sources.length > 0 ? await sourceSections(agent.sources, sourceCtx) : [];
   return [
     sections.join("\n"),
-    await bundleContext(store, config, sourceCtx.now),
+    await bundleContext(store, config, sourceCtx.now, {
+      focusRecords: agent.name === (config.delivery?.deliverAgent ?? "chief-of-staff"),
+    }),
     await declaredReadsContext(store, config, agent),
     await instanceContext(store),
     ...external,
@@ -503,7 +507,7 @@ async function buildPrompt(
  */
 export function capabilityLines(
   agent: AgentConcept,
-  runtime: { provider: string; capabilities: ProviderCapabilities; webBudget: number },
+  runtime: { provider: string; capabilities: ProviderCapabilities; webBudget: number; localMode?: boolean },
 ): string[] {
   const { capabilities: caps, provider } = runtime;
   const lines = [
@@ -531,6 +535,12 @@ export function capabilityLines(
       `- **Web search: YES**, up to ${runtime.webBudget} searches this run. Spend them on the checks that`,
       "  most need live confirmation, and cite what you found. Unspent budget is not a virtue; an",
       "  unsupported claim is still an unsupported claim.",
+    );
+  } else if (agent.web > 0 && runtime.localMode) {
+    lines.push(
+      `- **Web search: NO, this brain runs in local mode**, so no search query leaves the machine, even`,
+      `  though your concept asks for ${agent.web}. Work from the bundle; name any check that needs the web`,
+      "  as a gap for the principal to run by hand.",
     );
   } else if (agent.web > 0) {
     // Declared but unavailable — the exact shape that silently failed before.
@@ -636,13 +646,26 @@ export function eventSortKey(relPath: string): string {
   return `${m ? `${m[1]}${m[2]}${m[3]}` : "00000000"} ${relPath}`;
 }
 
-export async function bundleContext(store: InstanceStore, config: InstanceConfig, now: Date = new Date()): Promise<string> {
+export async function bundleContext(
+  store: InstanceStore,
+  config: InstanceConfig,
+  now: Date = new Date(),
+  options: { focusRecords?: boolean } = {},
+): Promise<string> {
   // Tolerant reads — a missing ops file is context absence, not a crash.
   const parts: string[] = ["\n## Bundle context (source of truth excerpts)"];
   // ops/focus.md: the principal's priority dial, first, so everything after
   // it is read in its light (v2.3.5).
   const focus = await loadFocus(store, config);
-  if (focus) parts.push(focusContextSection(focus));
+  if (focus) {
+    parts.push(focusContextSection(focus));
+    // The hub (beats and directions) also gets the records the focus links
+    // under Top of mind; spokes keep their own reads: and stay lean.
+    if (options.focusRecords) {
+      const records = await focusRecordsSection(store, config, focus);
+      if (records) parts.push(records);
+    }
+  }
   // ops/nags.md: the persistent-reminder surface — principals opt in to being
   // bugged every heartbeat until an item is done. Inlined for EVERY agent.
   for (const rel of ["index.md", "ops/calendar.md", "ops/watch-list.md", "ops/nags.md"]) {

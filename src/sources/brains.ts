@@ -3,6 +3,7 @@ import type { BrainIdentity, BrainLinkConfig } from "../instance/config-core.js"
 import type { InstanceStore } from "../instance/store.js";
 import { getEnv } from "../instance/env-core.js";
 import { GitHubInstanceStore } from "../instance/store-github.js";
+import { isLocalMode } from "../instance/local-mode.js";
 import {
   brainConfigProblems,
   computeExport,
@@ -48,7 +49,9 @@ export function openLinkedBrain(link: BrainLinkConfig, ctx: SourceContext): Open
     if (local) return { store: readOnlyStore(local), via: `local checkout ${link.localPath}` };
     gaps.push(ctx.openLocalBrain ? `no brain found at ${link.localPath}` : "local checkouts are not reachable on this tier");
   }
-  if (link.repo) {
+  if (link.repo && isLocalMode(ctx.config)) {
+    gaps.push("local mode reads linked brains only from local checkouts");
+  } else if (link.repo) {
     const tokenName = linkTokenEnv(link);
     const token = getEnv(ctx.env, tokenName);
     if (token) {

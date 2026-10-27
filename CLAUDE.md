@@ -100,7 +100,9 @@ src/
                 continuation + thinking-budget retry).
                 anthropic-api = subscription OAuth over plain fetch; its system
                 prompt SHAPE is load-bearing (docs/learnings/2026-07-12)
-  instance/     config loading/resolution · THE STORAGE SEAM: store.ts
+  instance/     config loading/resolution · local-mode.ts (v2.3.6: "mode":
+                "local" refusals - console delivery, no network sources or web
+                search, no public issues, no cloud tier) · THE STORAGE SEAM: store.ts
                 interface, store-fs (local), store-github (tarball read,
                 one commit per flush, never force) · tar.ts · github-auth.ts
                 · env(-core).ts — the env-injection primitive every provider,
@@ -115,8 +117,11 @@ src/
                 verifiers(-core) · the three propose/dispose write paths:
                 schedule.ts (wakes/pauses/cadence + schedule-request),
                 drafts.ts (path-jailed draft-request), defects.ts
-                (defect-report → public engine issue, leak-guarded)
-  channels/     delivery registry (registry.ts, Workers-safe: discord/notion/
+                (defect-report → public engine issue, leak-guarded) · focus.ts (v2.3.5:
+                ops/focus.md inlined first, Top-of-mind links inlined for the hub,
+                the brief format, focus-update from the principal only)
+  channels/     brief-core.ts (the three-line digest: ## Brief lines, ## Also
+                list + report link) · delivery registry (registry.ts, Workers-safe: discord/notion/
                 gmail/console, injected env) · index.ts fs wrapper
   brains/       the mesh of brains (v2.0): core.ts (Workers-safe) = brain
                 identity, links declared on both sides, `share:` grants +

@@ -3,7 +3,7 @@
 This history is organized by **minor release line** (and, from 2.0, major):
 the capability boundary operators actually adopt. Patch tags are deliberately
 rolled into the value and maturity of their minor rather than narrated one by
-one. The latest tag is **v2.3.5**.
+one. The latest tag is **v2.3.6**.
 
 ## Upgrade procedure
 
@@ -34,7 +34,26 @@ The ledger remains append-only; never "migrate" it by editing old entries.
 
 ## [v2.3.x] - Slack: the persona in a group setting
 
-**Latest tag: v2.3.5 · 2026-10-27**
+**Latest tag: v2.3.6 · 2026-10-27**
+
+**Local mode, the standards pack, and a focus that links out (v2.3.6).**
+`init --local` scaffolds a brain whose knowledge never leaves the machine:
+`"mode": "local"` makes the engine refuse, in code, chat and mail
+delivery (console only), network read sources (Gmail, Calendar, Drive,
+OneDrive, remote docs, remote linked brains), web search, public engine
+issues (drafts only), the cloud tier, `github:` remote instances, the
+Slack listener and Google consent; `validate` errors on a local config
+that reaches out. The model call is the one remaining network path. Every
+`init` now writes `CLAUDE.md` and `AGENTS.md`, the working agreement for
+any assistant session in the brain (focus first, OKF v0.2, the layout, the
+log, the constitution), with the local boundary added for local brains.
+The focus links out: records linked under Top of mind are inlined for the
+hub, so moving an item in or out of focus changes what the hub reads in
+full. The sample brain delivers to the console and runs a full heartbeat
+with no setup. See [docs/local-only.md](docs/local-only.md).
+
+**Upgrade:** nothing required. To make an existing brain local, follow
+[Converting an existing brain](docs/local-only.md#converting-an-existing-brain).
 
 **Focus, and a brief you can read in three lines (v2.3.5).** A brain now
 says what matters in `ops/focus.md`: top of mind, secondary, tertiary,

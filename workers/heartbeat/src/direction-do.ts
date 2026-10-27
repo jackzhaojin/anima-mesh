@@ -2,6 +2,7 @@ import { DurableObject } from "cloudflare:workers";
 import { GitHubInstanceStore } from "../../../src/instance/store-github.js";
 import { githubToken } from "../../../src/instance/github-auth.js";
 import { runDirectionCore, type DirectionMessage } from "../../../src/harness/direction-core.js";
+import { assertNotLocal } from "../../../src/instance/local-mode.js";
 import { dateStampFor } from "../../../src/harness/run-core.js";
 import { gmailChannel, pollGmailInbox, markGmailRead } from "../../../src/channels/gmail.js";
 import { postSlackMarkdown, slackConversationContext } from "../../../src/channels/slack.js";
@@ -279,6 +280,8 @@ export class DirectionDO extends DurableObject<Env> {
     }
 
     const config = await store.loadConfig();
+    // A local-mode brain's knowledge never reaches the cloud tier (v2.3.6).
+    assertNotLocal(config, "the cloud tier");
     const directionAgent = config.direction?.agent ?? config.delivery?.deliverAgent ?? "chief-of-staff";
     const replies: Array<{ item: QueuedDirection; content: string }> = [];
     for (const item of queue) {

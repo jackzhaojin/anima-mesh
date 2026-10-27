@@ -33,6 +33,7 @@ import { migrateBundle } from "./okf/migrate.js";
 import type { BrainKind } from "./instance/config-core.js";
 import { execFileSync } from "node:child_process";
 import { writeFileSync } from "node:fs";
+import { assertNotLocal, localModeIssues } from "./instance/local-mode.js";
 
 /**
  * anima-mesh CLI — init / validate / run / gate / report.
@@ -100,7 +101,7 @@ function usage(): string {
     "                        [--org NAME | --name NAME] [--principal NAME] [--principal-email EMAIL]",
     "                        [--kind person|org|team|group] [--brain-id ID] [--agents a,b,c]",
     "                        [--persona NAME] [--description TEXT]",
-    "                        [--model MODEL] [--harness HARNESS]",
+    "                        [--model MODEL] [--harness HARNESS] [--local]",
     "  anima-mesh validate <dir> [--profile okf|animamesh]",
     "  anima-mesh run <agent> [--instance dir | --instance github:owner/repo#ref]",
     "  anima-mesh gate list|approve <id>|deny <id> [--instance dir] [--by NAME] [--note TEXT]",
@@ -166,6 +167,8 @@ async function cmdInit(args: string[], io: { log: (s: string) => void; error: (s
   } else {
     answers = await interactiveInterview();
   }
+  // Local mode (v2.3.6): nothing but the model call leaves the machine.
+  if (hasFlag(args, "local")) answers = { ...answers, localOnly: true };
 
   if (hasFlag(args, "agentic")) {
     const harnessName = flag(args, "agentic") || "opencode";
@@ -193,6 +196,7 @@ async function cmdValidate(args: string[], io: { log: (s: string) => void }): Pr
     // Config-aware checks (v2.0.0): the link map, members, and share
     // markings only make sense against the instance config.
     report.issues.push(...brainIssues(bundle, instance.config));
+    report.issues.push(...localModeIssues(instance.config));
     report.ok = !report.issues.some((i) => i.level === "error");
   }
   io.log(formatReport(report));
@@ -217,6 +221,7 @@ async function cmdRun(args: string[], io: { log: (s: string) => void }): Promise
     }
     const env = loadInstanceEnv(process.cwd());
     const store = new GitHubInstanceStore({ repo, ref, token: await githubToken(env) });
+    assertNotLocal(await store.loadConfig(), "running from a github: remote");
     report = await runAgent({
       store,
       agentName,

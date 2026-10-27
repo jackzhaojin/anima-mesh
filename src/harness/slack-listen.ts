@@ -15,6 +15,7 @@ import {
   type SlackMention,
 } from "../channels/slack.js";
 import { runDirectionCore } from "./direction-core.js";
+import { assertNotLocal } from "../instance/local-mode.js";
 
 /**
  * Slack mentions on the laptop tier (v2.3.1) - the same direction pipeline
@@ -85,6 +86,7 @@ export async function slackListenOnce(options: SlackListenOptions): Promise<Slac
   const fresh = mentions.filter((m) => !handled.has(m.ts));
   const result: SlackListenResult = { answered: 0, failed: 0, denied: 0 };
   const config = await store.loadConfig();
+  assertNotLocal(config, "the Slack listener");
   const directionAgent = config.direction?.agent ?? config.delivery?.deliverAgent ?? "chief-of-staff";
 
   for (const m of fresh) {

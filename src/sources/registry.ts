@@ -3,6 +3,7 @@ import { listCabinet, cabinetListingMarkdown, inlineCabinetFiles, cabinetContent
 import { listDocs, docsListingMarkdown, githubDocsConfigured } from "./github-docs.js";
 import { brainsSection } from "./brains.js";
 import { gmailSection, calendarSection, driveSection } from "./google.js";
+import { isLocalMode, NETWORK_SOURCES, localModeSourceSection } from "../instance/local-mode.js";
 
 /**
  * Source registry — Workers-safe (fetch-based sources only, injected env).
@@ -17,8 +18,14 @@ export const KNOWN_SOURCES = ["onedrive", "github-docs", "brains", "gmail", "goo
 
 export async function sourceSections(sourceNames: string[], ctx: SourceContext): Promise<string[]> {
   const sections: string[] = [];
+  const local = isLocalMode(ctx.config);
   for (const name of sourceNames) {
-    if (name === "onedrive") {
+    // Local mode: no network source is even attempted (v2.3.6). The docs
+    // corpus still reads a local working tree; linked brains open only
+    // local checkouts (brains.ts).
+    if (local && (NETWORK_SOURCES.includes(name) || (name === "github-docs" && !ctx.env.GITHUB_DOCS_LOCAL_PATH))) {
+      sections.push(localModeSourceSection(name));
+    } else if (name === "onedrive") {
       sections.push(await onedriveSection(ctx));
     } else if (name === "github-docs") {
       sections.push(await githubDocsSection(ctx));

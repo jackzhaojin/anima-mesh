@@ -5,6 +5,7 @@ import type { LedgerEntry } from "../ledger/ledger.js";
 import { runAgentCore, dateStampFor, type RunReport } from "./run-core.js";
 import { scheduleFromBundle, effectiveCadence, mutateSchedule, type Schedule } from "./schedule.js";
 import type { LocalBrainOpener, SourceFs, SourceContext } from "../sources/types.js";
+import { assertNotLocal } from "../instance/local-mode.js";
 
 /**
  * The heartbeat trigger — one of D5's four deterministic jobs. Decides which
@@ -157,6 +158,8 @@ function tierBlockedNotes(blocked: HeartbeatDecision[]): string[] {
 export async function heartbeatCore(options: HeartbeatCoreOptions): Promise<HeartbeatResult> {
   const store = options.store;
   const config = await store.loadConfig();
+  // A local-mode brain's knowledge never reaches the cloud tier (v2.3.6).
+  if (options.cloudTier) assertNotLocal(config, "the cloud tier");
   const bundle = await store.loadBundle();
   const agents = agentsFromBundle(bundle);
   const ledgerEntries = await store.readLedger();
