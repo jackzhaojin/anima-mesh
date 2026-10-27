@@ -6,7 +6,7 @@ level: L3
 model: "claude-sonnet-5"
 harness: anthropic-api
 heartbeat: daily
-whitelist: [schedule-update, draft-write, defect-report]
+whitelist: [schedule-update, draft-write, defect-report, focus-update]
 # Web searches per run — a small budget for the concrete lookups a brief
 # gets blocked on, not for research sweeps; that is research-watch's job.
 web: 3

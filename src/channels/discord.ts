@@ -1,4 +1,5 @@
 import type { DeliveryChannel, DeliveryMessage, ChannelContext, DeliveryResult } from "./types.js";
+import { flatBody } from "./types.js";
 import { getEnv } from "../instance/env-core.js";
 
 /**
@@ -56,7 +57,7 @@ function mode(ctx: ChannelContext): "webhook" | "bot-dm" | null {
 }
 
 function buildChunks(msg: DeliveryMessage): string[] {
-  const full = `**${msg.title}**\n\n${msg.body}`;
+  const full = `**${msg.title}**\n\n${flatBody(msg)}`;
   const chunks: string[] = [];
   let rest = full;
   while (rest.length > CONTENT_LIMIT) {

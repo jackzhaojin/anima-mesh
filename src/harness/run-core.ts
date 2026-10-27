@@ -6,6 +6,7 @@ import { applyDefectReports } from "./defects.js";
 import { continueRequestedReads, stripReadRequests, readRequestCapabilityLines } from "./read-requests.js";
 import type { ProviderImage } from "../providers/types.js";
 import { defectCapabilityLines } from "../defects/report-core.js";
+import { loadFocus, focusContextSection, briefFormatLines } from "./focus.js";
 import {
   resolveProvider,
   providerCapabilities,
@@ -468,6 +469,10 @@ async function buildPrompt(
   if (beatNotes && beatNotes.length > 0) {
     sections.push("", ...beatNotes);
   }
+  // The hub's report is the brief: state the format delivery enforces.
+  if (agent.name === (config.delivery?.deliverAgent ?? "chief-of-staff")) {
+    sections.push(...briefFormatLines(await loadFocus(store, config)));
+  }
   // Declared read sources (agent frontmatter opt-in) — live external context
   // inlined so L1 runs still need no tool access. Failures become honest
   // sections, never aborted runs.
@@ -634,6 +639,10 @@ export function eventSortKey(relPath: string): string {
 export async function bundleContext(store: InstanceStore, config: InstanceConfig, now: Date = new Date()): Promise<string> {
   // Tolerant reads — a missing ops file is context absence, not a crash.
   const parts: string[] = ["\n## Bundle context (source of truth excerpts)"];
+  // ops/focus.md: the principal's priority dial, first, so everything after
+  // it is read in its light (v2.3.5).
+  const focus = await loadFocus(store, config);
+  if (focus) parts.push(focusContextSection(focus));
   // ops/nags.md: the persistent-reminder surface — principals opt in to being
   // bugged every heartbeat until an item is done. Inlined for EVERY agent.
   for (const rel of ["index.md", "ops/calendar.md", "ops/watch-list.md", "ops/nags.md"]) {

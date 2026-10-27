@@ -174,7 +174,8 @@ against the ledger, and replies in thread. Setup and an app manifest:
 
 **Outbound — the daily brief (flow ③):** the beat's last agent is the hub;
 its report goes to the brain's `delivery.channels`: a Discord bot DM, a
-Slack channel (head in the channel, the rest threaded under it), Notion,
+Slack channel (three brief lines in the channel, a short list and the report
+link threaded under it; see [focus.md](focus.md)), Notion,
 Gmail or console. The channel registry is pluggable. Failure alerts follow
 the same channels (Slack and/or Discord; v2.3.2): silence must mean
 success. Long reports are never truncated: anything over a channel's

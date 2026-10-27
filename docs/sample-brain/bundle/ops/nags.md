@@ -8,9 +8,10 @@ generated: { by: codex/gpt-6, at: 2026-10-26T20:26:17-04:00 }
 # Active nags
 
 > Founder directive (2026-07-02): *"bug me daily until I do this."* Every
-> agent sees this file every run. Compliance-ops repeats every ACTIVE item
-> in `## Needs you` with its age ("day N of asking"); Mira leads the brief
-> with them. An item leaves this list only when its done-condition is met —
+> agent sees this file every run. How loudly each nag is raised follows
+> [the focus](focus.md): a top-of-mind nag leads the brief, a secondary one
+> gets one line, and a nag under `## Snoozed` stays silent until its wake
+> condition. An item leaves this list only when its done-condition is met;
 > a new log entry records the completion.
 
 ## Active
@@ -18,7 +19,14 @@ generated: { by: codex/gpt-6, at: 2026-10-26T20:26:17-04:00 }
 | # | Nag | Since | Done when |
 |---|---|---|---|
 | 1 | **Export FY2026 bank transactions (CSV)** from the operating account and drop it in the document store. This is the single blocker on reconciling [../organization/ownership/capital-structure.md](../organization/ownership/capital-structure.md) — and reconciliation is the blocker on Form 1120 prep (see [calendar.md](calendar.md)). Prep pack: `drafts/nag-prep/01-bank-export.md`. | 2026-07-02 | Export in the store, cataloged in `organization/documents/`, librarian reconciliation run clean |
-| 2 | **Rewrite the one-page service description** to the current direction (research-led consulting, not staff augmentation). Mira brings a section outline to the brief until writing starts. | 2026-07-12 | New one-pager in the document store, cataloged |
+
+## Snoozed
+
+Silent until the wake condition; the focus quiets business development.
+
+| # | Nag | Since | Wake when | Done when |
+|---|---|---|---|---|
+| 2 | **Rewrite the one-page service description** to the current direction (research-led consulting, not staff augmentation). | 2026-07-12 | The founder takes business development off quiet in the focus | New one-pager in the document store, cataloged |
 
 ## Completed
 

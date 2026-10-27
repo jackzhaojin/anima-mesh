@@ -6,6 +6,14 @@ This file is the story of the company's operating system.
 
 ## 2026-10-27
 
+### A focus file, and a brief the founder can read in three lines
+
+Added [the focus](ops/focus.md): the 1120 and its reconciliation lead,
+business development is quiet (nag #2 moved to `## Snoozed` with a wake
+condition), and the lease renewal is hands-off. Mira's whitelist gains
+`focus-update` so the founder can move the dial from chat. The brief now
+goes out as three lines with a short Also list in the thread.
+
 ### Dated records move into calendar-year folders
 
 Decisions and events moved to `decisions/2026/` and `events/2026/` and took

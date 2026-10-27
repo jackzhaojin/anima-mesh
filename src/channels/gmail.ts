@@ -1,4 +1,5 @@
 import type { DeliveryChannel, DeliveryMessage, ChannelContext, DeliveryResult } from "./types.js";
+import { flatBody } from "./types.js";
 import { getEnv } from "../instance/env-core.js";
 
 /**
@@ -78,7 +79,7 @@ export const gmailChannel: DeliveryChannel = {
       `Subject: ${msg.title}`,
       'Content-Type: text/plain; charset="UTF-8"',
       "",
-      msg.body,
+      flatBody(msg),
     ].join("\r\n");
 
     const sendRes = await doFetch(`${GMAIL_API}/messages/send`, {

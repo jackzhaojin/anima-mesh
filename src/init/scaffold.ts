@@ -197,6 +197,7 @@ export async function scaffoldBrain(targetDir: string, answers: InitAnswers): Pr
     "in the principal's document store; update this index when adding a concept.\n");
   put("bundle/ops/index.md",
     "# Operations\n\n" +
+    "- [Focus](focus.md) - What matters right now; every agent reads it first, and it shapes the brief.\n" +
     `- [Calendar](calendar.md) - ${isPerson ? "Personal obligations" : "Compliance deadlines"}.\n` +
     "- [Watch-list](watch-list.md) - Signals worth researching.\n" +
     "- [Schedule](schedule.md) - Cadence overrides and one-shot wakes.\n" +
@@ -251,6 +252,26 @@ export async function scaffoldBrain(targetDir: string, answers: InitAnswers): Pr
       `## Hard deadlines\n\n| Due | Item | State |\n|---|---|---|\n| _yyyy-mm-dd_ | _add your first hard deadline_ | not started |\n\n` +
       `## Recurring cycles\n\n| Cadence | Item |\n|---|---|\n| daily | agent heartbeats; report what needs the principal |\n\n` +
       `## One-time items outstanding\n\n- [ ] Replace these placeholders with ${isPerson ? "this person's" : "the organization's"} real obligations\n`,
+  );
+
+  // The priority dial (v2.3.5): starts as a template the principal fills in.
+  const focusStale = new Date(`${date}T00:00:00Z`);
+  focusStale.setUTCDate(focusStale.getUTCDate() + 30);
+  put(
+    "bundle/ops/focus.md",
+    `---\ntype: focus\ntitle: "Focus - what matters right now"\n` +
+      `description: The principal's priority dial; every agent reads it first and the brief follows it.\n` +
+      `date: ${date}\nstale_after: ${focusStale.toISOString().replace(".000Z", "Z")}\nbrief: { lines: 3, also: 8 }\n${generated}\n---\n\n` +
+      `# Focus\n\n` +
+      `What matters right now. Every agent reads this first, every run; the daily\n` +
+      `brief leads with the top of it and keeps the rest to one line each. Change it\n` +
+      `whenever priorities move: by hand, or by asking the hub in chat once its\n` +
+      `whitelist includes \`focus-update\`. It is fine to say nothing matters here now.\n\n` +
+      `## Top of mind\n\n- _what the brief should lead with_\n\n` +
+      `## Secondary\n\n- _one line each in the brief's Also list_\n\n` +
+      `## Tertiary\n\n- _mentioned rarely, one line at most_\n\n` +
+      `## Quiet (silent unless the exception fires)\n\n- _an area, and the exception that breaks the silence (a tax deadline, a legal notice)_\n\n` +
+      `## Hands off (handled elsewhere; never raise or work on)\n\n- _a topic another session or person owns_\n`,
   );
 
   put(

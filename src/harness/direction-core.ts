@@ -13,6 +13,7 @@ import {
 } from "./run-core.js";
 import { applyDraftRequests, stripDraftRequests, draftCapabilityLines } from "./drafts.js";
 import { applyDefectReports } from "./defects.js";
+import { applyFocusUpdate, focusCapabilityLines, stripFocusUpdates } from "./focus.js";
 import { defectCapabilityLines, stripDefectReports } from "../defects/report-core.js";
 import { sourceSections } from "../sources/registry.js";
 import type { LocalBrainOpener, SourceContext, SourceFs } from "../sources/types.js";
@@ -211,7 +212,25 @@ export async function runDirectionCore(options: DirectionRunOptions): Promise<Di
     env: providerCtx.env ?? {},
     fetchImpl: providerCtx.fetchImpl,
   });
-  const reply = stripReadRequests(stripDefectReports(stripDraftRequests(result.text))).slice(0, REPLY_LIMIT);
+  // The principal moves the focus dial from chat (v2.3.5). A shared-channel
+  // mention counts only from a configured focus editor.
+  const fromPrincipal =
+    message.audience !== "group" || (config.direction?.focusEditors ?? []).includes(message.sender);
+  const focusWritten = await applyFocusUpdate({
+    store,
+    config,
+    agent,
+    runId,
+    gatedTypes,
+    approvals: approvalRecords,
+    clock,
+    text: result.text,
+    fromPrincipal,
+    dateStamp,
+    actor: `${provider.name}/${cognition.model}`,
+    progress,
+  });
+  const reply = stripFocusUpdates(stripReadRequests(stripDefectReports(stripDraftRequests(result.text)))).slice(0, REPLY_LIMIT);
 
   // The artifact is the evidence: the inbound message AND the disposition,
   // written by the harness (L1 contract), named so brief delivery skips it.
@@ -240,6 +259,7 @@ export async function runDirectionCore(options: DirectionRunOptions): Promise<Di
     "",
     ...(draftsWritten.length > 0 ? ["## Drafts written this run", "", ...draftsWritten.map((p) => `- ${p}`), ""] : []),
     ...(defectsFiled.length > 0 ? ["## Engine defects captured this run", "", ...defectsFiled.map((p) => `- ${p}`), ""] : []),
+    ...(focusWritten ? ["## Focus updated this run", "", `- ${focusWritten}`, ""] : []),
   ].join("\n");
   await store.writeReport(reportName, reportContent);
   await store.appendLedger({
@@ -330,6 +350,7 @@ async function buildDirectionPrompt(
         ]
       : []),
     ...(agent.whitelist.includes("defect-report") ? defectCapabilityLines(config.drafts) : []),
+    ...(agent.whitelist.includes("focus-update") ? focusCapabilityLines() : []),
     // Ask-driven retrieval (v0.17.0): a chat question is exactly where "open
     // the file this is about" gets asked — same surface as beat runs.
     ...readRequestCapabilityLines(agent, { vision }),

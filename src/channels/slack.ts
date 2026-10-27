@@ -1,4 +1,5 @@
 import type { DeliveryChannel, DeliveryMessage, ChannelContext, DeliveryResult } from "./types.js";
+import { flatBody } from "./types.js";
 import { getEnv } from "../instance/env-core.js";
 
 /**
@@ -163,10 +164,24 @@ export const slackChannel: DeliveryChannel = {
   },
 
   async deliver(msg: DeliveryMessage, ctx: ChannelContext): Promise<DeliveryResult> {
+    const via = mode(ctx);
+    // A digest (v2.3.5) posts its few lines as the notification, bare - the
+    // bot's name already says who it is from - and its thread as a reply.
+    if (msg.thread !== undefined && via === "bot") {
+      const channel = getEnv(ctx.env, "SLACK_CHANNEL_ID")!;
+      const parent = await postSlackMarkdown(ctx, { channel }, msg.body);
+      const reply = await postSlackMarkdown(ctx, { channel, threadTs: parent.ts }, msg.thread);
+      const messages = parent.messages + reply.messages;
+      return {
+        channel: "slack",
+        ok: true,
+        detail: `bot: posted a ${msg.body.split("\n").length}-line brief and ${reply.messages} thread reply(ies) (${messages} message(s))`,
+      };
+    }
     // The report body already opens with its own "# Title" heading; only
     // prepend the title when the body does not.
-    const markdown = msg.body.trimStart().startsWith("# ") ? msg.body : `# ${msg.title}\n\n${msg.body}`;
-    const via = mode(ctx);
+    const text = flatBody(msg);
+    const markdown = text.trimStart().startsWith("# ") ? text : `# ${msg.title}\n\n${text}`;
 
     if (via === "bot") {
       const { messages } = await postSlackMarkdown(ctx, { channel: getEnv(ctx.env, "SLACK_CHANNEL_ID")! }, markdown);

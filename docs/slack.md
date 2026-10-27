@@ -6,8 +6,9 @@ Slack gives the mesh two surfaces, either of which works alone:
 
 1. **Brief delivery to a channel.** `slack` is a delivery channel like
    `discord` or `gmail`: the daily brief posts into a channel, rendered as
-   Markdown. A long brief puts its head in the channel and the rest in that
-   message's thread, so a shared channel shows one brief per day.
+   Markdown. Since v2.3.5 the channel message is the brief's three lines;
+   the short Also list and a link to the full report go in its thread, so a
+   shared channel shows one short brief per day ([focus and the brief](focus.md)).
 2. **Answering when mentioned.** Someone @-mentions the persona in a
    channel it was invited to (or DMs the app), and it answers in that
    thread after reading the conversation around the mention. This is the

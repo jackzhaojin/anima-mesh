@@ -74,6 +74,9 @@ const LINK_TOKEN_RE = /^BRAIN_LINK_[A-Z0-9_]+_TOKEN$/;
 /** Flatten the Worker env into the engine's injectable env record. */
 export function envRecord(env: Env): Record<string, string | undefined> {
   return {
+    // Not secrets: where the brain lives, so a delivered brief can link the full report.
+    BRAIN_REPO: env.BRAIN_REPO,
+    BRAIN_REF: env.BRAIN_REF,
     GITHUB_APP_ID: env.GITHUB_APP_ID,
     GITHUB_APP_INSTALLATION_ID: env.GITHUB_APP_INSTALLATION_ID,
     GITHUB_APP_PRIVATE_KEY: env.GITHUB_APP_PRIVATE_KEY,

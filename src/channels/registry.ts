@@ -7,6 +7,9 @@ import { parseConcept } from "../okf/frontmatter.js";
 import type { InstanceConfig } from "../instance/config-core.js";
 import type { InstanceStore } from "../instance/store.js";
 import { newestReportName } from "../harness/latest-report.js";
+import { loadFocus, DEFAULT_BRIEF } from "../harness/focus.js";
+import { digestBrief } from "./brief-core.js";
+import { flatBody } from "./types.js";
 
 /**
  * Channel registry + store-based delivery — Workers-safe. All bundled
@@ -21,7 +24,7 @@ export const consoleChannel: DeliveryChannel = {
     /* always */
   },
   async deliver(msg: DeliveryMessage, ctx: ChannelContext): Promise<DeliveryResult> {
-    (ctx.log ?? console.log)(`\n=== ${msg.title} ===\n\n${msg.body}\n`);
+    (ctx.log ?? console.log)(`\n=== ${msg.title} ===\n\n${flatBody(msg)}\n`);
     return { channel: "console", ok: true, detail: "printed" };
   },
 };
@@ -55,6 +58,23 @@ export function reportToMessage(raw: string, fallbackTitle: string, config: Inst
     sender: config.identity?.persona?.name,
     recipient: config.identity?.principal.email,
   };
+}
+
+/**
+ * Where the full report lives: its GitHub page when the runtime names the
+ * brain repo (the cloud tier), else the store's own path for it.
+ */
+function reportRef(
+  env: Record<string, string | undefined>,
+  config: InstanceConfig,
+  name: string,
+  store: InstanceStore,
+): string {
+  const repo = env.BRAIN_REPO;
+  if (repo && /^[\w.-]+\/[\w.-]+$/.test(repo)) {
+    return `https://github.com/${repo}/blob/${env.BRAIN_REF || "main"}/${config.reports}/${name}`;
+  }
+  return store.reportPath(name);
 }
 
 /** Deliver one message through named channels with an injected context. */
@@ -104,5 +124,14 @@ export async function deliverLatestReportFromStore(
     fetchImpl: options.fetchImpl,
     log: options.log,
   };
+  // v2.3.5: the hub's brief goes out as a digest - its `## Brief` lines as
+  // the notification, the `## Also` list and a report link in the thread.
+  // The full report stays in the repo. `delivery.format: "full"` opts out.
+  if ((config.delivery?.format ?? "digest") === "digest" && agent === (config.delivery?.deliverAgent ?? "chief-of-staff")) {
+    const focus = await loadFocus(store, config);
+    const digest = digestBrief(msg.body, focus?.brief ?? DEFAULT_BRIEF, reportRef(ctx.env, config, newest, store));
+    if (!digest.followedFormat) options.log?.(`delivery: ${newest} has no ## Brief section; sent its first lines`);
+    return deliverMessage({ ...msg, body: digest.headline, thread: digest.thread }, channelNames, ctx);
+  }
   return deliverMessage(msg, channelNames, ctx);
 }

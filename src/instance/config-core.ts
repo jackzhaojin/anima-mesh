@@ -118,6 +118,13 @@ export interface InstanceConfig {
   delivery?: {
     channels?: string[];
     deliverAgent?: string;
+    /**
+     * How the hub's brief is sent (v2.3.5). "digest" (default): its `## Brief`
+     * lines as the notification, the `## Also` list and a link to the full
+     * report in the thread; line counts come from `ops/focus.md`. "full":
+     * the whole report, as before.
+     */
+    format?: "digest" | "full";
   };
   /** A2A surface config; url is where the Agent Card would be served when hosted. */
   a2a?: {
@@ -159,6 +166,12 @@ export interface InstanceConfig {
     agent?: string;
     /** Max direction runs per local calendar day. Default 20. */
     dailyCap?: number;
+    /**
+     * Channel-native sender ids (a Slack user id, an email address) who may
+     * change `ops/focus.md` from a SHARED channel. Direct messages always
+     * come from the principal; a group mention needs its sender listed here.
+     */
+    focusEditors?: string[];
     gmail?: {
       /** Poll cadence in minutes; 0/absent = inbound email off. */
       pollMinutes?: number;

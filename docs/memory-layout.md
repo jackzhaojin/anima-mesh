@@ -114,7 +114,7 @@ outside the bundle.
 ## Runtime and migration boundaries
 
 Established control paths stay stable: `constitution.md`, `agents/`,
-`ops/calendar.md`, `ops/watch-list.md`, `ops/nags.md`, `ops/schedule.md`,
+`ops/focus.md`, `ops/calendar.md`, `ops/watch-list.md`, `ops/nags.md`, `ops/schedule.md`,
 the root index and log, and any concept the constitution links to: a
 refactor never edits the constitution, so those concepts stay where they are
 (the layout warnings skip them) until the principal moves the link by hand.

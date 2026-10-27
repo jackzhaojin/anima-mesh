@@ -14,6 +14,17 @@ export interface DeliveryMessage {
   sender?: string;
   /** Recipient address where the channel needs one (email). */
   recipient?: string;
+  /**
+   * Follow-up detail (v2.3.5 brief digest: the Also list and the report
+   * link). Threading channels post it as a reply under the first message so
+   * the notification itself stays short; others append it to the body.
+   */
+  thread?: string;
+}
+
+/** Body and thread as one text, for channels that cannot thread. */
+export function flatBody(msg: DeliveryMessage): string {
+  return msg.thread ? `${msg.body}\n\n${msg.thread}` : msg.body;
 }
 
 export interface ChannelContext {

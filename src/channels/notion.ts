@@ -1,4 +1,5 @@
 import type { DeliveryChannel, DeliveryMessage, ChannelContext, DeliveryResult } from "./types.js";
+import { flatBody } from "./types.js";
 import { getEnv } from "../instance/env-core.js";
 
 /**
@@ -23,11 +24,12 @@ export const notionChannel: DeliveryChannel = {
     const databaseId = getEnv(ctx.env, "NOTION_DATABASE_ID")!;
     const doFetch = ctx.fetchImpl ?? fetch;
 
+    const text = flatBody(msg);
     const chunks: string[] = [];
-    for (let i = 0; i < msg.body.length && chunks.length < MAX_BLOCKS; i += BLOCK_CHAR_LIMIT) {
-      chunks.push(msg.body.slice(i, i + BLOCK_CHAR_LIMIT));
+    for (let i = 0; i < text.length && chunks.length < MAX_BLOCKS; i += BLOCK_CHAR_LIMIT) {
+      chunks.push(text.slice(i, i + BLOCK_CHAR_LIMIT));
     }
-    const truncated = msg.body.length > BLOCK_CHAR_LIMIT * MAX_BLOCKS;
+    const truncated = text.length > BLOCK_CHAR_LIMIT * MAX_BLOCKS;
 
     const res = await doFetch("https://api.notion.com/v1/pages", {
       method: "POST",

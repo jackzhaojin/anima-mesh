@@ -3,7 +3,7 @@
 This history is organized by **minor release line** (and, from 2.0, major):
 the capability boundary operators actually adopt. Patch tags are deliberately
 rolled into the value and maturity of their minor rather than narrated one by
-one. The latest tag is **v2.3.4**.
+one. The latest tag is **v2.3.5**.
 
 ## Upgrade procedure
 
@@ -34,7 +34,26 @@ The ledger remains append-only; never "migrate" it by editing old entries.
 
 ## [v2.3.x] - Slack: the persona in a group setting
 
-**Latest tag: v2.3.4 · 2026-10-27**
+**Latest tag: v2.3.5 · 2026-10-27**
+
+**Focus, and a brief you can read in three lines (v2.3.5).** A brain now
+says what matters in `ops/focus.md`: top of mind, secondary, tertiary,
+areas that stay quiet unless a stated exception fires (a tax deadline, a
+legal notice), and topics that are hands-off because another session owns
+them. Every agent reads it first, every run. The hub's brief has a fixed
+shape (`## Brief`, `## Also`, `## Detail`), and delivery enforces it in
+code: the notification is at most three lines, the thread holds at most
+eight one-line items and a link to the full report, and the detail never
+leaves git. The principal moves the dial from chat with `focus-update`
+(L3 whitelist); scheduled beats never apply one, and in a shared channel
+only `direction.focusEditors` count. Nags follow the focus, with a
+`## Snoozed` section for nags set aside. `init` scaffolds a focus
+template. See [docs/focus.md](docs/focus.md).
+
+**Upgrade:** redeploy the heartbeat Worker. Add `bundle/ops/focus.md`
+(copy the sample's), add `focus-update` to the hub's whitelist and your
+chat user id to `direction.focusEditors` if you want to change it from a
+shared channel. `delivery.format: "full"` keeps whole-report delivery.
 
 **Memory is two tiers deep: a year or a topic (v2.3.4).** The memory
 layout default is now an area, then a calendar year for time-sensitive
