@@ -2,6 +2,7 @@
 type: nags
 title: "Active nags — surfaced every heartbeat until done"
 date: 2026-07-02
+generated: { by: codex/gpt-6, at: 2026-10-26T20:26:17-04:00 }
 ---
 
 # Active nags
@@ -16,7 +17,7 @@ date: 2026-07-02
 
 | # | Nag | Since | Done when |
 |---|---|---|---|
-| 1 | **Export FY2026 bank transactions (CSV)** from the operating account and drop it in the document store. This is the single blocker on reconciling [../facts/capital-structure.md](../facts/capital-structure.md) — and reconciliation is the blocker on Form 1120 prep (see [calendar.md](calendar.md)). Prep pack: `drafts/nag-prep/01-bank-export.md`. | 2026-07-02 | Export in the store, cataloged in `cabinet/`, librarian reconciliation run clean |
+| 1 | **Export FY2026 bank transactions (CSV)** from the operating account and drop it in the document store. This is the single blocker on reconciling [../organization/ownership/capital-structure.md](../organization/ownership/capital-structure.md) — and reconciliation is the blocker on Form 1120 prep (see [calendar.md](calendar.md)). Prep pack: `drafts/nag-prep/01-bank-export.md`. | 2026-07-02 | Export in the store, cataloged in `organization/documents/`, librarian reconciliation run clean |
 | 2 | **Rewrite the one-page service description** to the current direction (research-led consulting, not staff augmentation). Mira brings a section outline to the brief until writing starts. | 2026-07-12 | New one-pager in the document store, cataloged |
 
 ## Completed

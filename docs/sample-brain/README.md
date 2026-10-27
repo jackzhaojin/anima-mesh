@@ -22,6 +22,13 @@ Two reasons it exists:
 
 ## Start at the index
 
+The sample uses [two-tier subject memory](../memory-layout.md):
+`bundle/organization/identity/`, `ownership/` and `documents/`, with a
+short root map and indexes at each populated directory. CRM already uses
+area/topic records. Governance and runtime anchors keep their established
+paths, including the founder-boundary concept referenced by the constitution.
+Existing historical filenames and recorded facts are retained.
+
 **[bundle/index.md](bundle/index.md)** is the map — it explains how every
 piece ties into the daily loop. Read it first; everything else is texture.
 
@@ -85,7 +92,7 @@ The regression suite exercises filing with a mocked GitHub API.
   `bundle/events/`, `ledger/actions.jsonl`. History is never rewritten;
   corrections are new entries.
 - **Facts say where they came from and who checked them** (OKF v0.2).
-  [bundle/facts/corporate-identity.md](bundle/facts/corporate-identity.md)
+  [bundle/organization/identity/corporate-identity.md](bundle/organization/identity/corporate-identity.md)
   cites its cabinet original under `sources:` and records the librarian's
   read of it under `verified:`. A fact without `verified:` is a lead.
   `pnpm cli okf trust docs/sample-brain` rolls this up
@@ -106,7 +113,7 @@ The regression suite exercises filing with a mocked GitHub API.
   Originals sit in SharePoint/OneDrive; the engine's sources seam reads the
   library over Microsoft Graph (read-only, delegated consent) and inlines
   the listing into prompts each beat. The bundle holds only extracted
-  knowledge — see [bundle/cabinet/2025-09-22-ein-letter.md](bundle/cabinet/2025-09-22-ein-letter.md)
+  knowledge — see [bundle/organization/documents/2025-09-22-ein-letter.md](bundle/organization/documents/2025-09-22-ein-letter.md)
   for the pattern at its sharpest.
 - **The mesh reaches across repos.** The cloud tier runs the brain straight
   from its GitHub-hosted copy (`github:owner/repo#ref` works on the CLI

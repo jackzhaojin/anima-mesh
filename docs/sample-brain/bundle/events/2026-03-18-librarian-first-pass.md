@@ -2,6 +2,7 @@
 type: event
 title: "Librarian first pass — cabinet cataloged, share count corrected"
 date: 2026-03-18
+generated: { by: codex/gpt-6, at: 2026-10-26T20:26:17-04:00 }
 ---
 
 # Event: librarian first pass
@@ -11,7 +12,7 @@ into `cabinet/` — one concept per key document, originals staying outside
 the repo.
 
 One correction, and it set the norm:
-[facts/corporate-identity.md](../facts/corporate-identity.md) carried an
+[organization/identity/corporate-identity.md](../organization/identity/corporate-identity.md) carried an
 authorized-share count of 10,000,000 from a working session's recall. The
 certificate of incorporation says **8,000,000**. The fact was corrected,
 sourced to the cabinet concept, and marked `verified`. Recall is not a

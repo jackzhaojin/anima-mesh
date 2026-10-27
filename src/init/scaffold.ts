@@ -97,7 +97,11 @@ export async function scaffoldBrain(targetDir: string, answers: InitAnswers): Pr
     throw new Error(`init: brain id '${brainId}' must be a lowercase slug and not a reserved word`);
   }
   const agents = answers.agents.length > 0 ? answers.agents : isPerson ? DEFAULT_PERSON_AGENTS : DEFAULT_AGENTS;
-  const factsRel = isPerson ? "facts/person.md" : "facts/organization.md";
+  // Knowledge defaults to area/topic/concept; runtime control surfaces retain
+  // their established paths. Existing flat bundles remain fully supported.
+  const knowledgeArea = isPerson ? "personal" : "organization";
+  const factsRel = `${knowledgeArea}/identity/${isPerson ? "person" : "organization"}.md`;
+  const eventRel = `events/${date.replaceAll("-", "")}-instance-created.md`;
   const model = answers.defaultModel ?? "kimi-code/kimi-for-coding";
   const harness = answers.defaultHarness ?? "opencode";
   const persona = answers.personaName?.trim() || undefined;
@@ -149,26 +153,52 @@ export async function scaffoldBrain(targetDir: string, answers: InitAnswers): Pr
       `    pnpm cli validate <path-to-this-repo>\n` +
       `    pnpm cli run <agent> --instance <path-to-this-repo>\n\n` +
       `Core engine feedback: [bundle/ops/engine-feedback.md](bundle/ops/engine-feedback.md)\n` +
-      `explains the hub's narrow issue-filing grant and runtime credential setup.\n`,
+      `explains the hub's narrow issue-filing grant and runtime credential setup.\n\n` +
+      `## Memory layout\n\n` +
+      `Start at [bundle/index.md](bundle/index.md). New subject memory defaults to\n` +
+      `two directory tiers: area/topic/concept.md. Each populated directory has\n` +
+      `an index linking its immediate children with short descriptions; the root\n` +
+      `is an area map rather than an exhaustive file list. Use stable names for\n` +
+      `evergreen facts and YYYYMMDD-slug.md for new dated records, preserving\n` +
+      `ISO YYYY-MM-DD dates in metadata and logs. Runtime anchors (constitution,\n` +
+      `agents, ops, events and log) keep their established paths.\n`,
   );
 
   // ── the bundle ───────────────────────────────────────────────────────────
-  const agentLinks = agents.map((a) => `| [agents/${a}.md](agents/${a}.md) | ${a} (L1) |`).join("\n");
+  const agentLinks = agents.map((a) => `- [${a}](${a}.md) - ${a} (L1).\n`).join("");
   put(
     "bundle/index.md",
     `---\nokf_version: "${OKF_VERSION}"\n---\n\n` +
       `# ${answers.orgName} — bundle index\n\n` +
       `Single source of truth for the ${answers.orgName} mesh, an OKF v${OKF_VERSION} bundle. One concept per\n` +
       `file; \`type\` required; this index and [log.md](log.md) (newest first) are reserved.\n\n` +
-      `| Concept | What it holds |\n|---|---|\n` +
+      `New subject memory uses area/topic/concept.md. Follow local indexes for\n` +
+      `details; runtime control paths stay stable.\n\n` +
+      `| Area | What it holds |\n|---|---|\n` +
       `| [constitution.md](constitution.md) | Immutable hard limits — agents may not modify |\n` +
-      `| [${factsRel}](${factsRel}) | ${isPerson ? "Who this person is - stable facts" : "The organization's stable facts"} |\n` +
-      `| [ops/calendar.md](ops/calendar.md) | ${isPerson ? "Obligations calendar" : "Compliance calendar"} |\n` +
-      `| [ops/watch-list.md](ops/watch-list.md) | Research / competitive watch |\n` +
-      `| [ops/schedule.md](ops/schedule.md) | Schedule overrides and one-shot wakes |\n` +
-      `| [ops/engine-feedback.md](ops/engine-feedback.md) | Core engine issue reporting: authorization, runtime setup, and filing evidence |\n` +
-      `${agentLinks}\n`,
+      `| [${knowledgeArea}](${knowledgeArea}/index.md) | Identity facts and document memory |\n` +
+      `| [Operations](ops/index.md) | Calendar, watch-list, schedule and engine feedback |\n` +
+      `| [Events](events/index.md) | Dated, append-only history |\n` +
+      `| [Agents](agents/index.md) | Roles and approved capabilities |\n`,
   );
+
+  put(`bundle/${knowledgeArea}/index.md`,
+    `# ${isPerson ? "Personal" : "Organization"} memory\n\n` +
+    `- [Identity](identity/index.md) - Stable identity facts.\n` +
+    `- [Documents](documents/index.md) - Source-document knowledge and pointers.\n`);
+  put(`bundle/${knowledgeArea}/identity/index.md`,
+    `# Identity\n\n- [${isPerson ? "Person" : "Organization"}](${isPerson ? "person" : "organization"}.md) - Stable identity; verify against sources.\n`);
+  put(`bundle/${knowledgeArea}/documents/index.md`,
+    "# Document memory\n\nNo documents cataloged yet. Add concise concepts here and link originals\n" +
+    "in the principal's document store; update this index when adding a concept.\n");
+  put("bundle/ops/index.md",
+    "# Operations\n\n" +
+    `- [Calendar](calendar.md) - ${isPerson ? "Personal obligations" : "Compliance deadlines"}.\n` +
+    "- [Watch-list](watch-list.md) - Signals worth researching.\n" +
+    "- [Schedule](schedule.md) - Cadence overrides and one-shot wakes.\n" +
+    "- [Engine feedback](engine-feedback.md) - Authorization and setup for narrow issue filing.\n");
+  put("bundle/agents/index.md", "# Agent roster\n\n" + agentLinks);
+  put("bundle/events/index.md", `# Events\n\n- [Instance created](${path.posix.basename(eventRel)}) - Brain scaffolded on ${date}.\n`);
 
   put(
     "bundle/log.md",
@@ -240,7 +270,7 @@ export async function scaffoldBrain(targetDir: string, answers: InitAnswers): Pr
   );
 
   put(
-    `bundle/events/${date}-instance-created.md`,
+    `bundle/${eventRel}`,
     `---\ntype: event\ntitle: "Instance created"\ndate: ${date}\n${generated}\n---\n\n` +
       `# Event: instance created — ${date}\n\nScaffolded by \`anima-mesh init\` for ${answers.orgName}. Append-only; corrections are new events.\n`,
   );

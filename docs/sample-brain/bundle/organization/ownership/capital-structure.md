@@ -2,6 +2,7 @@
 type: fact
 title: "Capital structure — founding events"
 date: 2026-03-18
+generated: { by: codex/gpt-6, at: 2026-10-26T20:26:17-04:00 }
 ---
 
 # Capital structure
@@ -9,7 +10,7 @@ date: 2026-03-18
 > `status: unverified` — **do not rely on this for a filing.** The board
 > resolutions are cataloged, but the dollar amounts have not been
 > reconciled against bank records; the export is nag #1
-> ([ops/nags.md](../ops/nags.md)). The librarian flips this to `verified`
+> ([ops/nags.md](../../ops/nags.md)). The librarian flips this to `verified`
 > only when each event matches a bank line.
 
 Founding capital events, per board resolutions in the cabinet:

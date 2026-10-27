@@ -25,7 +25,7 @@ The whole system is this loop:
 3. **The agent writes one report** into `../reports/`. At L1 that is all it
    can do — the report *is* the action, and the repo diff is the test seam.
 4. **The hub reads everything** — every spoke report, the calendar, the
-   watch-list, [ops/nags.md](ops/nags.md) — and writes the daily brief,
+   watch-list, [operations](ops/index.md) — and writes the daily brief,
    nags first. The founder reads one thing.
 5. **Writes are propose → dispose.** An L3 agent ends its report with a
    fenced request block (`schedule-request`, `draft-request`,
@@ -43,96 +43,35 @@ the agent's; gates, whitelists, ledger, and leak guard are harness code),
 and **the engine is pinned one-way** (`animamesh.config.json` names an
 engine tag; the public engine never knows this firm exists).
 
-## Governance
+## Areas
 
-| Concept | What it holds |
-|---|---|
-| [constitution.md](constitution.md) | Immutable hard limits; gated action types; autonomy ladder. **Agents may not modify.** |
+- [Organization](organization/index.md) - Identity, ownership and source-document memory.
+- [CRM](crm/index.md) - Relationship rules, organizations, people and engagements.
+- [Governance facts](facts/index.md) - Stable boundary anchor referenced by the constitution.
+- [Decisions](decisions/index.md) - Dated, immutable choices and supersession.
+- [Events](events/index.md) - Append-only history.
+- [Operations](ops/index.md) - Calendar, watch-list, nags, schedule and engine feedback.
+- [Agents](agents/index.md) - Roster, capabilities and required reading.
 
-## Facts (stable; verify before trusting `unverified`)
+## Root anchors
 
-Stable corporate facts come from these concepts, never model recall. A fact
-marked `status: unverified` must not be relied on for a filing — the
-librarian verifies against cabinet originals.
+- [Constitution](constitution.md) - Immutable hard limits and approval gates.
+- [Update log](log.md) - Newest-first change history.
 
-| Concept | What it holds |
-|---|---|
-| [facts/corporate-identity.md](facts/corporate-identity.md) | Legal entity, incorporation, EIN pointer |
-| [facts/capital-structure.md](facts/capital-structure.md) | Founding capital events — **pending bank reconciliation** |
-| [facts/founder-boundary.md](facts/founder-boundary.md) | Day-job constraints every agent job is checked against |
+## Navigation and new memory
 
-## Decisions (dated, immutable once made)
-
-| Concept | What it holds |
-|---|---|
-| [decisions/2026-03-14-persona-channels-email-discord.md](decisions/2026-03-14-persona-channels-email-discord.md) | Mira runs on her own email + Discord (supersedes the custom-domain-mail plan) |
-| [decisions/2026-04-02-runtime-posture-cloud-default.md](decisions/2026-04-02-runtime-posture-cloud-default.md) | Cloud is the DEFAULT runtime; laptop is the interim net |
-| [decisions/2026-06-08-defects-file-as-issues.md](decisions/2026-06-08-defects-file-as-issues.md) | Engine defects file straight as public issues; drafts only as fallback |
-
-## Events (append-only)
-
-| Concept | What it holds |
-|---|---|
-| [events/2026-03-10-program-start.md](events/2026-03-10-program-start.md) | Repos created; bundle scaffolded; roster instantiated at L1 |
-| [events/2026-03-18-librarian-first-pass.md](events/2026-03-18-librarian-first-pass.md) | Cabinet cataloged; the share-count correction |
-
-## Cabinet (document memory)
-
-One concept per key document: extracted facts + why it matters. **Originals
-never enter this repo** — they stay in the company's SharePoint/OneDrive
-library; only knowledge comes in. The engine's sources seam reads that
-library **read-only over Microsoft Graph** and inlines the live folder
-listing into agents' prompts each beat, so even an L1 agent with no tools
-sees what documents exist; the librarian crawls it and keeps these
-concepts true.
-
-| Concept | The memory it holds |
-|---|---|
-| [cabinet/2025-09-15-certificate-of-incorporation.md](cabinet/2025-09-15-certificate-of-incorporation.md) | Birth certificate; 8,000,000 authorized @ $0.0001 |
-| [cabinet/2025-09-22-ein-letter.md](cabinet/2025-09-22-ein-letter.md) | The EIN letter — and why the EIN is deliberately *not* recorded here |
-| [cabinet/bank-statements-fy2026.md](cabinet/bank-statements-fy2026.md) | Bookkeeping raw material; ⚠ export gap = nag #1 |
-
-## CRM (system of record)
-
-Records are concepts: `crm-org`, `crm-person`, `crm-engagement`. Binding
-rules in [crm/taxonomy.md](crm/taxonomy.md) — the employment boundary is
-enforced **in the data**. The hub stewards hygiene every brief but proposes,
-never writes; the founder sends everything under their own name.
-
-| Concept | What it holds |
-|---|---|
-| [crm/orgs/harborlight-media.md](crm/orgs/harborlight-media.md) | The first prospective client org |
-| [crm/people/sam-tran.md](crm/people/sam-tran.md) | Warm contact — head of product at Harborlight |
-| [crm/engagements/2026-harborlight-content-audit.md](crm/engagements/2026-harborlight-content-audit.md) | The live engagement: stage, next action, boundary screen |
-
-## Ops
-
-| Concept | What it holds |
-|---|---|
-| [ops/calendar.md](ops/calendar.md) | Compliance calendar — deadlines and cycles |
-| [ops/watch-list.md](ops/watch-list.md) | Research-watch subjects |
-| [ops/nags.md](ops/nags.md) | **Active nags** — founder-requested daily bugging until done |
-| [ops/schedule.md](ops/schedule.md) | Machine-read: cadence overrides + one-shot wakes |
-| [ops/engine-feedback.md](ops/engine-feedback.md) | Core issue-filing path for every brain kind: grants, runtime credential, privacy review, and outcome evidence |
-
-## Agents (roster — every agent starts L1; promotions are frontmatter edits with history)
-
-| Concept | Level | Heartbeat |
-|---|---|---|
-| [agents/chief-of-staff.md](agents/chief-of-staff.md) — **Mira Solen**, the hub | L3 (`schedule-update, draft-write, defect-report`) | daily |
-| [agents/compliance-ops.md](agents/compliance-ops.md) | L1 | daily |
-| [agents/librarian.md](agents/librarian.md) | L1 | weekly |
-| [agents/research-watch.md](agents/research-watch.md) | L1 | weekly |
-| [agents/sales-qualification.md](agents/sales-qualification.md) ⛔ commercial, dual-gated | L1 | (inactive until activation) |
+Default new subject memory to two directory tiers: area/topic/concept.md.
+The root maps areas, each area maps topics, and topic indexes list records.
+Keep descriptions beside links; each file has one canonical home. Runtime
+anchors (agents, ops, events and constitution) keep their established paths.
+Evergreen facts keep stable names; new dated filenames use YYYYMMDD-slug.md.
+Frontmatter dates and log headings retain YYYY-MM-DD. This is an AnimaMesh
+authoring convention; OKF supports other layouts too.
 
 ## Outside the bundle
 
-Sibling directories the loop writes (paths from `animamesh.config.json`):
-
-- `../reports/` — one markdown report per run; the spokes' output and the
-  hub's input. Two curated samples are checked in.
-- `../drafts/` — gated draft artifacts: `nag-prep/` packs, `defects/`
-  fallback drafts.
-- `../approvals/` — the human gate's records (the secondary seam).
-- `../ledger/actions.jsonl` — append-only action ledger (the tertiary
-  seam); an unlogged action is a verifier failure.
+- [Sample README](../README.md) - How to validate and run this fictional instance.
+- `../reports/` - Agent outputs; historical records are not rewritten.
+- `../drafts/` - Gated draft artifacts and preparation packs.
+- `../approvals/` - Human approval records.
+- `../ledger/actions.jsonl` - Append-only action evidence.

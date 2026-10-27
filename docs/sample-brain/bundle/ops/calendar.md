@@ -2,11 +2,12 @@
 type: calendar
 title: "Compliance calendar"
 date: 2026-03-10
+generated: { by: codex/gpt-6, at: 2026-10-26T20:26:17-04:00 }
 ---
 
 # Compliance calendar
 
-Deadlines come from [../facts/corporate-identity.md](../facts/corporate-identity.md)
+Deadlines come from [../organization/identity/corporate-identity.md](../organization/identity/corporate-identity.md)
 and cabinet originals — never recall. Compliance-ops reads this every run
 and reports anything inside 60 days.
 

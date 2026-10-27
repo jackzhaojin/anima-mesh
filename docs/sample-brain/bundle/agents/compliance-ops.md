@@ -10,8 +10,10 @@ whitelist: []
 # Budget for confirming deadlines against official sources when the
 # runtime grants search; the calendar concept stays the source of record.
 web: 4
+reads: [organization/identity/, organization/ownership/, facts/founder-boundary.md]
 commercial: false
 date: 2026-03-10
+generated: { by: codex/gpt-6, at: 2026-10-26T20:29:17-04:00 }
 ---
 
 # Compliance Ops

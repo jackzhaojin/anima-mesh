@@ -154,6 +154,11 @@ local midnight (`2026-07-06T00:00:00-04:00`).
 
 ### 7. Reserved files
 
+AnimaMesh's authoring default is [area/topic/concept with local indexes](memory-layout.md).
+The root maps areas; topic indexes enumerate local records with descriptions.
+This is a convention for new memory, not an additional OKF conformance rule
+or a migration imposed on existing brains.
+
 - **`index.md`**: no frontmatter, except the bundle root, which carries
   only `okf_version: "0.2"`. The body is sections of
   `* [Title](path) - description` entries.

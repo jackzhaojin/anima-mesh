@@ -3,6 +3,7 @@ type: cabinet
 title: "Certificate of Incorporation — Copperline Labs, Inc."
 date: 2025-09-15
 verified: { by: claude-code/claude-sonnet-5, at: 2026-03-18T00:00:00-04:00, note: librarian read of the cabinet original }
+generated: { by: codex/gpt-6, at: 2026-10-26T20:26:17-04:00 }
 ---
 
 # Certificate of Incorporation
@@ -13,5 +14,5 @@ store; this concept holds only the extracted knowledge.
 - **Filed:** 2025-09-15, Delaware Division of Corporations.
 - **Authorized:** 8,000,000 common shares @ $0.0001 par.
 - **Why it matters:** the authoritative source for
-  [../facts/corporate-identity.md](../facts/corporate-identity.md) — it is
+  [../organization/identity/corporate-identity.md](../identity/corporate-identity.md) — it is
   the document that corrected the recalled share count on 2026-03-18.

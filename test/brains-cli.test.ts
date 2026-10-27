@@ -57,7 +57,7 @@ describe("init --kind person", () => {
     expect(hub).toContain("Personal Chief of Staff");
     expect(hub).toContain("sources: [brains, gmail, google-calendar]");
     expect(existsSync(path.join(dir, "bundle/agents/compliance-ops.md"))).toBe(true);
-    expect(existsSync(path.join(dir, "bundle/facts/person.md"))).toBe(true);
+    expect(existsSync(path.join(dir, "bundle/personal/identity/person.md"))).toBe(true);
     expect(await readFile(path.join(dir, "bundle/ops/calendar.md"), "utf8")).toContain("Obligations calendar");
     expect(checkConformance(await loadBundle(path.join(dir, "bundle")), "animamesh").ok).toBe(true);
     // The interactive tier names the brain for what it models, too.

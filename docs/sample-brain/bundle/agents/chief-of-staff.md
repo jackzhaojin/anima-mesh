@@ -13,10 +13,10 @@ web: 3
 # Required reading every run (issue #5): the harness inlines these — file,
 # directory, or an out-loud NOT AVAILABLE marker — so a no-tool harness can
 # never silently drop the working set this role's rules below depend on.
-reads: [ops/schedule.md, ops/engine-feedback.md, crm/taxonomy.md, crm/, drafts/nag-prep/]
+reads: [ops/schedule.md, ops/engine-feedback.md, crm/taxonomy.md, crm/, drafts/nag-prep/, organization/index.md, organization/identity/, organization/ownership/, facts/founder-boundary.md]
 commercial: false
 date: 2026-03-10
-generated: { by: codex/model-undisclosed, at: 2026-10-18T23:10:12-04:00 }
+generated: { by: codex/gpt-6, at: 2026-10-26T20:29:17-04:00 }
 sources:
   - { id: feedback-contract, resource: "../ops/engine-feedback.md", title: Core engine feedback runbook }
 ---

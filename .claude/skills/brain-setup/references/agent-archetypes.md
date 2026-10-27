@@ -11,7 +11,7 @@ default to fewer.
 
 Ask conversationally, adapting to what the user has already told you. The
 first question is the most important — a good description improves every
-agent's prompt forever (it lands in `facts/organization.md`).
+agent's prompt forever (it lands in `organization/identity/organization.md`).
 
 | # | Ask about | Listening for | Maps to |
 |---|---|---|---|

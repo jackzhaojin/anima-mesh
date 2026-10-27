@@ -16,16 +16,16 @@ live in `drafts/` only — the hub never writes bundle concepts.*
 Paste to begin the work:
 
 > Reconcile Copperline's founding capital events against the FY2026 bank
-> export. Inputs: `bundle/facts/capital-structure.md` (the two events,
-> both unmatched), `bundle/cabinet/bank-statements-fy2026.md` (statement
+> export. Inputs: `bundle/organization/ownership/capital-structure.md` (the two events,
+> both unmatched), `bundle/organization/documents/bank-statements-fy2026.md` (statement
 > coverage), the CSV export in the document store. Output: each capital
 > event matched to a bank line or flagged, and the fact's
 > `status: unverified` flipped only if both match.
 
 ## Materials
 
-- [../../bundle/facts/capital-structure.md](../../bundle/facts/capital-structure.md) — the two events to match
-- [../../bundle/cabinet/bank-statements-fy2026.md](../../bundle/cabinet/bank-statements-fy2026.md) — statement coverage + the gap
+- [../../bundle/organization/ownership/capital-structure.md](../../bundle/organization/ownership/capital-structure.md) — the two events to match
+- [../../bundle/organization/documents/bank-statements-fy2026.md](../../bundle/organization/documents/bank-statements-fy2026.md) — statement coverage + the gap
 - [../../bundle/ops/calendar.md](../../bundle/ops/calendar.md) — the 1120 chain this feeds
 
 ## Pre-work (done, no founder decisions needed)

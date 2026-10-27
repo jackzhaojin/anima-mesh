@@ -102,7 +102,7 @@ stays behind constitution gates. (Workers/Durable-Object internals:
 *Code:*
 
 - [../../src/sources/msgraph.ts](../../src/sources/msgraph.ts) — the Graph
-  read; [cabinet/2025-09-22-ein-letter.md](bundle/cabinet/2025-09-22-ein-letter.md)
+  read; [organization/documents/2025-09-22-ein-letter.md](bundle/organization/documents/2025-09-22-ein-letter.md)
   — the discipline it enables: record where truth lives, not a copy.
 - [../../src/sources/github-docs.ts](../../src/sources/github-docs.ts) —
   a second repo as a read source (local tree on a laptop, GitHub API on
