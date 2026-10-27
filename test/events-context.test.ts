@@ -82,6 +82,28 @@ describe("recent events in the assembled context", () => {
     expect(prompt.indexOf("2026-07-07-event.md")).toBeLessThan(prompt.indexOf("2026-07-03-event.md"));
   });
 
+  it("reads year folders, orders mixed date styles by date, and never treats index.md as an event", async () => {
+    const root = await makeInstance({
+      "bundle/events/index.md": "# Events\n",
+      "bundle/events/2025/index.md": "# 2025\n",
+      "bundle/events/2025/2025-12-30-old-style.md": concept("event", { date: "2025-12-30" }, "old style\n"),
+      "bundle/events/2026/index.md": "# 2026\n",
+      "bundle/events/2026/2026-10-27-legacy-name.md": concept("event", { date: "2026-10-27" }, "legacy\n"),
+      "bundle/events/2026/20261001-compact-name.md": concept("event", { date: "2026-10-01" }, "compact\n"),
+    });
+    const prompt = await promptFor(root);
+
+    expect(prompt).toContain("### Recent events (3 of 3, newest first");
+    expect(prompt).not.toContain("index.md\n\n# Events");
+    // 2026-10-27 is newer than 20261001 even though "2026-" sorts before "20261" as raw text.
+    const legacy = prompt.indexOf("#### events/2026/2026-10-27-legacy-name.md");
+    const compact = prompt.indexOf("#### events/2026/20261001-compact-name.md");
+    const old = prompt.indexOf("#### events/2025/2025-12-30-old-style.md");
+    expect(legacy).toBeGreaterThan(-1);
+    expect(legacy).toBeLessThan(compact);
+    expect(compact).toBeLessThan(old);
+  });
+
   it("omits the section entirely when the bundle has no events", async () => {
     const root = await makeInstance();
     const prompt = await promptFor(root);

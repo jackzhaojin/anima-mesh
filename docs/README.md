@@ -79,7 +79,7 @@ into a 16:9 slide.
 
 ## Contributing docs
 
-Memory organization defaults to [two subject tiers and local indexes](memory-layout.md).
+Memory organization defaults to [two tiers (year or topic) and local indexes](memory-layout.md).
 Use that guide when adding knowledge or reorganizing an existing brain.
 
 - New platform lesson → `learnings/YYYY-MM-DD-<slug>.md` (conventions in

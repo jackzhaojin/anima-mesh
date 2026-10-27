@@ -3,7 +3,7 @@
 This history is organized by **minor release line** (and, from 2.0, major):
 the capability boundary operators actually adopt. Patch tags are deliberately
 rolled into the value and maturity of their minor rather than narrated one by
-one. The latest tag is **v2.3.3**.
+one. The latest tag is **v2.3.4**.
 
 ## Upgrade procedure
 
@@ -34,7 +34,28 @@ The ledger remains append-only; never "migrate" it by editing old entries.
 
 ## [v2.3.x] - Slack: the persona in a group setting
 
-**Latest tag: v2.3.3 · 2026-10-18**
+**Latest tag: v2.3.4 · 2026-10-27**
+
+**Memory is two tiers deep: a year or a topic (v2.3.4).** The memory
+layout default is now an area, then a calendar year for time-sensitive
+memory (`events/2026/`, `decisions/2026/`, a talk's year) or a topic for
+evergreen memory, then at most one more level, such as one talk's
+workspace. Dated records use `YYYYMMDD-slug.md`; each folder carries a
+local index and the root index is an area map. `validate` warns, never
+errors, on concepts more than three folders deep (`animamesh/layout-depth`)
+and on decisions or events outside a year folder (`animamesh/layout-year`).
+`init` files its first event under `events/<year>/`, and the sample brain
+follows the layout. Recent events are now ordered by the date in their
+filename, so year folders and mixed `2026-10-27-`/`20261027-` names stay
+chronological, and `events/index.md` is no longer mistaken for the newest
+event. Directory `reads:` skip `index.md` and `log.md`, so local indexes
+never take a record's place in the bounded inline budget. See
+[docs/memory-layout.md](docs/memory-layout.md).
+
+**Upgrade:** redeploy the heartbeat Worker so recent events read year
+folders correctly, then reorganize at your own pace; flat bundles stay
+valid. Map old paths to new ones, repair links and agent `reads:`, and
+leave reports, the ledger and log prose untouched.
 
 **Read-only Drive search and image inspection (#18).** Agents declaring
 `google-drive` can search file/folder metadata across all modification

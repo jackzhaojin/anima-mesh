@@ -16,7 +16,7 @@ import {
 import type { InstanceStore } from "../instance/store.js";
 import type { InstanceConfig } from "../instance/config-core.js";
 import { sourceSections } from "../sources/registry.js";
-import { trustDigest } from "../okf/trust.js";
+import { isReservedFile, trustDigest } from "../okf/trust.js";
 import type { Bundle, Concept } from "../okf/bundle-core.js";
 import type { SourceContext } from "../sources/types.js";
 import type { LocalBrainOpener, SourceFs } from "../sources/types.js";
@@ -620,6 +620,17 @@ export function knowledgeTrustSection(bundle: Bundle, now: Date): string | null 
 }
 const MAX_EVENT_CHARS = 3000;
 
+/**
+ * Chronological key for an event path: the 8 date digits of its filename
+ * (2026-10-27-x.md and 20261027-x.md both give 20261027), then the path as
+ * a tiebreak. Undated names sort first, so they never pose as the newest.
+ */
+export function eventSortKey(relPath: string): string {
+  const name = relPath.replace(/^.*\//, "");
+  const m = /^(\d{4})-?(\d{2})-?(\d{2})/.exec(name);
+  return `${m ? `${m[1]}${m[2]}${m[3]}` : "00000000"} ${relPath}`;
+}
+
 export async function bundleContext(store: InstanceStore, config: InstanceConfig, now: Date = new Date()): Promise<string> {
   // Tolerant reads — a missing ops file is context absence, not a crash.
   const parts: string[] = ["\n## Bundle context (source of truth excerpts)"];
@@ -633,9 +644,13 @@ export async function bundleContext(store: InstanceStore, config: InstanceConfig
   // every correction and settled fact through an event — but no harness surface
   // carried them, so on a no-tool harness a fresh event was invisible and
   // agents re-derived questions the principal had already settled. The newest
-  // few are ambient context for every agent, every run; date-prefixed names
-  // make lexicographic order chronological.
-  const events = await store.listFiles(`${config.bundle}/events`);
+  // few are ambient context for every agent, every run. Year folders
+  // (events/2026/...) are the layout default, and a stream may mix legacy
+  // 2026-10-27- names with 20261027- names, so order by the date in the
+  // filename, never by raw path; index.md/log.md are navigation, not events.
+  const events = (await store.listFiles(`${config.bundle}/events`))
+    .filter((name) => !isReservedFile(name))
+    .sort((a, b) => eventSortKey(a).localeCompare(eventSortKey(b)));
   if (events.length > 0) {
     const recent = events.slice(-RECENT_EVENTS).reverse();
     parts.push(
@@ -706,7 +721,9 @@ export async function declaredReadsContext(
     if (resolved) continue;
 
     for (const candidate of candidates) {
-      const names = await store.listFiles(candidate);
+      // index.md/log.md are navigation, not records: a directory read spends
+      // its bounded slots on the records themselves.
+      const names = (await store.listFiles(candidate)).filter((name) => !isReservedFile(name));
       if (names.length === 0) continue;
       const shown = names.slice(0, MAX_DIR_FILES);
       parts.push(`\n### ${decl} (directory — ${names.length} file(s))`);

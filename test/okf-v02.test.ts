@@ -165,6 +165,28 @@ describe("OKF v0.2 conformance profile", () => {
     expect(flagged.map((i) => i.path)).toEqual(["agents/old.md"]);
   });
 
+  it("the animamesh profile warns (never errors) on layouts past three folders or dated records outside a year; constitution links are pinned", async () => {
+    const bundle = await loadBundle(
+      await tree({
+        ...minimalAnimaMeshFiles(),
+        "constitution.md": concept("constitution", { immutable: true }, "# C\n\nSee [the seam](decisions/2026-07-05-seam.md).\n"),
+        "decisions/2026-07-05-seam.md": concept("decision", { date: "2026-07-05", status: "accepted" }, "Pinned by law."),
+        "events/2026-10-01-flat.md": concept("event", { date: "2026-10-01" }, "Flat."),
+        "events/2026/20261002-filed.md": concept("event", { date: "2026-10-02" }, "Filed."),
+        "decisions/2026/20261003-chose.md": concept("decision", { date: "2026-10-03", status: "accepted" }, "Chose."),
+        "professional/2026/20261111-talk/notes.md": concept("reference", {}, "Three deep is fine."),
+        "professional/2026/20261111-talk/prep/notes.md": concept("reference", {}, "Four is too deep."),
+      }),
+    );
+    const report = checkConformance(bundle, "animamesh");
+    expect(report.ok).toBe(true);
+    const byRule = (rule: string) => report.issues.filter((i) => i.rule === rule).map((i) => [i.level, i.path]);
+    expect(byRule("animamesh/layout-year")).toEqual([["warning", "events/2026-10-01-flat.md"]]);
+    expect(byRule("animamesh/layout-depth")).toEqual([["warning", "professional/2026/20261111-talk/prep/notes.md"]]);
+    // The plain OKF profile has no layout opinion.
+    expect(checkConformance(bundle, "okf").issues.map((i) => i.rule)).not.toContain("animamesh/layout-depth");
+  });
+
   it("a schema may not give `status` domain values; lifecycle values are fine", async () => {
     const schema = (values: string) =>
       `---\ntype: concept-type\nname: commitment\nproperties:\n  status: { kind: enum, values: ${values} }\n---\n\nSchema.\n`;

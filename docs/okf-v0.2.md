@@ -154,8 +154,9 @@ local midnight (`2026-07-06T00:00:00-04:00`).
 
 ### 7. Reserved files
 
-AnimaMesh's authoring default is [area/topic/concept with local indexes](memory-layout.md).
-The root maps areas; topic indexes enumerate local records with descriptions.
+AnimaMesh's authoring default is [two tiers with local indexes](memory-layout.md):
+an area, then a calendar year (time-sensitive memory) or a topic, then at
+most one more level. The root maps areas; local indexes enumerate records.
 This is a convention for new memory, not an additional OKF conformance rule
 or a migration imposed on existing brains.
 

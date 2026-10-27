@@ -22,10 +22,11 @@ Two reasons it exists:
 
 ## Start at the index
 
-The sample uses [two-tier subject memory](../memory-layout.md):
-`bundle/organization/identity/`, `ownership/` and `documents/`, with a
-short root map and indexes at each populated directory. CRM already uses
-area/topic records. Governance and runtime anchors keep their established
+The sample uses the [two-tier memory layout](../memory-layout.md): topical
+areas split by topic (`bundle/organization/identity/`, `ownership/`,
+`documents/`, and CRM's `orgs/`, `people/`, `engagements/`), and dated
+areas split by calendar year (`bundle/decisions/2026/`, `bundle/events/2026/`),
+with a short root map and indexes at each populated directory. Governance and runtime anchors keep their established
 paths, including the founder-boundary concept referenced by the constitution.
 Existing historical filenames and recorded facts are retained.
 
@@ -55,7 +56,7 @@ run **writes real files** here (`reports/`, `ledger/`);
 
 The sample already demonstrates an authorized hub: L3 with
 `defect-report` on its whitelist, backed by the
-[issue-first decision](bundle/decisions/2026-06-08-defects-file-as-issues.md).
+[issue-first decision](bundle/decisions/2026/20260608-defects-file-as-issues.md).
 Its required [engine-feedback runbook](bundle/ops/engine-feedback.md) is
 also included by `init` in every new brain, and both personal and
 organizational hub templates read it on every run.

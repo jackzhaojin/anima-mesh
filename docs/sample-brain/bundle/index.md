@@ -60,8 +60,10 @@ engine tag; the public engine never knows this firm exists).
 
 ## Navigation and new memory
 
-Default new subject memory to two directory tiers: area/topic/concept.md.
-The root maps areas, each area maps topics, and topic indexes list records.
+Memory is two tiers deep by default, three at most: an area, then a
+calendar year for dated records (decisions/2026/, events/2026/) or a topic
+for evergreen ones, then optionally one more level. The root maps areas,
+each area maps its years or topics, and those indexes list records.
 Keep descriptions beside links; each file has one canonical home. Runtime
 anchors (agents, ops, events and constitution) keep their established paths.
 Evergreen facts keep stable names; new dated filenames use YYYYMMDD-slug.md.

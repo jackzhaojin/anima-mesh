@@ -97,11 +97,13 @@ export async function scaffoldBrain(targetDir: string, answers: InitAnswers): Pr
     throw new Error(`init: brain id '${brainId}' must be a lowercase slug and not a reserved word`);
   }
   const agents = answers.agents.length > 0 ? answers.agents : isPerson ? DEFAULT_PERSON_AGENTS : DEFAULT_AGENTS;
-  // Knowledge defaults to area/topic/concept; runtime control surfaces retain
+  // Knowledge defaults to area / year-or-topic / concept; runtime control surfaces retain
   // their established paths. Existing flat bundles remain fully supported.
   const knowledgeArea = isPerson ? "personal" : "organization";
   const factsRel = `${knowledgeArea}/identity/${isPerson ? "person" : "organization"}.md`;
-  const eventRel = `events/${date.replaceAll("-", "")}-instance-created.md`;
+  // Dated records file under their calendar year (docs/memory-layout.md).
+  const year = date.slice(0, 4);
+  const eventRel = `events/${year}/${date.replaceAll("-", "")}-instance-created.md`;
   const model = answers.defaultModel ?? "kimi-code/kimi-for-coding";
   const harness = answers.defaultHarness ?? "opencode";
   const persona = answers.personaName?.trim() || undefined;
@@ -155,13 +157,14 @@ export async function scaffoldBrain(targetDir: string, answers: InitAnswers): Pr
       `Core engine feedback: [bundle/ops/engine-feedback.md](bundle/ops/engine-feedback.md)\n` +
       `explains the hub's narrow issue-filing grant and runtime credential setup.\n\n` +
       `## Memory layout\n\n` +
-      `Start at [bundle/index.md](bundle/index.md). New subject memory defaults to\n` +
-      `two directory tiers: area/topic/concept.md. Each populated directory has\n` +
-      `an index linking its immediate children with short descriptions; the root\n` +
-      `is an area map rather than an exhaustive file list. Use stable names for\n` +
-      `evergreen facts and YYYYMMDD-slug.md for new dated records, preserving\n` +
-      `ISO YYYY-MM-DD dates in metadata and logs. Runtime anchors (constitution,\n` +
-      `agents, ops, events and log) keep their established paths.\n`,
+      `Start at [bundle/index.md](bundle/index.md). Memory is two tiers deep by\n` +
+      `default, three at most: an area, then a calendar year (dated records such\n` +
+      `as events/${year}/) or a topic, then optionally one more level. Each\n` +
+      `populated directory has an index linking its immediate children with short\n` +
+      `descriptions; the root is an area map rather than an exhaustive file list.\n` +
+      `Use stable names for evergreen facts and YYYYMMDD-slug.md for dated\n` +
+      `records, preserving ISO YYYY-MM-DD dates in metadata and logs. Runtime\n` +
+      `anchors (constitution, agents, ops and the root log) keep their paths.\n`,
   );
 
   // ── the bundle ───────────────────────────────────────────────────────────
@@ -172,8 +175,9 @@ export async function scaffoldBrain(targetDir: string, answers: InitAnswers): Pr
       `# ${answers.orgName} — bundle index\n\n` +
       `Single source of truth for the ${answers.orgName} mesh, an OKF v${OKF_VERSION} bundle. One concept per\n` +
       `file; \`type\` required; this index and [log.md](log.md) (newest first) are reserved.\n\n` +
-      `New subject memory uses area/topic/concept.md. Follow local indexes for\n` +
-      `details; runtime control paths stay stable.\n\n` +
+      `Memory is an area, then a calendar year (dated records) or a topic, then at\n` +
+      `most one more level. Follow local indexes for details; runtime control\n` +
+      `paths stay stable.\n\n` +
       `| Area | What it holds |\n|---|---|\n` +
       `| [constitution.md](constitution.md) | Immutable hard limits — agents may not modify |\n` +
       `| [${knowledgeArea}](${knowledgeArea}/index.md) | Identity facts and document memory |\n` +
@@ -198,7 +202,8 @@ export async function scaffoldBrain(targetDir: string, answers: InitAnswers): Pr
     "- [Schedule](schedule.md) - Cadence overrides and one-shot wakes.\n" +
     "- [Engine feedback](engine-feedback.md) - Authorization and setup for narrow issue filing.\n");
   put("bundle/agents/index.md", "# Agent roster\n\n" + agentLinks);
-  put("bundle/events/index.md", `# Events\n\n- [Instance created](${path.posix.basename(eventRel)}) - Brain scaffolded on ${date}.\n`);
+  put("bundle/events/index.md", `# Events\n\nOne folder per calendar year, newest first.\n\n- [${year}](${year}/index.md) - Events dated ${year}.\n`);
+  put(`bundle/events/${year}/index.md`, `# Events ${year}\n\n- [Instance created](${path.posix.basename(eventRel)}) - Brain scaffolded on ${date}.\n`);
 
   put(
     "bundle/log.md",

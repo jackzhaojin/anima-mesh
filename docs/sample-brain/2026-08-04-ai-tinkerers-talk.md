@@ -167,7 +167,7 @@ its own bug tracker.
 - [../../src/harness/defects.ts](../../src/harness/defects.ts) — the
   whole trust pipeline in one module: gate, leak guard, dedup, cap,
   ledger, fallback.
-- [bundle/decisions/2026-06-08-defects-file-as-issues.md](bundle/decisions/2026-06-08-defects-file-as-issues.md)
+- [bundle/decisions/2026/20260608-defects-file-as-issues.md](bundle/decisions/2026/20260608-defects-file-as-issues.md)
   — the trust decision as a bundle concept: drafts-first until the leak
   guard earned issue-first.
 - [drafts/defects/README.md](drafts/defects/README.md) — the fallback

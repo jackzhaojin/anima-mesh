@@ -88,11 +88,16 @@ describe("role-declared reads in the prompt (issue #5)", () => {
       {
         "bundle/crm/taxonomy.md": concept("fact", {}, "# Taxonomy\n"),
         "bundle/crm/people/jane.md": concept("fact", {}, "# Jane\n"),
+        // Navigation files never take a record's slot.
+        "bundle/crm/index.md": "# CRM\n",
+        "bundle/crm/people/index.md": "# People\n",
       },
     );
     const prompt = await promptFor(root);
 
     expect(prompt).toContain("### crm/ (directory — 2 file(s))");
+    expect(prompt).not.toContain("#### crm/index.md");
+    expect(prompt).not.toContain("#### crm/people/index.md");
     expect(prompt).toContain("#### crm/people/jane.md");
     expect(prompt).toContain("#### crm/taxonomy.md");
   });

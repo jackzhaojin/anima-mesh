@@ -349,6 +349,7 @@ separately credentialed dashboard Worker, and one evidence commit per run.
 | [CHANGELOG.md](CHANGELOG.md) | Each minor release line: its value, maturity, and operator upgrade steps |
 | [docs/engine-vs-instance.md](docs/engine-vs-instance.md) | The sorting rule: what belongs in this public engine vs a private brain |
 | [docs/okf-v0.2.md](docs/okf-v0.2.md) | OKF v0.2 in AnimaMesh: provenance, trust, lifecycle; how AI writes a memory file; migrating |
+| [docs/memory-layout.md](docs/memory-layout.md) | Where memory files go: an area, then a calendar year or a topic, at most three folders deep |
 | [docs/okf-crm-domain.md](docs/okf-crm-domain.md) | The CRM domain shelf: typed concepts, lifecycle stages, compliance screens as data |
 | [docs/learnings/](docs/learnings/README.md) | Hard-won platform knowledge (vendor gateways, Workers egress, …) with evidence |
 | [CLAUDE.md](CLAUDE.md) | Working agreements for AI coding sessions in this repo |
@@ -371,7 +372,7 @@ conformance and complete a full agent run against the fake provider.
 
 ![AnimaMesh 2.x at a glance](docs/two-point-x.svg)
 
-v2.3.2 (2026-10-18). Package name on npm to be confirmed; pinned consumers
+v2.3.4 (2026-10-27). Package name on npm to be confirmed; pinned consumers
 reference the repo by tag. **2.0 is the mesh of brains**: person, org, team,
 and group brains linked by mutual consent, owner-decided `share:` grants,
 mandatory `markings:`, inherited law down a containment chain, member roles

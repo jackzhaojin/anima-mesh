@@ -36,6 +36,10 @@ export interface ConformanceReport {
   conceptCount: number;
 }
 
+/** Folders below the bundle root: area, year or topic, one more level. */
+export const MAX_LAYOUT_DEPTH = 3;
+const YEAR_DIR_RE = /^\d{4}$/;
+
 const LINK_RE = /\[[^\]]*\]\(([^)#?]+\.md)(?:[#?][^)]*)?\)/g;
 
 /**
@@ -181,6 +185,40 @@ export function checkConformance(
     // A2 — decisions and events are dated; decisions carry a status.
     for (const c of [...conceptsByType(bundle, "decision"), ...conceptsByType(bundle, "event")]) {
       if (!hasDate(c)) err("animamesh/dated", `${c.frontmatter.type} concepts must carry a date`, c.relPath);
+    }
+
+    // A6 - the memory layout default (docs/memory-layout.md): an area, then a
+    // calendar year or a topic, then at most one more level. Warnings only:
+    // flat bundles stay valid and an engine upgrade never moves files.
+    // A concept the constitution links to is pinned where it is: moving it
+    // would mean editing the constitution, which a refactor never does.
+    const pinned = new Set<string>();
+    for (const law of conceptsByType(bundle, "constitution")) {
+      for (const match of law.body.matchAll(LINK_RE)) {
+        const resolved = resolveRel(law.relPath, match[1]!);
+        if (resolved) pinned.add(resolved);
+      }
+    }
+    for (const c of bundle.concepts) {
+      if (isReservedFile(c.relPath) || pinned.has(c.relPath)) continue;
+      const dirs = c.relPath.split("/").slice(0, -1);
+      if (dirs.length > MAX_LAYOUT_DEPTH) {
+        warn(
+          "animamesh/layout-depth",
+          `${dirs.length} folders deep; the layout allows ${MAX_LAYOUT_DEPTH} (area / year-or-topic / one more level)`,
+          c.relPath,
+        );
+      }
+    }
+    for (const c of [...conceptsByType(bundle, "decision"), ...conceptsByType(bundle, "event")]) {
+      if (pinned.has(c.relPath)) continue;
+      if (!c.relPath.split("/").slice(0, -1).some((d) => YEAR_DIR_RE.test(d))) {
+        warn(
+          "animamesh/layout-year",
+          `dated ${c.frontmatter.type} records file under a calendar-year folder (e.g. ${c.relPath.split("/")[0]}/2026/)`,
+          c.relPath,
+        );
+      }
     }
 
     // A3 — agent concepts declare the chokepoint fields (D14) and a valid level (D6).

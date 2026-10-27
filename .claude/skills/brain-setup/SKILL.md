@@ -141,9 +141,11 @@ Walk the user through, in order (each exists for a reason — say the reason):
    [docs/okf-v0.2.md](../../../docs/okf-v0.2.md): copy that pointer into
    the new brain's `CLAUDE.md` / `AGENTS.md`. Also copy the
    [two-tier memory and indexing convention](../../../docs/memory-layout.md):
-   new subject concepts use area/topic/concept, the root maps areas, local
-   indexes list immediate children with descriptions, evergreen names stay
-   stable and new dated filenames use YYYYMMDD. Keep runtime anchor paths
+   an area, then a calendar year for time-sensitive memory or a topic for
+   evergreen memory, then at most one more level (never a fourth folder);
+   the root maps areas, local indexes list immediate children with
+   descriptions, evergreen names stay stable and dated filenames use
+   YYYYMMDD. Keep runtime anchor paths
    and mandatory role reads working. Related summaries and episodic working
    notes may share an area under the bundle; supporting Markdown must have
    OKF metadata and frozen/dictated bodies stay intact. Large originals stay
