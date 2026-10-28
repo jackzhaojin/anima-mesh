@@ -24,6 +24,8 @@ const FM_OPEN = /^---\r?\n/;
  * mask corruption in the firm's knowledge layer.
  */
 export function parseConcept(raw: string): ParsedConcept | null {
+  // A byte-order mark (some Windows editors write one) is not content.
+  raw = raw.replace(/^\uFEFF/, "");
   if (!FM_OPEN.test(raw)) return null;
   const rest = raw.replace(FM_OPEN, "");
   const closeIdx = rest.search(/^---\s*$/m);

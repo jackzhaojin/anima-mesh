@@ -51,6 +51,10 @@ the exact persona the scheduled tiers run
 hosted service: each private instance deploys its own Workers, Durable
 Objects, repository, and secrets from this public engine.
 
+**Where the brain lives** is your choice since v2.4: a git repository (needed
+for the cloud tier), or a OneDrive, SharePoint, Google Drive or Dropbox
+folder for teams without git ([docs/storage.md](docs/storage.md)).
+
 **Local mode** (v2.3.6) is the exception, for brains that hold someone
 else's proprietary knowledge: `init --local` makes a brain the engine keeps
 on the machine. No cloud tier, chat or mail delivery, cloud read sources,
@@ -304,6 +308,11 @@ pnpm cli init ../my-brain --answers answers.json --agentic opencode
 # or a brain that never leaves this machine (no cloud, chat, web or Drive)
 pnpm cli init ../work-brain --name "My work" --principal "Ada" --kind person --local
 
+# or one that lives in a synced OneDrive / Google Drive folder instead of git
+pnpm cli init "$HOME/OneDrive - Acme/my-brain" --name "My work" --principal "Ada" \
+  --local --storage synced --provider onedrive
+pnpm cli doctor --instance "$HOME/OneDrive - Acme/my-brain"   # storage health
+
 # or just look: what the sample brain's beat would run (it needs no setup;
 # copy it elsewhere first to run it for real, offline, brief to the console)
 pnpm cli heartbeat --instance docs/sample-brain --dry-run
@@ -363,6 +372,7 @@ separately credentialed dashboard Worker, and one evidence commit per run.
 | [CHANGELOG.md](CHANGELOG.md) | Each minor release line: its value, maturity, and operator upgrade steps |
 | [docs/engine-vs-instance.md](docs/engine-vs-instance.md) | The sorting rule: what belongs in this public engine vs a private brain |
 | [docs/okf-v0.2.md](docs/okf-v0.2.md) | OKF v0.2 in AnimaMesh: provenance, trust, lifecycle; how AI writes a memory file; migrating |
+| [docs/storage.md](docs/storage.md) | Where a brain lives: git, or a synced OneDrive / Google Drive / Dropbox folder, and `doctor` |
 | [docs/local-only.md](docs/local-only.md) | Local mode: a brain for proprietary knowledge that never leaves the machine |
 | [docs/focus.md](docs/focus.md) | The focus file (what matters right now) and the three-line brief |
 | [docs/memory-layout.md](docs/memory-layout.md) | Where memory files go: an area, then a calendar year or a topic, at most three folders deep |
@@ -388,7 +398,7 @@ conformance and complete a full agent run against the fake provider.
 
 ![AnimaMesh 2.x at a glance](docs/two-point-x.svg)
 
-v2.3.6 (2026-10-27). Package name on npm to be confirmed; pinned consumers
+v2.4.0 (2026-10-27). Package name on npm to be confirmed; pinned consumers
 reference the repo by tag. **2.0 is the mesh of brains**: person, org, team,
 and group brains linked by mutual consent, owner-decided `share:` grants,
 mandatory `markings:`, inherited law down a containment chain, member roles
@@ -413,7 +423,15 @@ in an allowed channel (or a DM to the app) becomes a direction answered in
 its thread, with the surrounding conversation as context. It runs from the
 cloud Worker (`/slack/events`) or, with no public endpoint, from the laptop
 (`slack listen`). Channel membership can be the allowlist (`*`), and cloud
-failure alerts follow each brain's own channels.
+failure alerts follow each brain's own channels. Later 2.3 patches add the
+[focus file and three-line brief](docs/focus.md) (what matters right now,
+and a notification you can read), memory two tiers deep by year or topic,
+[local mode](docs/local-only.md) for proprietary brains, and a working
+agreement (`CLAUDE.md`/`AGENTS.md`) in every new brain. **v2.4** makes a
+brain portable: it can live in git or in a OneDrive, SharePoint, Google
+Drive or Dropbox folder, with per-machine ledger shards, one runner,
+atomic writes, conflict copies flagged in the brief, and `anima-mesh
+doctor` to check the folder ([docs/storage.md](docs/storage.md)).
 
 The cloud tier introduced in v0.3 is the primary execution path; the CLI
 remains the bootstrap, operator, and subprocess-harness path. The 0.x lines

@@ -34,6 +34,9 @@ import type { BrainKind } from "./instance/config-core.js";
 import { execFileSync } from "node:child_process";
 import { writeFileSync } from "node:fs";
 import { assertNotLocal, localModeIssues } from "./instance/local-mode.js";
+import { machineId } from "./instance/config.js";
+import { sanitizeWriter } from "./instance/storage-core.js";
+import { doctor, formatDoctor } from "./instance/doctor.js";
 
 /**
  * anima-mesh CLI — init / validate / run / gate / report.
@@ -74,6 +77,8 @@ export async function main(argv: string[], io: { log: (s: string) => void; error
         return await cmdOntology(rest, io);
       case "okf":
         return await cmdOkf(rest, io);
+      case "doctor":
+        return await cmdDoctor(rest, io);
       case "templates":
         io.log(listAgentTemplates().join("\n"));
         return 0;
@@ -102,11 +107,14 @@ function usage(): string {
     "                        [--kind person|org|team|group] [--brain-id ID] [--agents a,b,c]",
     "                        [--persona NAME] [--description TEXT]",
     "                        [--model MODEL] [--harness HARNESS] [--local]",
+    "                        [--storage git|synced] [--provider onedrive|google-drive|dropbox] [--runner HOST]",
     "  anima-mesh validate <dir> [--profile okf|animamesh]",
     "  anima-mesh run <agent> [--instance dir | --instance github:owner/repo#ref]",
     "  anima-mesh gate list|approve <id>|deny <id> [--instance dir] [--by NAME] [--note TEXT]",
     "  anima-mesh report [--instance dir]",
-    "  anima-mesh heartbeat [--instance dir] [--dry-run] [--no-deliver]",
+    "  anima-mesh heartbeat [--instance dir] [--dry-run] [--no-deliver] [--force]",
+    "  anima-mesh doctor [--instance dir]          storage health: conflict copies, unsyncable names,",
+    "                        unreadable placeholders, junk that must not sync, ledger shards",
     "  anima-mesh deliver [--instance dir] [--agent NAME] [--channel c1,c2]",
     "  anima-mesh card [--instance dir] [--out FILE]",
     "  anima-mesh export-local [--instance dir] [--agents a,b | --all]",
@@ -169,6 +177,19 @@ async function cmdInit(args: string[], io: { log: (s: string) => void; error: (s
   }
   // Local mode (v2.3.6): nothing but the model call leaves the machine.
   if (hasFlag(args, "local")) answers = { ...answers, localOnly: true };
+  // Synced storage (v2.3.7): OneDrive, SharePoint, Google Drive or Dropbox instead of git.
+  const storage = flag(args, "storage");
+  if (storage !== undefined && storage !== "git") {
+    if (storage !== "synced") {
+      io.error("init: --storage must be git or synced");
+      return 2;
+    }
+    const provider = flag(args, "provider") || undefined;
+    answers = {
+      ...answers,
+      storage: { kind: "synced" as const, ...(provider ? { provider: provider as "onedrive" } : {}), ...(flag(args, "runner") ? { runner: flag(args, "runner") } : {}) },
+    };
+  }
 
   if (hasFlag(args, "agentic")) {
     const harnessName = flag(args, "agentic") || "opencode";
@@ -297,7 +318,7 @@ async function cmdReport(args: string[], io: { log: (s: string) => void }): Prom
   io.log(`\n## Pending approvals (${pending.length})`);
   for (const p of pending) io.log(`- ${p.id}: ${p.actionType} — ${p.summary}`);
 
-  const ledger = new Ledger(instance.ledgerFile);
+  const ledger = new Ledger(instance.ledgerFile, { writer: instance.ledgerWriter });
   const entries = ledger.read().slice(-10);
   io.log(`\n## Last ${entries.length} ledger entries`);
   for (const e of entries) io.log(`- ${e.ts} ${e.agent} ${e.action} (${e.type})`);
@@ -351,6 +372,16 @@ async function cmdSlack(args: string[], io: { log: (s: string) => void }): Promi
 async function cmdHeartbeat(args: string[], io: { log: (s: string) => void }): Promise<number> {
   const instanceRoot = flag(args, "instance") ?? ".";
   const dryRun = hasFlag(args, "dry-run");
+  // A synced brain has one runner (v2.3.7): two machines beating the same
+  // folder would both run every due agent before sync caught up.
+  const runner = loadInstance(instanceRoot).config.storage?.runner;
+  if (runner && !dryRun && !hasFlag(args, "force") && sanitizeWriter(runner) !== machineId()) {
+    io.log(
+      `heartbeat: this brain's runner is "${runner}" and this machine is "${machineId()}". ` +
+        `Run the beat there, change storage.runner, or pass --force (only when the runner is off).`,
+    );
+    return 2;
+  }
   const result = await heartbeat({ instanceRoot, dryRun, onProgress: (n) => io.log(`  ${n}`) });
 
   io.log(`due: ${result.due.length ? result.due.map((d) => `${d.agent} (${d.reason})`).join(", ") : "none"}`);
@@ -565,4 +596,10 @@ if (invokedDirectly) {
       process.exit(1);
     },
   );
+}
+
+async function cmdDoctor(args: string[], io: { log: (s: string) => void }): Promise<number> {
+  const result = await doctor(flag(args, "instance") ?? ".");
+  io.log(formatDoctor(result));
+  return result.ok ? 0 : 1;
 }

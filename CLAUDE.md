@@ -82,7 +82,9 @@ src/
                 (concept-type schemas: the ontology contract; `status` is
                 reserved for lifecycle) · ontology.ts (derived type catalog
                 + link graph)
-  ledger/       append-only JSONL ledger + integrity/completeness assertions
+  ledger/       append-only JSONL ledger + integrity/completeness assertions;
+                synced brains (v2.4) append per-machine shards, reads merge
+                every shard and conflict copy, dedup exact lines, order by ts
   gates/        ApprovalStore (file-based needs-you) · gatekeeper (constitution
                 gates + ladder enforcement — GateViolation on any breach)
   autonomy/     L1→L4 ladder; external actions ALWAYS gated, even at L4
@@ -100,7 +102,10 @@ src/
                 continuation + thinking-budget retry).
                 anthropic-api = subscription OAuth over plain fetch; its system
                 prompt SHAPE is load-bearing (docs/learnings/2026-07-12)
-  instance/     config loading/resolution · local-mode.ts (v2.3.6: "mode":
+  instance/     config loading/resolution · storage-core.ts (v2.4: conflict
+                copies, portable names, machine ids; Workers-safe) · atomic.ts
+                (temp+rename writes; only ENOENT reads as missing) · doctor.ts
+                (`anima-mesh doctor`) · local-mode.ts (v2.3.6: "mode":
                 "local" refusals - console delivery, no network sources or web
                 search, no public issues, no cloud tier) · THE STORAGE SEAM: store.ts
                 interface, store-fs (local), store-github (tarball read,

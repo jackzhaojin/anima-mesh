@@ -1,4 +1,5 @@
-import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, readdirSync } from "node:fs";
+import { writeFileAtomic } from "../instance/atomic.js";
 import { randomUUID } from "node:crypto";
 import * as path from "node:path";
 
@@ -38,7 +39,7 @@ export class ApprovalStore {
       requestedAt: input.now ?? new Date().toISOString(),
       status: "pending",
     };
-    writeFileSync(this.fileFor(record.id), JSON.stringify(record, null, 2) + "\n", "utf8");
+    writeFileAtomic(this.fileFor(record.id), JSON.stringify(record, null, 2) + "\n");
     return record;
   }
 
@@ -60,17 +61,23 @@ export class ApprovalStore {
       decidedAt: new Date().toISOString(),
       ...(note ? { note } : {}),
     };
-    writeFileSync(this.fileFor(id), JSON.stringify(updated, null, 2) + "\n", "utf8");
+    writeFileAtomic(this.fileFor(id), JSON.stringify(updated, null, 2) + "\n");
     return updated;
   }
 
   list(status?: ApprovalStatus): ApprovalRecord[] {
     if (!existsSync(this.dir)) return [];
-    const records: ApprovalRecord[] = [];
+    // A synced brain can hold a conflict copy of a record (one machine
+    // approved while another still saw it pending): one record per id, and
+    // a decision always outranks "pending" - decisions are terminal.
+    const byId = new Map<string, ApprovalRecord>();
     for (const file of readdirSync(this.dir)) {
-      if (!file.endsWith(".json")) continue;
-      records.push(JSON.parse(readFileSync(path.join(this.dir, file), "utf8")) as ApprovalRecord);
+      if (!file.endsWith(".json") || file.startsWith(".")) continue;
+      const r = JSON.parse(readFileSync(path.join(this.dir, file), "utf8")) as ApprovalRecord;
+      const prior = byId.get(r.id);
+      if (!prior || (prior.status === "pending" && r.status !== "pending")) byId.set(r.id, r);
     }
+    const records = [...byId.values()];
     records.sort((a, b) => a.requestedAt.localeCompare(b.requestedAt));
     return status ? records.filter((r) => r.status === status) : records;
   }

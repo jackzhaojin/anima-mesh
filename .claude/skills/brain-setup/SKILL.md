@@ -90,6 +90,13 @@ delivery, cloud read sources, web search or public issues
 ([docs/local-only.md](../../../docs/local-only.md)). Ask before assuming
 either way, and skip the cloud-tier step for a local brain.
 
+Ask where the brain will live. Git is the default (and the cloud tier needs
+it). A team without git can keep it in OneDrive, SharePoint, Google Drive or
+Dropbox: add `--storage synced --provider <drive>`, have every machine keep
+the folder downloaded and set `ANIMAMESH_WRITER`, keep the engine checkout
+outside the drive, and run `pnpm cli doctor --instance <dir>`
+([docs/storage.md](../../../docs/storage.md)).
+
 Init refuses non-empty directories by design, and validates its own output —
 a failed conformance check is an engine bug, not a user error. Keep the
 answers file out of the new repo (it's setup scratch, not knowledge).

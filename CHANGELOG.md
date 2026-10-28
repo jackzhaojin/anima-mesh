@@ -3,7 +3,7 @@
 This history is organized by **minor release line** (and, from 2.0, major):
 the capability boundary operators actually adopt. Patch tags are deliberately
 rolled into the value and maturity of their minor rather than narrated one by
-one. The latest tag is **v2.3.6**.
+one. The latest tag is **v2.4.0**.
 
 ## Upgrade procedure
 
@@ -31,6 +31,58 @@ The ledger remains append-only; never "migrate" it by editing old entries.
 ## [Unreleased]
 
 - Nothing yet.
+
+## [v2.4.x] - Brains anywhere: git, OneDrive, Google Drive
+
+**Latest tag: v2.4.0 · 2026-10-27**
+
+2.4 makes a brain portable. The same engine, conventions and agents run a
+brain kept in git, or in a folder a sync client keeps on every machine
+(OneDrive, SharePoint, Google Drive, Dropbox), for teams and enterprises
+that have a drive but no git. It completes the line 2.3.5 and 2.3.6 began
+for working brains: the focus file, the three-line brief, local mode and
+the working agreement every brain carries.
+
+**Synced storage.** `init --storage synced [--provider onedrive|google-drive|dropbox]`
+writes `"storage": { "kind": "synced", "runner": <machine> }`. A sync client
+never merges, so the engine handles its edge cases in code:
+
+- **One ledger shard per machine** (`ledger/actions.<machine>.jsonl`).
+  Reads merge the base file, every shard and any conflict copy of them,
+  drop exact duplicate lines and order by time, so history never splits
+  and nothing is rewritten. A machine reading another's shard sees its
+  runs and does not repeat them.
+- **One runner.** Only `storage.runner` runs `heartbeat`; other machines
+  refuse unless `--force`. The machine id is `ANIMAMESH_WRITER`, else the
+  first label of the host name (stable across networks).
+- **Conflict copies are named, not loaded silently.** OneDrive's
+  `name-MACHINE.md`, Google Drive's `name (1).md` and Dropbox's
+  "conflicted copy" are warnings in `validate`, errors in `doctor`, and a
+  P2 line in the hub's brief until merged. A conflict copy of an approval
+  can never bring "pending" back over a decision.
+- **Atomic writes everywhere.** Reports, concept writes and approvals go to
+  a temp file and are renamed into place, so a client never uploads half a
+  file. This applies to git brains too.
+- **Cloud-only placeholders are loud.** Only "does not exist" reads as
+  missing; any other read failure stops the run with "make the folder
+  available offline", instead of letting an agent report a fact as absent.
+- **Names that sync everywhere.** `validate` warns on names Windows,
+  OneDrive or SharePoint refuse, case-only twins and paths over 200
+  characters. Byte-order marks no longer hide frontmatter.
+
+**`anima-mesh doctor`** checks a brain where it lives: storage kind against
+the actual folder, the runner and machine id, things that must not sync
+(`node_modules`, `.git`, symlinks, `.env` secrets, Office lock files),
+every file readable now, an atomic write, conflict copies and names
+brain-wide, and the ledger's shards. Tested live on macOS against Google
+Drive for desktop and OneDrive, including a simulated second machine; see
+[docs/storage.md](docs/storage.md).
+
+**Upgrade:** nothing required for git brains; redeploy the heartbeat Worker
+to pick up the storage note and BOM handling. To move a brain to a drive,
+follow [Moving between git and a drive](docs/storage.md#moving-between-git-and-a-drive).
+Local mode and synced storage are independent and combine: `--local
+--storage synced` is a brain that never leaves the organization's drive.
 
 ## [v2.3.x] - Slack: the persona in a group setting
 

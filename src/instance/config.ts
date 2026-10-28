@@ -1,5 +1,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import * as path from "node:path";
+import { hostname } from "node:os";
+import { sanitizeWriter } from "./storage-core.js";
 import { CONFIG_FILENAME, DEFAULT_CONFIG, type InstanceConfig } from "./config-core.js";
 
 export { CONFIG_FILENAME, DEFAULT_CONFIG, type InstanceConfig } from "./config-core.js";
@@ -14,6 +16,8 @@ export interface ResolvedInstance {
   config: InstanceConfig;
   bundleDir: string;
   ledgerFile: string;
+  /** Synced storage: this machine's ledger shard id (each machine appends to its own). */
+  ledgerWriter?: string;
   approvalsDir: string;
   reportsDir: string;
   draftsDir: string;
@@ -31,8 +35,19 @@ export function loadInstance(instanceRoot: string): ResolvedInstance {
     config,
     bundleDir: path.join(root, config.bundle),
     ledgerFile: path.join(root, config.ledger),
+    ...(config.storage?.kind === "synced" ? { ledgerWriter: machineId() } : {}),
     approvalsDir: path.join(root, config.approvals),
     reportsDir: path.join(root, config.reports),
     draftsDir: path.join(root, config.drafts),
   };
+}
+
+/**
+ * This machine's id for a synced brain: ANIMAMESH_WRITER, else the first
+ * label of the host name (macOS reports "Mac.lan" on one network and
+ * "Mac.local" on another; the first label survives both). Set
+ * ANIMAMESH_WRITER for an id that never changes.
+ */
+export function machineId(): string {
+  return sanitizeWriter(process.env.ANIMAMESH_WRITER || hostname().split(".")[0] || "machine");
 }

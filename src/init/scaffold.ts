@@ -10,6 +10,7 @@ import { BRAIN_KINDS, isSlug, RESERVED_TOKENS } from "../brains/core.js";
 import { fillTemplate, loadAgentTemplate, templatesDir } from "./templates.js";
 import { agentsFromBundle } from "../agents/concept.js";
 import { composeLocalAgents, selectLocalAgents } from "../local/agents-core.js";
+import { machineId } from "../instance/config.js";
 
 /**
  * The init's contract (and its acceptance test): run against an empty
@@ -46,6 +47,12 @@ export interface InitAnswers {
    * issues, no cloud tier (instance/local-mode.ts).
    */
   localOnly?: boolean;
+  /**
+   * Synced storage (v2.3.7): the brain lives in a OneDrive, SharePoint,
+   * Google Drive or Dropbox folder instead of git. `runner` is the machine
+   * that runs heartbeats (default: the one running init).
+   */
+  storage?: { kind: "synced"; provider?: "onedrive" | "google-drive" | "dropbox" | "other"; runner?: string };
   /** Injectable clock for deterministic tests. */
   now?: string;
 }
@@ -128,6 +135,7 @@ export async function scaffoldBrain(targetDir: string, answers: InitAnswers): Pr
   // ── instance config: the pairing between this brain and the engine ──────
   const config: InstanceConfig = {
     ...(local ? { mode: "local" as const, delivery: { channels: ["console"] } } : {}),
+    ...(answers.storage ? { storage: { ...answers.storage, runner: answers.storage.runner ?? machineId() } } : {}),
     bundle: "bundle",
     ledger: "ledger/actions.jsonl",
     approvals: "approvals",
@@ -329,7 +337,7 @@ export async function scaffoldBrain(targetDir: string, answers: InitAnswers): Pr
 
   // ── the standards pack: how any session (Claude Code, Codex, a person)
   // works in this brain, written into the brain itself (v2.3.6) ──────────
-  const standards = standardsPack({ name: answers.orgName, principal: answers.principalName, local, isPerson });
+  const standards = standardsPack({ name: answers.orgName, principal: answers.principalName, local, isPerson, synced: !!answers.storage });
   put("CLAUDE.md", standards);
   put("AGENTS.md", `# AGENTS.md\n\nThe working agreement for this brain is [CLAUDE.md](CLAUDE.md); it applies to every\nassistant and every person who edits the bundle.\n`);
 
@@ -387,7 +395,7 @@ export async function scaffoldBrain(targetDir: string, answers: InitAnswers): Pr
  * or without the engine installed, keeps the same practices. Local mode
  * adds its boundary.
  */
-export function standardsPack(o: { name: string; principal: string; local: boolean; isPerson: boolean }): string {
+export function standardsPack(o: { name: string; principal: string; local: boolean; isPerson: boolean; synced?: boolean }): string {
   return [
     `# ${o.name} - working agreement`,
     "",
@@ -403,13 +411,40 @@ export function standardsPack(o: { name: string; principal: string; local: boole
           "console and to files, no chat or mail delivery, no cloud drives or inboxes, no web search,",
           "no public engine issues, no cloud tier. Keep the same line by hand:",
           "",
-          "- Never push this repository to a personal or public remote, and never copy its contents",
-          "  into another brain, a public issue, a chat outside the organization, or a prompt for a",
-          "  tool the organization has not approved.",
+          o.synced
+            ? "- Never move or share this folder outside the drive the organization approves, and never copy"
+            : "- Never push this repository to a personal or public remote, and never copy its contents",
+          o.synced
+            ? "  its contents into another brain, a public issue, a chat outside the organization, or a"
+            : "  into another brain, a public issue, a chat outside the organization, or a prompt for a",
+          o.synced ? "  prompt for a tool the organization has not approved." : "  tool the organization has not approved.",
           "- The model harness is the one network path. Use only the assistant and account the",
           "  organization approves for this material.",
           "- Engine bugs become drafts under `drafts/defects/`; describing one upstream is the",
           "  principal's call, in generic terms with no internal details.",
+        ]
+      : []),
+    ...(o.synced
+      ? [
+          "",
+          "## Synced folder, not git",
+          "",
+          "This brain lives in a folder a sync client keeps on every machine (`storage.kind: synced`).",
+          "Git would merge two people's edits; a sync client keeps both as a conflict copy instead.",
+          "",
+          "- Keep the folder downloaded (\"Always keep on this device\" / available offline). A file that",
+          "  is only in the cloud cannot be read, and the engine stops rather than guess.",
+          "- Before editing a file, check for a conflict copy beside it (`name-MACHINE.md`,",
+          "  `name (1).md`, `conflicted copy`). Merge it into the original and delete it; never leave",
+          "  two versions of one concept. `anima-mesh doctor` lists them; the brief flags them.",
+          "- Never put `node_modules`, a `.git` folder, build output or `.env` secrets in this folder.",
+          "  Keep the engine checkout and its dependencies outside it.",
+          "- Only the runner machine (`storage.runner`) runs scheduled beats. Each machine writes its own",
+          "  ledger shard (`ledger/actions.<machine>.jsonl`); never edit or merge them by hand.",
+          "- History is the drive's version history, the newest-first `bundle/log.md`, and the ledger.",
+          "  Log every meaningful change; there is no `git log` to fall back on.",
+          "- Names must work on Windows and SharePoint: no `< > : \" | ? * \\`, no trailing dot or space,",
+          "  no two names that differ only by case, relative paths under 200 characters.",
         ]
       : []),
     "",

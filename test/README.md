@@ -24,6 +24,19 @@ everything builds in temp dirs via `helpers.ts` and runs against
   migrate` (comments survive, judgment calls reported, migrated bundle
   validates clean, CLI dry-run vs `--write`); the harness's Knowledge trust
   section; the agent card titling from the index H1.
+- **focus-brief.test.ts** - the three-line digest cut in code (overflow
+  threaded, Also capped, report linked, a format-skipping report still
+  short); focus inlined first for every agent, the brief format for the hub
+  only; `focus-update` only from the principal in a direction, never a beat.
+- **local-mode.test.ts** - `init --local` output; delivery, network
+  sources, web search, public defect filing and the cloud tier refused in
+  code; Top-of-mind records inlined for the hub, missing links said aloud.
+- **storage.test.ts** - synced storage: OneDrive/Google Drive/Dropbox
+  conflict copies recognized (and real version names not), unsyncable
+  names, per-machine ledger shards merged with conflict copies deduped,
+  atomic writes, unreadable files never "missing", BOM, approvals that a
+  conflict copy cannot un-decide, the runner gate, the hub's storage note,
+  `init --storage synced` and `doctor`.
 - **ledger-gates.test.ts** — the safety layer as behavior: ledgers only grow;
   corruption is detected; approvals are terminal; the ladder blocks
   above-level actions; gated types without a *matching approved* record throw

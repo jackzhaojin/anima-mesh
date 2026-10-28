@@ -6,6 +6,7 @@ import { runAgentCore, dateStampFor, type RunReport } from "./run-core.js";
 import { scheduleFromBundle, effectiveCadence, mutateSchedule, type Schedule } from "./schedule.js";
 import type { LocalBrainOpener, SourceFs, SourceContext } from "../sources/types.js";
 import { assertNotLocal } from "../instance/local-mode.js";
+import { conflictCopies } from "../instance/storage-core.js";
 
 /**
  * The heartbeat trigger — one of D5's four deterministic jobs. Decides which
@@ -155,6 +156,20 @@ function tierBlockedNotes(blocked: HeartbeatDecision[]): string[] {
   ];
 }
 
+/** Conflict copies in the bundle, said to the hub so the principal hears about them (v2.3.7). */
+export function conflictNotes(relPaths: string[]): string[] {
+  const found = conflictCopies(relPaths);
+  if (found.length === 0) return [];
+  return [
+    "## Storage notes for this beat (surface these in your brief)",
+    "The brain's folder holds sync conflict copies: two versions of one concept, made when two",
+    "machines changed the same file. Until someone merges each into its original and deletes the",
+    "copy, either version may be stale. Make this one Also line (P2 · storage):",
+    ...found.slice(0, 8).map((f) => `- ${f.path}: ${f.reason}`),
+    ...(found.length > 8 ? [`- ...and ${found.length - 8} more (run \`anima-mesh doctor\`)`] : []),
+  ];
+}
+
 export async function heartbeatCore(options: HeartbeatCoreOptions): Promise<HeartbeatResult> {
   const store = options.store;
   const config = await store.loadConfig();
@@ -226,6 +241,7 @@ export async function heartbeatCore(options: HeartbeatCoreOptions): Promise<Hear
   // degrade agent-by-agent, not collapse. (Lesson from the first launchd
   // beat: an auth error in one provider killed the remaining runs.)
   const hubName = config.delivery?.deliverAgent ?? "chief-of-staff";
+  const storageNotes = conflictNotes((await store.loadBundle()).concepts.map((c) => c.relPath));
   const runs: RunReport[] = [];
   const failures: HeartbeatFailure[] = [];
   for (const { agent } of due) {
@@ -245,7 +261,10 @@ export async function heartbeatCore(options: HeartbeatCoreOptions): Promise<Hear
           onProgress: progress,
           // The hub speaks for the beat: due-but-unrunnable agents ride into
           // its prompt so the brief can nag the principal to run them locally.
-          beatNotes: agent.name === hubName && tierBlocked.length > 0 ? tierBlockedNotes(tierBlocked) : undefined,
+          beatNotes:
+            agent.name === hubName && (tierBlocked.length > 0 || storageNotes.length > 0)
+              ? [...(tierBlocked.length > 0 ? tierBlockedNotes(tierBlocked) : []), ...storageNotes]
+              : undefined,
         }),
       );
     } catch (err) {

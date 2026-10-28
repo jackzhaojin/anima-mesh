@@ -3,6 +3,7 @@ import { conceptsByType, getConcept } from "./bundle-core.js";
 import { checkSchemas } from "./schema.js";
 import { checkFamilies, isReservedFile, OKF_VERSION } from "./trust.js";
 import { checkLog } from "./log.js";
+import { conflictCopies, portabilityIssues } from "../instance/storage-core.js";
 
 /**
  * Conformance profiles:
@@ -209,6 +210,15 @@ export function checkConformance(
           c.relPath,
         );
       }
+    }
+    // A7 - storage (v2.3.7): a sync client's conflict copies are two versions
+    // of one concept, and names Windows/OneDrive/SharePoint refuse will not
+    // sync. Warnings, for every brain: a git brain may move to a drive later.
+    for (const { path: p, reason } of conflictCopies(bundle.concepts.map((x) => x.relPath))) {
+      warn("storage/conflict-copy", `${reason}: merge it into the original and delete it`, p);
+    }
+    for (const { path: p, problem } of portabilityIssues(bundle.concepts.map((x) => x.relPath))) {
+      warn("storage/portable-name", problem, p);
     }
     for (const c of [...conceptsByType(bundle, "decision"), ...conceptsByType(bundle, "event")]) {
       if (pinned.has(c.relPath)) continue;

@@ -120,6 +120,20 @@ export interface InstanceConfig {
    * public engine issues and the cloud tier for this brain (local-mode.ts).
    */
   mode?: "local";
+  /**
+   * Where the brain lives (v2.3.7). "git" (default): a repository; git
+   * merges and keeps history. "synced": a folder a sync client keeps on each
+   * machine (OneDrive, SharePoint, Google Drive, Dropbox) - every machine
+   * writes its own ledger shard, writes are atomic, conflict copies are
+   * flagged, and only the `runner` machine runs scheduled beats
+   * (docs/storage.md). The cloud tier needs git.
+   */
+  storage?: {
+    kind?: "git" | "synced";
+    provider?: "onedrive" | "google-drive" | "dropbox" | "other";
+    /** The one machine (host name or ANIMAMESH_WRITER) that runs `heartbeat`. */
+    runner?: string;
+  };
   /** Where reports get delivered (channel names) and whose report is "the brief". */
   delivery?: {
     channels?: string[];

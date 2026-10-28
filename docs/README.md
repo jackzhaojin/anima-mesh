@@ -80,7 +80,8 @@ into a 16:9 slide.
 ## Contributing docs
 
 What reaches the principal is set by [the focus file and the three-line brief](focus.md).
-A brain for proprietary knowledge runs in [local mode](local-only.md).
+A brain for proprietary knowledge runs in [local mode](local-only.md), and any
+brain can live in git or a [synced OneDrive / Google Drive folder](storage.md).
 Memory organization defaults to [two tiers (year or topic) and local indexes](memory-layout.md).
 Use that guide when adding knowledge or reorganizing an existing brain.
 

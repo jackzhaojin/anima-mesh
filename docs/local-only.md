@@ -55,8 +55,10 @@ account your organization approves for that material.
   the three-line brief. Schedule it with the OS (launchd, cron, Task
   Scheduler) if you want a daily beat; nothing else is needed.
 - **Validate**: `pnpm cli validate ~/work-brain` after changes.
-- **Version control**: `git init` the brain and keep any remote on storage
-  your organization approves. The engine is public; the brain is not.
+- **Where it lives**: `git init` the brain and keep any remote on storage
+  your organization approves, or put it in the organization's OneDrive,
+  SharePoint or Google Drive with `--storage synced`
+  ([storage](storage.md)). The engine is public; the brain is not.
 - **Linking**: a local brain may link to other brains only through local
   checkouts, and every link must be declared on both sides. Think twice
   before linking a proprietary brain to a personal one: the boundary is

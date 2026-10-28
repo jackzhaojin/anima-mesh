@@ -59,8 +59,9 @@ moving an item into or out of top of mind changes what the hub reads in
 full, not just how it ranks. A link that no longer resolves is said out
 loud. Spokes see the focus but keep their own `reads:`.
 
-Out of focus is not deleted: the record stays where it is, and git keeps
-every version of the focus. Compressing cold memory (summarizing records
+Out of focus is not deleted: the record stays where it is, and version
+history (git, or the drive's file versions for a [synced brain](storage.md))
+keeps every version of the focus. Compressing cold memory (summarizing records
 nobody has had in focus for a long time) is a planned next step, not part
 of this release.
 

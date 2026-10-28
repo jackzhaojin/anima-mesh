@@ -1,4 +1,5 @@
-import { mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
+import { writeFileAtomic, isMissing, unreadable } from "./atomic.js";
 import * as path from "node:path";
 import { loadBundle, type Bundle } from "../okf/bundle.js";
 import { Ledger, type LedgerEntry } from "../ledger/ledger.js";
@@ -22,7 +23,7 @@ export class FsInstanceStore implements InstanceStore {
     this.instance = loadInstance(instanceRoot);
     this.root = this.instance.root;
     this.bundleDir = this.instance.bundleDir;
-    this.ledger = new Ledger(this.instance.ledgerFile);
+    this.ledger = new Ledger(this.instance.ledgerFile, { writer: this.instance.ledgerWriter });
     this.approvals = new ApprovalStore(this.instance.approvalsDir);
   }
 
@@ -34,22 +35,30 @@ export class FsInstanceStore implements InstanceStore {
     return loadBundle(this.bundleDir);
   }
 
+  // Only "does not exist" reads as absent (v2.3.7). Any other failure - a
+  // cloud-only placeholder a sync client could not fetch, a permission
+  // error - is loud: an agent must never be told a fact is missing when it
+  // is merely not on this machine.
   async readOptional(relPath: string): Promise<string | null> {
+    const abs = path.join(this.root, relPath);
     try {
-      return readFileSync(path.join(this.root, relPath), "utf8");
-    } catch {
-      return null;
+      return readFileSync(abs, "utf8");
+    } catch (err) {
+      if (isMissing(err) || (err as { code?: string }).code === "EISDIR") return null;
+      throw unreadable(abs, err);
     }
   }
 
   async listFiles(relDir: string): Promise<string[]> {
+    const abs = path.join(this.root, relDir);
     try {
-      return readdirSync(path.join(this.root, relDir), { recursive: true, encoding: "utf8" })
+      return readdirSync(abs, { recursive: true, encoding: "utf8" })
         .filter((f) => f.endsWith(".md"))
         .map((f) => f.split(path.sep).join("/"))
         .sort();
-    } catch {
-      return [];
+    } catch (err) {
+      if (isMissing(err)) return [];
+      throw unreadable(abs, err);
     }
   }
 
@@ -58,8 +67,9 @@ export class FsInstanceStore implements InstanceStore {
       return readdirSync(this.instance.reportsDir)
         .filter((f) => f.endsWith(".md"))
         .sort();
-    } catch {
-      return [];
+    } catch (err) {
+      if (isMissing(err)) return [];
+      throw unreadable(this.instance.reportsDir, err);
     }
   }
 
@@ -68,8 +78,7 @@ export class FsInstanceStore implements InstanceStore {
   }
 
   async writeReport(name: string, content: string): Promise<void> {
-    mkdirSync(this.instance.reportsDir, { recursive: true });
-    writeFileSync(path.join(this.instance.reportsDir, name), content, "utf8");
+    writeFileAtomic(path.join(this.instance.reportsDir, name), content);
   }
 
   reportPath(name: string): string {
@@ -85,9 +94,7 @@ export class FsInstanceStore implements InstanceStore {
   }
 
   async writeFile(relPath: string, content: string): Promise<void> {
-    const abs = path.join(this.root, relPath);
-    mkdirSync(path.dirname(abs), { recursive: true });
-    writeFileSync(abs, content, "utf8");
+    writeFileAtomic(path.join(this.root, relPath), content);
   }
 
   async listApprovals(status?: ApprovalStatus): Promise<ApprovalRecord[]> {
