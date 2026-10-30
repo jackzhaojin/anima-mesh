@@ -161,6 +161,12 @@ someone's world (`person`, `org`, `team`, or `group`), and brains connect
   reads the principal's own Gmail and Calendar through read-only scopes,
   with account numbers, one-time codes, and passwords redacted in code
   before any prompt sees them.
+- **One brain per boundary, not per project.** One brain for yourself, one
+  for each organization whose knowledge belongs to it, and one for each
+  group of people you share work with. Every project, client and side effort
+  is a folder in the brain it belongs to, and big files stay in the file
+  cabinet (a drive the brain links to). A second brain for one owner only
+  doubles the upkeep ([when to start a new brain](docs/layered-brains.md#when-to-start-a-new-brain-rarely)).
 - **Brains link, and both sides must agree.** `member-of`/`has-member`,
   `child-of`/`parent-of`, `peer-of`: a link is live only when both configs
   declare it with inverse relations. A hub that declares `context-sources: [brains]`

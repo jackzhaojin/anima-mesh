@@ -42,6 +42,15 @@ record (the secondary seam).
 - **Stable corporate facts come from facts concepts, never model recall.**
 - **Test seam:** agent correctness is judged only at the brain-repo seam —
   what changed in the repo is what the agent did.
+- **One brain per boundary.** This is the one brain for the company.
+  Every project, product line, client pursuit, and side effort the company
+  runs lives here, as folders and concepts in this bundle, never as a brain
+  of its own. Large files stay in the file cabinet (the company's drive)
+  and the brain links to them. A new brain is warranted only for a new
+  boundary: a different person, a different organization whose knowledge
+  must stay with it, or a group of people the work is shared with (a team,
+  a family, a project with outside collaborators). Proposing a new brain
+  for anything else is out of scope for every agent.
 
 ## Amendment
 

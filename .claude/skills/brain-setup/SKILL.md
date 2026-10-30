@@ -20,9 +20,20 @@ promoted hub) — read [docs/sample-brain/](../../../docs/sample-brain/README.md
 a complete scrubbed production instance that validates and runs
 credential-free. Copy shapes from it freely; never copy its fictional facts.
 
-## Step 0 — offer the two paths
+## Step 0 - check that this needs a new brain
 
-Ask one question before anything else:
+A brain is one per **boundary**, not per project: one for a person, one for
+each organization whose knowledge belongs to it, one for each group of
+people who share work. If the user already has a brain and wants one for a
+new project, product, client, talk, or side effort, say so plainly and
+offer the alternative instead: a folder in the existing brain, with big
+files in its file cabinet (the drive it links to). Go on only when the new
+brain has a different owner or a different set of people
+([docs/layered-brains.md](../../../docs/layered-brains.md#when-to-start-a-new-brain-rarely)).
+
+## Step 0b - offer the two paths
+
+Then ask one question before collecting anything:
 
 > **Quick setup** (≈1 minute): three questions, default roster
 > (chief-of-staff + compliance-ops), defaults for everything else — you can
@@ -112,9 +123,10 @@ failure.
 
 Walk the user through, in order (each exists for a reason — say the reason):
 
-1. **Private git repo, immediately.** The brain will hold real corporate
-   facts. Never let it live inside a cloud-synced folder (sync conflicts
-   corrupt append-only files).
+1. **Private git repo, immediately** (or the synced drive chosen above).
+   The brain will hold real corporate facts. A git brain never lives inside
+   a cloud-synced folder; a synced brain is set up with `--storage synced`
+   so each machine writes its own ledger shard.
 2. **Pick its document store.** Recommend one for almost every brain: the
    brain is memory and index, the store holds the documents of record
    (contracts, tax forms, statements, decks). Ask which the organization

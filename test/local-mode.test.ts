@@ -82,6 +82,7 @@ describe("init --local", () => {
     await scaffoldBrain(root, { orgName: "Acme", principalName: "Sam Lee", agents: [], now: "2026-10-27T12:00:00Z" });
     const claude = await readFile(path.join(root, "CLAUDE.md"), "utf8");
     expect(claude).toContain("## Writing memory (OKF v0.2)");
+    expect(claude).toContain("## One brain, everything in it");
     expect(claude).not.toContain("Local mode");
   });
 

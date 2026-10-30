@@ -84,6 +84,18 @@ follow [Moving between git and a drive](docs/storage.md#moving-between-git-and-a
 Local mode and synced storage are independent and combine: `--local
 --storage synced` is a brain that never leaves the organization's drive.
 
+**One brain per boundary (main, untagged, 2026-10-30).** Docs and the
+scaffold now say plainly when to start a brain: one for a person, one per
+organization whose knowledge belongs to it, one per group of people who
+share work. Every project, client and side effort is a folder in the brain
+it belongs to, and big files stay in the file cabinet. `init` writes the
+rule into the constitution and the working agreement; the sample brain's
+constitution carries it as an amendment;
+[layered-brains.md](docs/layered-brains.md#when-to-start-a-new-brain-rarely)
+has the table and a new diagram; the setup skill checks before scaffolding.
+No runtime change, so no tag: existing brains add the rule to their own
+constitution by hand.
+
 ## [v2.3.x] - Slack: the persona in a group setting
 
 **Latest tag: v2.3.6 · 2026-10-27**

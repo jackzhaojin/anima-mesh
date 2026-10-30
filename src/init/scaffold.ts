@@ -244,7 +244,8 @@ export async function scaffoldBrain(targetDir: string, answers: InitAnswers): Pr
       `## Standing rules\n\n- Autonomy ladder: L1 report-only → L2 draft-for-approval → L3 whitelisted reversible → L4 external (per-action gated, permanently). Every agent starts at L1.\n` +
       `- Least privilege: each agent holds only the credentials its job requires.\n` +
       `- Every agent action is appended to the ledger; an unlogged action is a verifier failure.\n` +
-      `- Stable facts come from facts concepts, never model recall.\n\n` +
+      `- Stable facts come from facts concepts, never model recall.\n` +
+      `- One brain per boundary: this is the one brain for ${answers.orgName}. Every project, side effort and topic lives here as folders and concepts, never as a brain of its own; large files stay in the file cabinet (a drive or document library) and the brain links to them. A new brain is warranted only for a new boundary: a different person, a different organization whose knowledge must stay with it, or a group of people the work is shared with.\n\n` +
       `## Amendment\n\nOnly ${answers.principalName} may amend this file, by hand, recording a dated decision concept.\n`,
   );
 
@@ -455,6 +456,15 @@ export function standardsPack(o: { name: string; principal: string; local: boole
     "   exception fires; never touch hands-off topics.",
     "2. `bundle/index.md` - the map of areas; follow local indexes from there.",
     "3. `bundle/ops/nags.md` and `bundle/ops/calendar.md` - open asks and dates.",
+    "",
+    "## One brain, everything in it",
+    "",
+    `This is the one brain for ${o.name}. A new project, client, product or side effort`,
+    "is a folder and a few concepts here, never a new brain. Large files (decks, media,",
+    "databases, signed documents) stay in the file cabinet, the drive or document library",
+    "this brain points to, and the brain keeps the facts and a link. Start another brain",
+    "only for a new boundary: a different person, a different organization whose knowledge",
+    "must stay with it, or a group of people you share the work with.",
     "",
     "## Writing memory (OKF v0.2)",
     "",

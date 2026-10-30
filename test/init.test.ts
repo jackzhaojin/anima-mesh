@@ -64,6 +64,8 @@ describe("agentic init — the acceptance test from the PRD", () => {
     const constitution = readFileSync(path.join(target, "bundle/constitution.md"), "utf8");
     expect(constitution).toContain("immutable: true");
     expect(constitution).toContain("money-movement");
+    // One brain per boundary: projects are folders, not brains.
+    expect(constitution).toContain("One brain per boundary: this is the one brain for Acme Research Co");
   });
 
   it("substitutes identity into templates and config — identity-plural by design", async () => {

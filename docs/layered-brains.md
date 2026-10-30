@@ -23,6 +23,32 @@ Each brain is still its own private repo with its own constitution, ledger,
 approvals, and agents. Nothing about running one brain changed; a brain with
 no `brain` block in its config behaves exactly as before.
 
+## When to start a new brain (rarely)
+
+![One brain per boundary](one-brain-per-boundary.svg)
+
+**One brain per boundary, not per project.** A boundary is a set of people
+and an owner of the knowledge. Most people need very few brains: one for
+themselves, and one for each organization whose knowledge belongs to that
+organization (a company they run, an employer that keeps its own material).
+Everything done inside a boundary lives in that one brain.
+
+| You want to... | Do this |
+|---|---|
+| Start a project, product, client pursuit, talk, or side effort | a folder and a few concepts in the brain it belongs to |
+| Keep big files (decks, media, databases, signed documents) | the file cabinet: Google Drive, OneDrive, SharePoint, Dropbox. The brain keeps the facts and a link ([starting-a-company.md](starting-a-company.md)) |
+| Run a different company, or work for an employer that owns its material | a new `org` brain (an employer's often in [local mode](local-only.md)) |
+| Share work with other people: a team, a family, outside collaborators | a new `team` or `group` brain they are members of |
+| Separate one of your own projects from the rest of your life | **not a new brain.** Use folders, `markings:`, and the focus file |
+
+Why: every brain carries its own constitution, roster, heartbeat, secrets,
+and deploy. A second brain for one owner doubles that upkeep, splits the
+hub's view of what matters, and turns every cross-project question into a
+link to manage. A brain is the unit of **access control** (section 6
+below), so it earns its place only when the people who can read it change.
+Every scaffolded constitution states this rule, and agents never propose a
+new brain for anything else.
+
 This page is the contract. The ontology side (typed concepts, schemas, the
 Palantir mapping) is in [ontology.md](ontology.md).
 

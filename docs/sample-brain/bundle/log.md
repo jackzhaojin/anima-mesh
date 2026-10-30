@@ -4,6 +4,16 @@ Grouped by date, newest first (OKF v0.2 §9). New entries go at the top of
 today's group; history is never rewritten, and corrections are new entries.
 This file is the story of the company's operating system.
 
+## 2026-10-30
+
+### Constitution: one brain per boundary
+
+The founder added a standing rule: this is the one brain for the company,
+every project and side effort is a folder here, and big files stay in the
+company drive. A new brain is for a new boundary only (a different person,
+organization, or group of people). See the
+[decision](decisions/2026/20261030-one-brain-per-boundary.md).
+
 ## 2026-10-27
 
 ### A focus file, and a brief the founder can read in three lines

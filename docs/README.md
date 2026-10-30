@@ -69,6 +69,7 @@ into a 16:9 slide.
 |---|---|---|
 | [two-point-x.svg](two-point-x.svg) | 2.x at a glance: v2.0 to v2.3, by the numbers (16:9) | README, CHANGELOG |
 | [mesh-of-brains.svg](mesh-of-brains.svg) | person, org, team, group brains; links, grants, markings (16:9) | README, layered-brains |
+| [one-brain-per-boundary.svg](one-brain-per-boundary.svg) | when to start a new brain: one per person, organization, or sharing group; projects are folders | layered-brains |
 | [slack-in-the-room.svg](slack-in-the-room.svg) | a Slack @-mention end to end, gates to threaded reply (16:9) | slack, architecture |
 | [cloud-architecture.svg](cloud-architecture.svg) | the cloud tier: people, Worker, brain, linked brains, sources | architecture |
 | [heartbeat-sequence.svg](heartbeat-sequence.svg) | one beat, step by step | heartbeat-anatomy |

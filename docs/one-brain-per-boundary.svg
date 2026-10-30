@@ -1,0 +1,74 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 660" font-family="ui-sans-serif, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif">
+  <rect x="0" y="0" width="1280" height="660" fill="#ffffff"/>
+  <text x="40" y="46" font-size="21" fill="#1f2328" font-weight="700">One brain per boundary, not per project</text>
+  <text x="40" y="70" font-size="13" fill="#57606a">A brain earns its place when the people who can read it change. Inside a boundary, everything is folders and concepts, and big files stay in the file cabinet.</text>
+
+  <!-- person brain -->
+  <rect x="40" y="100" width="380" height="250" rx="10" fill="#fff8e5" stroke="#d4a72c" stroke-width="1.5"/>
+  <text x="56" y="128" font-size="15" fill="#7d4e00" font-weight="700">You</text>
+  <rect x="345" y="112" width="59" height="22" rx="11" fill="#ffffff" stroke="#d4a72c" stroke-width="1"/>
+  <text x="374.5" y="127" font-size="11.5" fill="#7d4e00" font-weight="600" text-anchor="middle">person</text>
+  <text x="56" y="152" font-size="12" fill="#4d3a12">your whole life, in one brain</text>
+  <g font-size="12" fill="#1f2328" font-family="ui-monospace, SFMono-Regular, Menlo, monospace">
+    <text x="56" y="184">career/</text><text x="200" y="184" fill="#57606a" font-family="ui-sans-serif, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif">talks, a webinar</text>
+    <text x="56" y="206">home/</text><text x="200" y="206" fill="#57606a" font-family="ui-sans-serif, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif">the house, repairs</text>
+    <text x="56" y="228">money/</text><text x="200" y="228" fill="#57606a" font-family="ui-sans-serif, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif">taxes, accounts</text>
+    <text x="56" y="250">projects/</text><text x="200" y="250" fill="#57606a" font-family="ui-sans-serif, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif">every side project</text>
+  </g>
+  <rect x="56" y="308" width="348" height="26" rx="13" fill="#ffffff" stroke="#d4a72c" stroke-width="1"/>
+  <text x="230" y="325" font-size="11.5" fill="#7d4e00" font-weight="600" text-anchor="middle">file cabinet: your own Google Drive or OneDrive</text>
+
+  <!-- company brain -->
+  <rect x="450" y="100" width="380" height="250" rx="10" fill="#edf5ff" stroke="#54aeff" stroke-width="1.5"/>
+  <text x="466" y="128" font-size="15" fill="#0a5bd3" font-weight="700">Your company</text>
+  <rect x="773" y="112" width="41" height="22" rx="11" fill="#ffffff" stroke="#54aeff" stroke-width="1"/>
+  <text x="793.5" y="127" font-size="11.5" fill="#0a5bd3" font-weight="600" text-anchor="middle">org</text>
+  <text x="466" y="152" font-size="12" fill="#33445c">everything the company does, in one brain</text>
+  <g font-size="12" fill="#1f2328" font-family="ui-monospace, SFMono-Regular, Menlo, monospace">
+    <text x="466" y="184">clients/</text><text x="610" y="184" fill="#57606a" font-family="ui-sans-serif, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif">each pursuit</text>
+    <text x="466" y="206">products/</text><text x="610" y="206" fill="#57606a" font-family="ui-sans-serif, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif">each product line</text>
+    <text x="466" y="228">channels/</text><text x="610" y="228" fill="#57606a" font-family="ui-sans-serif, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif">each media channel</text>
+    <text x="466" y="250">finance/</text><text x="610" y="250" fill="#57606a" font-family="ui-sans-serif, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif">books, filings</text>
+  </g>
+  <rect x="466" y="308" width="348" height="26" rx="13" fill="#ffffff" stroke="#54aeff" stroke-width="1"/>
+  <text x="640" y="325" font-size="11.5" fill="#0a5bd3" font-weight="600" text-anchor="middle">file cabinet: the company's shared drives</text>
+
+  <!-- employer brain -->
+  <rect x="860" y="100" width="380" height="250" rx="10" fill="#f6f8fa" stroke="#57606a" stroke-width="1.5"/>
+  <text x="876" y="128" font-size="15" fill="#1f2328" font-weight="700">Your employer</text>
+  <rect x="1100" y="112" width="124" height="22" rx="11" fill="#ffffff" stroke="#57606a" stroke-width="1"/>
+  <text x="1162" y="127" font-size="11.5" fill="#1f2328" font-weight="600" text-anchor="middle">org · local mode</text>
+  <text x="876" y="152" font-size="12" fill="#3d444d">its knowledge stays with it, on its storage</text>
+  <g font-size="12" fill="#1f2328" font-family="ui-monospace, SFMono-Regular, Menlo, monospace">
+    <text x="876" y="184">accounts/</text><text x="1020" y="184" fill="#57606a" font-family="ui-sans-serif, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif">each client account</text>
+    <text x="876" y="206">projects/</text><text x="1020" y="206" fill="#57606a" font-family="ui-sans-serif, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif">each engagement</text>
+    <text x="876" y="228">talks/</text><text x="1020" y="228" fill="#57606a" font-family="ui-sans-serif, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif">internal sessions</text>
+    <text x="876" y="250">career/</text><text x="1020" y="250" fill="#57606a" font-family="ui-sans-serif, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif">reviews, goals</text>
+  </g>
+  <rect x="876" y="308" width="348" height="26" rx="13" fill="#ffffff" stroke="#57606a" stroke-width="1"/>
+  <text x="1050" y="325" font-size="11.5" fill="#1f2328" font-weight="600" text-anchor="middle">file cabinet: OneDrive or SharePoint (synced)</text>
+
+  <!-- the question -->
+  <text x="40" y="396" font-size="15" fill="#1f2328" font-weight="700">Thinking about a new brain?</text>
+
+  <rect x="40" y="412" width="590" height="160" rx="10" fill="#e9f5ee" stroke="#1a7f37" stroke-width="1.5"/>
+  <text x="56" y="438" font-size="13.5" fill="#116329" font-weight="700">No: a folder in the brain it belongs to</text>
+  <text x="56" y="464" font-size="12" fill="#2f4a3a"><tspan font-weight="700">A new project, client, product, talk or side effort</tspan> - a folder</text>
+  <text x="56" y="481" font-size="12" fill="#2f4a3a">and a few concepts; the focus file says how much it matters.</text>
+  <text x="56" y="505" font-size="12" fill="#2f4a3a"><tspan font-weight="700">Big files</tspan> (decks, media, databases, signed documents) - the</text>
+  <text x="56" y="522" font-size="12" fill="#2f4a3a">file cabinet; a concept keeps the facts and a link.</text>
+  <text x="56" y="546" font-size="12" fill="#2f4a3a"><tspan font-weight="700">Keeping one of your own projects apart</tspan> - folders and</text>
+  <text x="56" y="563" font-size="12" fill="#2f4a3a">markings:, not a second brain with the same owner.</text>
+
+  <rect x="650" y="412" width="590" height="160" rx="10" fill="#fbf5ff" stroke="#8250df" stroke-width="1.5"/>
+  <text x="666" y="438" font-size="13.5" fill="#6639ba" font-weight="700">Yes: a new boundary</text>
+  <text x="666" y="464" font-size="12" fill="#3f2a63"><tspan font-weight="700">A different person</tspan> - their own person brain.</text>
+  <text x="666" y="488" font-size="12" fill="#3f2a63"><tspan font-weight="700">A different organization that owns its knowledge</tspan> - an org</text>
+  <text x="666" y="505" font-size="12" fill="#3f2a63">brain (an employer's, often in local mode on its storage).</text>
+  <text x="666" y="529" font-size="12" fill="#3f2a63"><tspan font-weight="700">People you share the work with</tspan> (a team, a family, outside</text>
+  <text x="666" y="546" font-size="12" fill="#3f2a63">collaborators) - a team or group brain they are members of.</text>
+
+  <line x1="40" y1="596" x2="1240" y2="596" stroke="#d0d7de" stroke-width="1"/>
+  <text x="40" y="622" font-size="12.5" fill="#57606a"><tspan font-weight="700" fill="#cf222e">Why not a brain per project:</tspan> each brain has its own constitution, roster, heartbeat, secrets and deploy.</text>
+  <text x="40" y="642" font-size="12.5" fill="#57606a">A second brain for one owner doubles that upkeep, splits the brief, and turns every cross-project question into a link to manage.</text>
+</svg>
