@@ -52,7 +52,7 @@ brief: { lines: 3, also: 8 }
 ## The focus links out
 
 Keep the focus a short list of pointers: each item links to the record that
-holds its detail (`[the return](../finance/2026/20260301-return.md)`), and
+holds its detail (`[the return](../finance/2026/2026-03-01-return.md)`), and
 the detail stays there. The records linked under **Top of mind** are inlined
 for the hub (its beats and its chat directions; up to four, clipped), so
 moving an item into or out of top of mind changes what the hub reads in

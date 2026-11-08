@@ -171,7 +171,8 @@ Walk the user through, in order (each exists for a reason — say the reason):
    evergreen memory, then at most one more level (never a fourth folder);
    the root maps areas, local indexes list immediate children with
    descriptions, evergreen names stay stable and dated filenames use
-   YYYYMMDD. Keep runtime anchor paths
+   ISO dates with dashes (`YYYY-MM-DD-slug.md`, `YYYY-MM` for a month,
+   never `YYYYMMDD`). Keep runtime anchor paths
    and mandatory role reads working. Related summaries and episodic working
    notes may share an area under the bundle; supporting Markdown must have
    OKF metadata and frozen/dictated bodies stay intact. Large originals stay

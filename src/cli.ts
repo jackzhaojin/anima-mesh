@@ -30,6 +30,10 @@ import { connectGoogle } from "./connect/google.js";
 import { buildOntology, formatOntology } from "./okf/ontology.js";
 import { trustDigest, OKF_VERSION } from "./okf/trust.js";
 import { migrateBundle } from "./okf/migrate.js";
+import { planIsoDates, isoDatePath } from "./okf/iso-dates.js";
+import { addLogEntry } from "./okf/log.js";
+import { dateStampFor } from "./harness/run-core.js";
+import { mkdirSync, renameSync, rmdirSync } from "node:fs";
 import type { BrainKind } from "./instance/config-core.js";
 import { execFileSync } from "node:child_process";
 import { writeFileSync } from "node:fs";
@@ -125,6 +129,8 @@ function usage(): string {
     "  anima-mesh okf trust [--instance dir]       OKF v0.2 trust tiers, lifecycle, stale + unattributed concepts",
     "  anima-mesh okf migrate [--instance dir] [--write]",
     "                        OKF v0.1 -> v0.2 mechanical rewrite (dry run unless --write); lists what needs judgment",
+    "  anima-mesh okf iso-dates [--instance dir] [--write]",
+    "                        dated names yyyymmdd-slug -> yyyy-mm-dd-slug, links follow (dry run unless --write)",
     "  anima-mesh connect google [--instance dir] [--port N] [--no-open]",
     "                        one-time READ-ONLY Gmail + Calendar + Drive consent for the principal",
     "  anima-mesh slack listen [--instance dir] [--once] [--interval SECONDS] [--lookback MINUTES]",
@@ -564,7 +570,84 @@ async function cmdOkf(args: string[], io: { log: (s: string) => void; error: (s:
     );
     return 0;
   }
-  io.error("okf: use `okf trust` or `okf migrate [--write]`");
+  if (sub === "iso-dates") {
+    // The whole instance, not just the bundle: reports, agent artifacts and
+    // the repo's own docs link to dated memory too. The ledger is append-only
+    // and never touched; lockfiles and secrets are never read.
+    const root = instance?.root ?? target;
+    const SKIP_DIRS = new Set([".git", "node_modules", ".wrangler", "dist", ".playwright-cli", ".playwright-mcp"]);
+    const TEXT_EXT = /\.(md|markdown|json|ya?ml|txt|ts|js|mjs|html|svg|toml|csv)$/i;
+    const SKIP_FILE = /(^\.env|\.jsonl$|^package-lock\.json$|^pnpm-lock\.yaml$|^yarn\.lock$|^\.DS_Store$)/;
+    const paths: string[] = [];
+    const texts = new Map<string, string>();
+    const walk = (dir: string, rel: string) => {
+      for (const e of readdirSync(dir, { withFileTypes: true })) {
+        const abs = path.join(dir, e.name);
+        const r = rel ? `${rel}/${e.name}` : e.name;
+        if (e.isDirectory()) {
+          if (!SKIP_DIRS.has(e.name)) walk(abs, r);
+        } else if (e.isFile() && !SKIP_FILE.test(e.name)) {
+          paths.push(r);
+          if (TEXT_EXT.test(e.name)) texts.set(r, readFileSync(abs, "utf8"));
+        }
+      }
+    };
+    walk(root, "");
+    const plan = planIsoDates(paths, texts);
+    const write = hasFlag(args, "write");
+    if (plan.clashes.length) {
+      io.error(`iso-dates: ${plan.clashes.length} name clash(es) - nothing changed:`);
+      for (const c of plan.clashes) io.error(`  ${c.from} -> ${c.to} (already exists)`);
+      return 1;
+    }
+    for (const r of plan.renames) io.log(`${write ? "renamed" : "would rename"} ${r.from} -> ${r.to}`);
+    for (const [p, n] of plan.counts) io.log(`${write ? "rewrote" : "would rewrite"} ${n} reference(s) in ${isoDatePath(p)}`);
+    const refs = [...plan.counts.values()].reduce((a, b) => a + b, 0);
+    if (write && plan.renames.length) {
+      for (const r of plan.renames) {
+        mkdirSync(path.dirname(path.join(root, r.to)), { recursive: true });
+        renameSync(path.join(root, r.from), path.join(root, r.to));
+      }
+      for (const [p, text] of plan.rewrites) writeFileSync(path.join(root, isoDatePath(p)), text, "utf8");
+      // Old dated folders are empty now; remove them deepest first.
+      const oldDirs = new Set<string>();
+      for (const r of plan.renames) {
+        const segs = r.from.split("/").slice(0, -1);
+        for (let i = segs.length; i > 0; i--) oldDirs.add(segs.slice(0, i).join("/"));
+      }
+      for (const d of [...oldDirs].sort((a, b) => b.length - a.length)) {
+        const abs = path.join(root, d);
+        if (existsSync(abs) && readdirSync(abs).length === 0) rmdirSync(abs);
+      }
+      const logPath = path.join(instance?.bundleDir ?? bundleDir, "log.md");
+      if (existsSync(logPath)) {
+        const entry =
+          `### Dated names to ISO 8601\n\n` +
+          `${plan.renames.length} file(s) renamed from \`yyyymmdd-slug\` to \`yyyy-mm-dd-slug\` by ` +
+          `\`anima-mesh okf iso-dates\`, so names read like the \`date:\` metadata and these headings. ` +
+          `${refs} reference(s) in ${plan.counts.size} file(s) followed, including links in older ` +
+          `entries of this log: a mechanical link fix, not a change to what they record.`;
+        const [heading, para] = entry.split("\n\n") as [string, string];
+        const wrapped: string[] = [];
+        for (const word of para.split(" ")) {
+          const last = wrapped.length - 1;
+          if (last >= 0 && wrapped[last]!.length + word.length < 76) wrapped[last] += ` ${word}`;
+          else wrapped.push(word);
+        }
+        writeFileSync(logPath, addLogEntry(readFileSync(logPath, "utf8"), dateStampFor(new Date()), `${heading}\n\n${wrapped.join("\n")}`), "utf8");
+      }
+    }
+    if (plan.unresolved.length) {
+      io.log(`\nstill mentions a compact dated name with no file here (${plan.unresolved.length}) - fix by hand:`);
+      for (const u of plan.unresolved) io.log(`  ${u.path}: ${u.name}`);
+    }
+    io.log(
+      `\n${plan.renames.length} file(s) ${write ? "renamed" : "would be renamed"}, ${refs} reference(s) in ` +
+        `${plan.counts.size} file(s)${write ? "" : " (dry run - pass --write)"}. Then: anima-mesh validate${instance ? ` ${target}` : ""}`,
+    );
+    return 0;
+  }
+  io.error("okf: use `okf trust`, `okf migrate [--write]` or `okf iso-dates [--write]`");
   return 2;
 }
 

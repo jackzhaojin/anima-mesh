@@ -15,18 +15,18 @@ bundle/
     index.md                   lists the years
     2026/                      tier 1: the calendar year
       index.md
-      20261027-first-customer.md
+      2026-10-27-first-customer.md
   decisions/
     2026/
-      20261014-pricing-model.md
+      2026-10-14-pricing-model.md
   professional/                time-sensitive area
     index.md                   lists years, plus talks/accolades views
     talks-guide.md             evergreen notes can sit at the area root
     2026/
-      20261111-platform-talk.md        summary record
-      20261111-platform-talk/          tier 2: one item's workspace
+      2026-11-11-platform-talk.md      summary record
+      2026-11-11-platform-talk/        tier 2: one item's workspace
         index.md
-        20261020-brainstorm-notes.md
+        2026-10-20-brainstorm-notes.md
         slides-outline.md
   finance/                     topical area
     index.md
@@ -49,11 +49,11 @@ The areas are examples, not a mandatory taxonomy. Pick per area:
   may hold its records directly until a split earns its place; don't create
   one-file folders to equalize depth.
 - **The second tier** is free: one talk's or one deal's workspace, a month
-  (`2026/10/`) when a year gets crowded, or a sub-topic. Inside a topic,
+  (`2026/2026-10/`) when a year gets crowded, or a sub-topic. Inside a topic,
   dated records may sit directly or get year folders once the topic is busy.
 - **Never a fourth folder.** When a workspace has phases (submission,
   prep, logistics), flatten them into the workspace with date-prefixed
-  names (`20260830-talk-prep-draft-v2.md`) rather than nesting.
+  names (`2026-08-30-talk-prep-draft-v2.md`) rather than nesting.
 
 `anima-mesh validate` warns (never errors) on concepts more than three
 folders deep (`animamesh/layout-depth`) and on decision or event concepts
@@ -79,11 +79,16 @@ root index and log and continues accepting flat bundles.
 
 ## Dates and evergreen records
 
-Use `YYYYMMDD-slug.md` for dated records, with the domain date (event,
-commitment or decision), not the date someone filed the note. The year
-folder is that date's year. Partial dates stay partial: never invent a day
-to fit a filename. Frontmatter dates and log headings keep `YYYY-MM-DD`;
-timestamps such as `generated.at` keep an explicit time-zone offset.
+Dated names use ISO 8601 with dashes: `YYYY-MM-DD-slug.md` for a dated
+record, `YYYY-MM` for a month (`2026-10-close.md`, a `2026-10/` folder).
+The date is the domain date (event, commitment or decision), not the date
+someone filed the note, and the year folder is that date's year. Partial
+dates stay partial: never invent a day to fit a filename. Names, frontmatter
+`date:` and log headings all read the same `YYYY-MM-DD`; timestamps such as
+`generated.at` keep an explicit time-zone offset. Never the compact
+`YYYYMMDD` form: `anima-mesh validate` warns on it
+(`animamesh/iso-date-name`), and `anima-mesh okf iso-dates --write` renames
+old names and rewrites every link to them (never the ledger).
 
 Evergreen records use stable names such as `organization.md` or
 `overview.md`. Update current understanding in place with sources, actual

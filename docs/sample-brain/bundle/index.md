@@ -66,7 +66,7 @@ for evergreen ones, then optionally one more level. The root maps areas,
 each area maps its years or topics, and those indexes list records.
 Keep descriptions beside links; each file has one canonical home. Runtime
 anchors (agents, ops, events and constitution) keep their established paths.
-Evergreen facts keep stable names; new dated filenames use YYYYMMDD-slug.md.
+Evergreen facts keep stable names; new dated filenames use ISO dates, YYYY-MM-DD-slug.md (YYYY-MM for a month).
 Frontmatter dates and log headings retain YYYY-MM-DD. This is an AnimaMesh
 authoring convention; OKF supports other layouts too.
 

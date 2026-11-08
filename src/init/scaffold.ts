@@ -116,7 +116,7 @@ export async function scaffoldBrain(targetDir: string, answers: InitAnswers): Pr
   const factsRel = `${knowledgeArea}/identity/${isPerson ? "person" : "organization"}.md`;
   // Dated records file under their calendar year (docs/memory-layout.md).
   const year = date.slice(0, 4);
-  const eventRel = `events/${year}/${date.replaceAll("-", "")}-instance-created.md`;
+  const eventRel = `events/${year}/${date}-instance-created.md`;
   const local = answers.localOnly === true;
   // A local brain defaults to a local CLI harness; the model call is its one
   // network path, and the organization picks which one is approved.
@@ -180,8 +180,9 @@ export async function scaffoldBrain(targetDir: string, answers: InitAnswers): Pr
       `as events/${year}/) or a topic, then optionally one more level. Each\n` +
       `populated directory has an index linking its immediate children with short\n` +
       `descriptions; the root is an area map rather than an exhaustive file list.\n` +
-      `Use stable names for evergreen facts and YYYYMMDD-slug.md for dated\n` +
-      `records, preserving ISO YYYY-MM-DD dates in metadata and logs. Runtime\n` +
+      `Use stable names for evergreen facts and ISO dates with dashes for dated\n` +
+      `records: YYYY-MM-DD-slug.md, or YYYY-MM for a month, never YYYYMMDD, so\n` +
+      `names read like the dates in metadata and logs. Runtime\n` +
       `anchors (constitution, agents, ops and the root log) keep their paths.\n`,
   );
 
@@ -493,7 +494,8 @@ export function standardsPack(o: { name: string; principal: string; local: boole
     "- Below an area, dated memory splits by calendar year first (`events/2026/`,",
     "  `decisions/2026/`), evergreen memory by topic. A second level is optional (one",
     "  workspace, a month, a sub-topic); never a fourth folder.",
-    "- Dated files are `YYYYMMDD-slug.md`; evergreen files keep stable names.",
+    "- Dated files are `YYYY-MM-DD-slug.md` (a month alone is `YYYY-MM`), never",
+    "  `YYYYMMDD`; evergreen files keep stable names.",
     "- Every folder has an `index.md` listing its children with a short description (no",
     "  frontmatter, except the root's `okf_version`). Update it in the same change.",
     "- `bundle/log.md` is newest first: add a `## YYYY-MM-DD` group at the top and never",

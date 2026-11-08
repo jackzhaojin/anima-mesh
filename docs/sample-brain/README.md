@@ -62,7 +62,7 @@ run **writes real files** here (`reports/`, `ledger/`);
 
 The sample already demonstrates an authorized hub: L3 with
 `defect-report` on its whitelist, backed by the
-[issue-first decision](bundle/decisions/2026/20260608-defects-file-as-issues.md).
+[issue-first decision](bundle/decisions/2026/2026-06-08-defects-file-as-issues.md).
 Its required [engine-feedback runbook](bundle/ops/engine-feedback.md) is
 also included by `init` in every new brain, and both personal and
 organizational hub templates read it on every run.

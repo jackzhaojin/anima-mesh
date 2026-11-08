@@ -3,6 +3,7 @@ import { conceptsByType, getConcept } from "./bundle-core.js";
 import { checkSchemas } from "./schema.js";
 import { checkFamilies, isReservedFile, OKF_VERSION } from "./trust.js";
 import { checkLog } from "./log.js";
+import { isoDatePath } from "./iso-dates.js";
 import { conflictCopies, portabilityIssues } from "../instance/storage-core.js";
 
 /**
@@ -228,6 +229,15 @@ export function checkConformance(
           `dated ${c.frontmatter.type} records file under a calendar-year folder (e.g. ${c.relPath.split("/")[0]}/2026/)`,
           c.relPath,
         );
+      }
+    }
+
+    // A8 - dated names (v2.4.1) use ISO dates, `2026-10-30-slug.md`, like the
+    // `date:` metadata and the log headings; `okf iso-dates` renames old ones.
+    for (const c of bundle.concepts) {
+      const iso = isoDatePath(c.relPath);
+      if (iso !== c.relPath) {
+        warn("animamesh/iso-date-name", `dated names use ISO dates: ${iso} (run \`anima-mesh okf iso-dates\`)`, c.relPath);
       }
     }
 

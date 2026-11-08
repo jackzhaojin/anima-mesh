@@ -96,6 +96,29 @@ has the table and a new diagram; the setup skill checks before scaffolding.
 No runtime change, so no tag: existing brains add the rule to their own
 constitution by hand.
 
+**v2.4.1 (2026-11-08) - ISO dates in names.** Dated files and folders read
+`2026-10-30-slug.md` (a month alone is `2026-10`), the same `YYYY-MM-DD` as
+the `date:` metadata and the log headings, never the compact `20261030`.
+`init` names its first event that way and writes the rule into the working
+agreement; [memory-layout.md](docs/memory-layout.md#dates-and-evergreen-records)
+and the setup skill say it; the sample brain is renamed.
+`anima-mesh validate` warns on compact dated names
+(`animamesh/iso-date-name`). `anima-mesh okf iso-dates [--write]` renames
+them across the whole instance and rewrites every reference: links,
+backticked paths, agent `reads:` and `resource:` entries, reports and
+generated agent artifacts. It replaces only the exact names it renamed,
+never a blind 8-digit search, so IDs and timestamps stay put; it never
+touches the ledger (append-only, and it lists no memory paths); it refuses
+on any name clash; it reports compact mentions it cannot resolve (a linked
+brain's file) for a hand fix; and it adds a log entry. Reading still
+accepts both forms.
+
+**Upgrade:** pause the brain's beats and other sessions, bump the engine
+ref, run `anima-mesh okf iso-dates <instance>` (dry run), read the map, then
+`--write`, `anima-mesh validate`, `anima-mesh export-local` if the brain has
+local agents, and commit. On a synced brain, close the other machines first
+so the drive does not make conflict copies.
+
 ## [v2.3.x] - Slack: the persona in a group setting
 
 **Latest tag: v2.3.6 · 2026-10-27**

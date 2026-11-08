@@ -64,7 +64,7 @@ describe("conflict copies and unsyncable names", () => {
       "people/Sam.md",
       "people/sam.md",
       `deep/${"x".repeat(210)}.md`,
-      "events/2026/20261027-fine-name.md",
+      "events/2026/2026-10-27-fine-name.md",
     ]).map((p) => p.path);
     expect(problems).toEqual([
       "facts/q3: results.md",

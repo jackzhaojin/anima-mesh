@@ -51,6 +51,9 @@ describe("agentic init — the acceptance test from the PRD", () => {
     expect(report.issues.filter((i) => i.level === "error")).toHaveLength(0);
     // OKF v0.2 (v2.2.0): init output is spec-clean, not merely error-free.
     expect(report.issues.filter((i) => i.rule.startsWith("okf/"))).toEqual([]);
+    // v2.4.1: dated names are ISO with dashes from the first file on.
+    expect(report.issues.filter((i) => i.rule === "animamesh/iso-date-name")).toEqual([]);
+    expect(bundle.concepts.some((c) => c.relPath === "events/2026/2026-07-05-instance-created.md")).toBe(true);
     expect(readFileSync(path.join(target, "bundle/index.md"), "utf8")).toMatch(/^---\nokf_version: "0\.2"\n---/);
     expect(readFileSync(path.join(target, "bundle/log.md"), "utf8")).toMatch(/^# Bundle log[\s\S]*\n## 2026-07-05\n/);
     const facts = bundle.concepts.find((c) => c.frontmatter.type === "fact")!;
