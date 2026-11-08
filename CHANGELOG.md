@@ -108,7 +108,8 @@ them across the whole instance and rewrites every reference: links,
 backticked paths, agent `reads:` and `resource:` entries, reports and
 generated agent artifacts. It replaces only the exact names it renamed,
 never a blind 8-digit search, so IDs and timestamps stay put; it never
-touches the ledger (append-only, and it lists no memory paths); it refuses
+touches the ledger (append-only, and it lists no memory paths) or
+`local-only/` (v2.4.2: frozen local material the engine never reads); it refuses
 on any name clash; it reports compact mentions it cannot resolve (a linked
 brain's file) for a hand fix; and it adds a log entry. Reading still
 accepts both forms.

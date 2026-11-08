@@ -573,9 +573,10 @@ async function cmdOkf(args: string[], io: { log: (s: string) => void; error: (s:
   if (sub === "iso-dates") {
     // The whole instance, not just the bundle: reports, agent artifacts and
     // the repo's own docs link to dated memory too. The ledger is append-only
-    // and never touched; lockfiles and secrets are never read.
+    // and never touched; lockfiles and secrets are never read; `local-only/`
+    // (frozen local material the engine never reads) stays as it was.
     const root = instance?.root ?? target;
-    const SKIP_DIRS = new Set([".git", "node_modules", ".wrangler", "dist", ".playwright-cli", ".playwright-mcp"]);
+    const SKIP_DIRS = new Set([".git", "node_modules", ".wrangler", "dist", ".playwright-cli", ".playwright-mcp", "local-only"]);
     const TEXT_EXT = /\.(md|markdown|json|ya?ml|txt|ts|js|mjs|html|svg|toml|csv)$/i;
     const SKIP_FILE = /(^\.env|\.jsonl$|^package-lock\.json$|^pnpm-lock\.yaml$|^yarn\.lock$|^\.DS_Store$)/;
     const paths: string[] = [];

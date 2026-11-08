@@ -132,6 +132,7 @@ describe("okf iso-dates CLI", () => {
       "work/2026/20260901-program/20260908-kit.md": concept("note", { date: "2026-09-08" }, "# Kit"),
       "work/2026/20260901-program/20260908-photo.webp": "binary-ish",
       "ledger/actions.jsonl": '{"detail":{"path":"decisions/2026/20261030-x.md"}}\n',
+      "local-only/20261026-moves/map.json": '{"to":"decisions/2026/20261030-x.md"}',
     });
     const out: string[] = [];
     const io = { log: (s: string) => out.push(s), error: (s: string) => out.push(s) };
@@ -151,6 +152,8 @@ describe("okf iso-dates CLI", () => {
     expect(await readFile(path.join(root, "log.md"), "utf8")).toMatch(/### Dated names to ISO 8601\n\n4 file\(s\) renamed/);
     // The ledger is append-only: never rewritten.
     expect(await readFile(path.join(root, "ledger/actions.jsonl"), "utf8")).toContain("20261030-x.md");
+    // local-only/ is frozen local material: neither renamed nor rewritten.
+    expect(await readFile(path.join(root, "local-only/20261026-moves/map.json"), "utf8")).toContain("20261030-x.md");
 
     const report = checkConformance(await loadBundle(root), "animamesh");
     expect(report.issues.filter((i) => i.rule === "animamesh/iso-date-name")).toEqual([]);
